@@ -20,4 +20,3 @@ pnpm build
 ```
 
 The APIMart key previously pasted into chat must be revoked before deployment; use only a newly generated key in the environment.
-
