@@ -1,0 +1,9 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#f5f0e8"/>
+  <path d="M0 500L420 0h360L360 630H0z" fill="#e9e1d4"/>
+  <circle cx="1010" cy="120" r="86" fill="#e24a32"/>
+  <text x="80" y="125" fill="#e24a32" font-family="Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="5">AI POSTER MAKER</text>
+  <text x="80" y="310" fill="#1d1a17" font-family="Georgia, serif" font-size="112">Give your</text>
+  <text x="80" y="425" fill="#1d1a17" font-family="Georgia, serif" font-size="112">idea a poster.</text>
+  <text x="83" y="515" fill="#71695e" font-family="Arial, sans-serif" font-size="22">TEXT TO POSTER / FOUR DIRECTIONS FROM ONE BRIEF</text>
+</svg>

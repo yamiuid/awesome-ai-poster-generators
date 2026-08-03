@@ -1,0 +1,41 @@
+{
+  "name": "text-to-poster",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "biome check . && tsc --noEmit",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@supabase/ssr": "latest",
+    "@supabase/supabase-js": "latest",
+    "@waffo/pancake-ts": "latest",
+    "ky": "latest",
+    "lucide-react": "latest",
+    "next": "16.2.12",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "sharp": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "latest",
+    "@playwright/test": "latest",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "react-doctor": "latest",
+    "react-grab": "latest",
+    "react-scan": "latest",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "latest"
+  }
+}
