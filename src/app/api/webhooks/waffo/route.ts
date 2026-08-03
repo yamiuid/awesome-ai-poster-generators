@@ -2,28 +2,7 @@ import { NextResponse } from "next/server";
 import { AppError, responseForError } from "@/lib/server/errors";
 import { createSupabaseAdminClient } from "@/lib/server/supabase/admin";
 import { verifyWaffoWebhook } from "@/lib/server/waffo";
-
-function periodEnd(start: string, plan: "monthly" | "yearly"): string {
-  const date = new Date(start);
-  date.setUTCMonth(date.getUTCMonth() + (plan === "yearly" ? 12 : 1));
-  return date.toISOString();
-}
-
-function planFor(
-  data: Readonly<{
-    billingPeriod?: string;
-    orderMetadata?: Record<string, string>;
-  }>,
-): "monthly" | "yearly" | null {
-  const metadataPlan = data.orderMetadata?.["plan"];
-  if (metadataPlan === "monthly" || metadataPlan === "yearly") {
-    return metadataPlan;
-  }
-  if (data.billingPeriod === "monthly" || data.billingPeriod === "yearly") {
-    return data.billingPeriod;
-  }
-  return null;
-}
+import { periodEnd, planFor, statusFor } from "@/lib/server/waffo-subscription";
 
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -36,14 +15,10 @@ export async function POST(request: Request): Promise<Response> {
     const { error: eventInsertError } = await admin
       .from("payment_events")
       .insert({
-        waffo_event_id: event.eventId,
+        waffo_event_id: event.id,
         event_type: event.eventType,
         event_mode: event.mode,
-        payload: {
-          eventId: event.eventId,
-          eventType: event.eventType,
-          mode: event.mode,
-        },
+        payload: JSON.parse(rawBody),
       });
     if (eventInsertError && eventInsertError.code !== "23505") {
       throw new AppError(
@@ -60,6 +35,7 @@ export async function POST(request: Request): Promise<Response> {
     const userId =
       data.orderMetadata?.["userId"] ?? data.merchantProvidedBuyerIdentity;
     const handledTypes = new Set([
+      "order.completed",
       "subscription.activated",
       "subscription.payment_succeeded",
       "subscription.updated",
@@ -72,7 +48,7 @@ export async function POST(request: Request): Promise<Response> {
     if (userId && handledTypes.has(event.eventType)) {
       const { data: existing } = await admin
         .from("subscriptions")
-        .select("last_event_at")
+        .select("last_event_at, period_start, period_end, plan")
         .eq("user_id", userId)
         .maybeSingle();
       if (
@@ -80,20 +56,17 @@ export async function POST(request: Request): Promise<Response> {
         new Date(existing.last_event_at).getTime() <
           new Date(event.timestamp).getTime()
       ) {
-        const plan = planFor(data);
-        if (plan) {
-          const status =
-            event.eventType === "subscription.canceling"
-              ? "canceling"
-              : event.eventType === "subscription.canceled"
-                ? "canceled"
-                : event.eventType === "subscription.past_due"
-                  ? "past_due"
-                  : event.eventType === "refund.succeeded"
-                    ? "refunded"
-                    : "active";
-          const start = data.currentPeriodStart ?? event.timestamp;
-          const end = data.currentPeriodEnd ?? periodEnd(start, plan);
+        const plan = planFor(data, existing?.plan ?? null);
+        const status = statusFor(event.eventType, data.orderStatus);
+        if (plan && status) {
+          const start =
+            data.currentPeriodStart ??
+            existing?.period_start ??
+            event.timestamp;
+          const end =
+            data.currentPeriodEnd ??
+            existing?.period_end ??
+            periodEnd(start, plan);
           const { error: subscriptionError } = await admin
             .from("subscriptions")
             .upsert(
@@ -124,7 +97,7 @@ export async function POST(request: Request): Promise<Response> {
     await admin
       .from("payment_events")
       .update({ processed_at: new Date().toISOString() })
-      .eq("waffo_event_id", event.eventId);
+      .eq("waffo_event_id", event.id);
     return NextResponse.json({ received: true });
   } catch (error) {
     if (error instanceof AppError) {

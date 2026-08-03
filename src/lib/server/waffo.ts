@@ -19,8 +19,15 @@ export function verifyWaffoWebhook(
   rawBody: string,
   signature: string | null,
 ): WebhookEvent<WebhookEventData> {
+  const environment = getServerEnv().WAFFO_ENVIRONMENT;
   try {
-    return verifyWebhook<WebhookEventData>(rawBody, signature);
+    const event = verifyWebhook<WebhookEventData>(rawBody, signature, {
+      environment,
+    });
+    if (event.mode !== environment) {
+      throw new Error("Webhook environment mismatch.");
+    }
+    return event;
   } catch {
     throw new AppError(
       "WEBHOOK_INVALID",

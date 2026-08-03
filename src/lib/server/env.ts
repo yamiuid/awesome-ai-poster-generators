@@ -8,6 +8,7 @@ const serverEnvSchema = z.object({
   APIMART_API_KEY: z.string().min(1),
   WAFFO_MERCHANT_ID: z.string().min(1),
   WAFFO_PRIVATE_KEY: z.string().min(1),
+  WAFFO_ENVIRONMENT: z.enum(["test", "prod"]).default("prod"),
   WAFFO_MONTHLY_PRODUCT_ID: z.string().min(1),
   WAFFO_YEARLY_PRODUCT_ID: z.string().min(1),
   SUPPORT_EMAIL: z.string().email().default("support@texttoposter.com"),

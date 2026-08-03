@@ -225,6 +225,7 @@ export default async function Home() {
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
           <Link href="/refunds">Refunds</Link>
+          <Link href="/ai-policy">AI use</Link>
           <Link href="mailto:support@texttoposter.com">Support</Link>
         </nav>
       </footer>

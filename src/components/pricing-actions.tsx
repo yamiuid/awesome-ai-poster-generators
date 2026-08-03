@@ -21,7 +21,14 @@ export function PricingAction({ plan, isPro, isSignedIn }: Props) {
       const result = await ky
         .post("/api/checkout", { json: { plan } })
         .json<Readonly<{ checkoutUrl: string }>>();
-      window.location.assign(result.checkoutUrl);
+      const checkoutWindow = window.open(
+        result.checkoutUrl,
+        "_blank",
+        "noopener,noreferrer",
+      );
+      if (!checkoutWindow) {
+        window.location.assign(result.checkoutUrl);
+      }
     } catch (checkoutError) {
       if (checkoutError instanceof HTTPError) {
         const body: unknown = await checkoutError.response

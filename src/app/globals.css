@@ -325,6 +325,16 @@ textarea:focus-visible {
   font-size: 0.72rem;
   line-height: 1.45;
 }
+.ai-disclosure {
+  margin: 0.9rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+.ai-disclosure a {
+  color: var(--ink);
+  text-underline-offset: 0.15rem;
+}
 .generate-button {
   display: flex;
   justify-content: center;

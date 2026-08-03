@@ -260,6 +260,10 @@ export function PosterStudio({ isPro }: Props) {
               watermark. Pro unlocks resolution, finish, and private history.
             </p>
           )}
+          <p className="ai-disclosure">
+            AI-generated content. Review accuracy, rights, and required labels
+            before publishing. <a href="/ai-policy">Read the AI use policy.</a>
+          </p>
 
           <button
             className="generate-button"
