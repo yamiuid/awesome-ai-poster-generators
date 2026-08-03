@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   description:
     "Turn any text into beautiful AI posters instantly. No sign-up needed. Choose from 6 styles, generate 4 variants at once. Free AI poster maker from text, powered by the latest model.",
   alternates: { canonical: "/" },
+  other: {
+    "waffo-verify": "54d548993b3914275941eb86ae3982ec",
+  },
   openGraph: {
     title: "AI Poster Maker — Generate Posters from Text in Seconds",
     description: "Turn a thought into four poster directions in seconds.",
