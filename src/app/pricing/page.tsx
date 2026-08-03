@@ -77,8 +77,10 @@ export default async function PricingPage() {
         </article>
       </section>
       <p className="pricing-footnote">
-        Refunds are eligible within 7 days only when no credits have been
-        settled. <Link href="/refunds">Read the policy.</Link>
+        Image engine: GPT Image 2 via APIMart. Outputs are AI-generated and
+        should be reviewed before publication. Refunds are eligible within 7
+        days only when no credits have been settled.{" "}
+        <Link href="/refunds">Read the policy.</Link>
       </p>
     </main>
   );

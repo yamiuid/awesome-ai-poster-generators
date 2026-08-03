@@ -261,8 +261,9 @@ export function PosterStudio({ isPro }: Props) {
             </p>
           )}
           <p className="ai-disclosure">
-            AI-generated content. Review accuracy, rights, and required labels
-            before publishing. <a href="/ai-policy">Read the AI use policy.</a>
+            AI-generated content from GPT Image 2 via APIMart. Review accuracy,
+            rights, and required labels before publishing.{" "}
+            <a href="/ai-policy">Read the AI use policy.</a>
           </p>
 
           <button
