@@ -1,5 +1,6 @@
 import { ArrowUpRight, MoveDown } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PosterStudio } from "@/components/poster-studio";
 import { UserMenu } from "@/components/user-menu";
 import { getAuthContext } from "@/lib/server/auth";
@@ -27,7 +28,17 @@ const faqs = [
   ],
 ] as const;
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; error_description?: string }>;
+}) {
+  // Supabase 的 site_url 错误兜底跳转到根路径（?error=...），转发到登录页显示原因
+  const params = await searchParams;
+  const authError = params.error_description ?? params.error;
+  if (authError) {
+    redirect(`/login?error=${encodeURIComponent(authError)}`);
+  }
   const auth = await getAuthContext();
   const applicationJsonLd = {
     "@context": "https://schema.org",

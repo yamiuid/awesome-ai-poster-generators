@@ -51,11 +51,21 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const code = url.searchParams.get("code");
   if (code) {
-    const supabase = await createSupabaseServerClient();
-    const { error: exchangeError } =
-      await supabase.auth.exchangeCodeForSession(code);
-    if (exchangeError) {
-      return loginWithError(url.origin, exchangeError.message, next);
+    try {
+      const supabase = await createSupabaseServerClient();
+      const { error: exchangeError } =
+        await supabase.auth.exchangeCodeForSession(code);
+      if (exchangeError) {
+        return loginWithError(url.origin, exchangeError.message, next);
+      }
+    } catch (exchangeFailure) {
+      // exchangeCodeForSession 可能抛异常（如 verifier/state 校验失败、网络异常），
+      // 必须兜底回登录页显示原因，否则 route handler 直接 500 白屏。
+      const reason =
+        exchangeFailure instanceof Error
+          ? exchangeFailure.message
+          : "The sign-in could not be completed. Please try again.";
+      return loginWithError(url.origin, reason, next);
     }
   }
 
