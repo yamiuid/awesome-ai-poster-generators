@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "AI Poster Maker 2026 — Free Posters from Text, No Login",
   description:
-    "Turn any text into beautiful AI posters instantly. No sign-up needed. Choose from 6 styles, generate 4 variants at once. Free AI poster maker from text, powered by the latest model.",
+    "Turn any text into beautiful AI posters instantly — no sign-up needed. 6 styles, 4 variants at once. Free AI poster maker powered by the latest model.",
   alternates: { canonical: "/" },
   other: {
     "waffo-verify": "54d548993b3914275941eb86ae3982ec",

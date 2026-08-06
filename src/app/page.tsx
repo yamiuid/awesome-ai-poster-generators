@@ -248,6 +248,7 @@ export default async function Home({
       <footer className="site-footer">
         <span>© 2026 Text to Poster</span>
         <nav aria-label="Legal">
+          <Link href="/about">About</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
           <Link href="/refunds">Refunds</Link>

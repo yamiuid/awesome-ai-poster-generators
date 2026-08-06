@@ -193,6 +193,7 @@ export function LegalPage({ kind }: Readonly<{ kind: Kind }>) {
       <footer className="site-footer">
         <span>© 2026 Text to Poster</span>
         <nav>
+          <Link href="/about">About</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
           <Link href="/refunds">Refunds</Link>
