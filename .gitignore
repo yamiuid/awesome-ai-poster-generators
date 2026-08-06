@@ -48,6 +48,7 @@ next-env.d.ts
 .omo/
 .workbuddy/
 PROJECT_AUDIT_REPORT.html
+.tmp-build*/
 .git-ttp-index*
 .git-fix-index*
 .git-clean-index*
