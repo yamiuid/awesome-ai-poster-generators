@@ -1,14 +1,9 @@
-import { creditCost, isQuality, isResolution } from "@/lib/domain/credits";
-import { getTask, type ProviderTask } from "./apimart";
+import { getTask } from "./apimart";
 import { AppError } from "./errors";
+import { applyProviderTask, failGeneration } from "./generation-task";
 import type { GenerationActor, GenerationRow } from "./generation-types";
-import { toGenerationResponse } from "./generation-types";
-import {
-  bakeWatermark,
-  createPosterUrl,
-  downloadProviderImage,
-  uploadPoster,
-} from "./storage";
+import { ownsGeneration, toGenerationResponse } from "./generation-types";
+import { createPosterUrl } from "./storage";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
 const POLL_DELAY_MS = 4_000;
@@ -18,21 +13,20 @@ function nextPollAt(): string {
   return new Date(Date.now() + POLL_DELAY_MS).toISOString();
 }
 
-async function loadGeneration(
-  generationId: string,
-  actor: GenerationActor,
-): Promise<GenerationRow> {
+async function readGeneration(generationId: string): Promise<GenerationRow> {
   const { data, error } = await createSupabaseAdminClient()
     .from("generations")
     .select("*")
     .eq("id", generationId)
     .maybeSingle();
-  if (
-    error ||
-    !data ||
-    data.user_id !== actor.userId ||
-    data.guest_key !== actor.guestKey
-  ) {
+  if (error) {
+    throw new AppError(
+      "GENERATION_READ_FAILED",
+      "We could not read that generation.",
+      503,
+    );
+  }
+  if (!data) {
     throw new AppError(
       "GENERATION_NOT_FOUND",
       "That generation is not available.",
@@ -40,6 +34,21 @@ async function loadGeneration(
     );
   }
   return data;
+}
+
+async function loadGeneration(
+  generationId: string,
+  actor: GenerationActor,
+): Promise<GenerationRow> {
+  const generation = await readGeneration(generationId);
+  if (!ownsGeneration(generation, actor)) {
+    throw new AppError(
+      "GENERATION_NOT_FOUND",
+      "That generation is not available.",
+      404,
+    );
+  }
+  return generation;
 }
 
 async function responseFor(
@@ -64,228 +73,51 @@ async function responseFor(
   return toGenerationResponse({ generation, assets: assets ?? [] }, urls);
 }
 
-async function failGeneration(
-  generation: GenerationRow,
-  actor: GenerationActor,
-  message: string,
-  status: "failed" | "timed_out",
+async function advanceGeneration(
+  initialGeneration: GenerationRow,
 ): Promise<GenerationRow> {
-  const admin = createSupabaseAdminClient();
-  await admin
-    .from("generations")
-    .update({
-      status,
-      error_message: message,
-      progress: 100,
-      completed_at: new Date().toISOString(),
-      reserved_credits: 0,
-    })
-    .eq("id", generation.id);
-  if (generation.mode === "pro") {
-    await admin.rpc("settle_credits", {
-      p_generation_id: generation.id,
-      p_successful_images: 0,
-      p_cost_per_image: 0,
-    });
-  } else {
-    await admin.rpc("release_guest_generation", {
-      p_guest_key: actor.guestKey,
-    });
-  }
-  const { data } = await admin
-    .from("generations")
-    .select("*")
-    .eq("id", generation.id)
-    .single();
-  if (!data) {
-    throw new AppError(
-      "GENERATION_STATE_FAILED",
-      "We could not save the generation failure.",
-      503,
-    );
-  }
-  return data;
-}
-
-async function storeTaskImages(
-  generation: GenerationRow,
-  task: ProviderTask,
-): Promise<number> {
-  const images =
-    task.result?.images.flatMap((image) => image.url).slice(0, 4) ?? [];
-  if (images.length === 0) {
-    throw new AppError(
-      "NO_IMAGES",
-      "The provider completed without returning images.",
-      502,
-    );
-  }
-
-  const admin = createSupabaseAdminClient();
-  const { data: existing } = await admin
-    .from("generated_assets")
-    .select("storage_path")
-    .eq("generation_id", generation.id);
-  const existingPaths = new Set(
-    (existing ?? []).map((asset) => asset.storage_path),
-  );
-  let stored = existingPaths.size;
-
-  for (const [index, sourceUrl] of images.entries()) {
-    const path = `${generation.user_id ?? `guest/${generation.guest_key ?? "unknown"}`}/${generation.id}/${index}.png`;
-    if (existingPaths.has(path)) {
-      continue;
-    }
-    const downloaded = await downloadProviderImage(sourceUrl);
-    const image =
-      generation.mode === "pro" ? downloaded : await bakeWatermark(downloaded);
-    await uploadPoster(path, image);
-    const { error } = await admin.from("generated_assets").insert({
-      generation_id: generation.id,
-      user_id: generation.user_id,
-      guest_key: generation.guest_key,
-      storage_path: path,
-      alt_text: generation.prompt,
-      watermarked: generation.mode !== "pro",
-      expires_at:
-        generation.mode === "pro"
-          ? null
-          : new Date(
-              Date.now() + (generation.user_id ? 7 : 1) * 24 * 60 * 60 * 1_000,
-            ).toISOString(),
-    });
-    if (error) {
-      throw new AppError(
-        "ASSET_RECORD_FAILED",
-        "The generated image could not be recorded.",
-        503,
-      );
-    }
-    stored += 1;
-  }
-  return stored;
-}
-
-async function finalizeCompleted(
-  generation: GenerationRow,
-  task: ProviderTask,
-): Promise<GenerationRow> {
-  const stored = await storeTaskImages(generation, task);
-  const isComplete = stored === 4;
-  const status = isComplete ? "succeeded" : "partially_succeeded";
-  const admin = createSupabaseAdminClient();
-  if (
-    generation.mode === "pro" &&
-    isResolution(generation.resolution) &&
-    isQuality(generation.quality)
-  ) {
-    await admin.rpc("settle_credits", {
-      p_generation_id: generation.id,
-      p_successful_images: stored,
-      p_cost_per_image: creditCost(generation.resolution, generation.quality),
-    });
-  }
-  await admin
-    .from("generations")
-    .update({
-      status,
-      progress: 100,
-      completed_at: new Date().toISOString(),
-      reserved_credits: 0,
-    })
-    .eq("id", generation.id);
-  const { data } = await admin
-    .from("generations")
-    .select("*")
-    .eq("id", generation.id)
-    .single();
-  if (!data) {
-    throw new AppError(
-      "GENERATION_STATE_FAILED",
-      "We could not finalize this generation.",
-      503,
-    );
-  }
-  return data;
-}
-
-async function applyTask(
-  generation: GenerationRow,
-  actor: GenerationActor,
-  task: ProviderTask,
-): Promise<GenerationRow> {
-  switch (task.status) {
-    case "pending":
-    case "processing": {
-      const { data } = await createSupabaseAdminClient()
-        .from("generations")
-        .update({
-          status: "processing",
-          progress: task.progress ?? generation.progress,
-          next_poll_at: nextPollAt(),
-        })
-        .eq("id", generation.id)
-        .select()
-        .single();
-      if (!data) {
-        throw new AppError(
-          "GENERATION_STATE_FAILED",
-          "We could not update generation progress.",
-          503,
-        );
-      }
-      return data;
-    }
-    case "completed":
-      return finalizeCompleted(generation, task);
-    case "failed":
-    case "cancelled":
-      return failGeneration(
-        generation,
-        actor,
-        task.error?.message ??
-          "The image provider failed to generate this poster.",
-        "failed",
-      );
-    default:
-      return failGeneration(
-        generation,
-        actor,
-        "The provider returned an unsupported task status.",
-        "failed",
-      );
-  }
-}
-
-export async function pollGeneration(
-  generationId: string,
-  actor: GenerationActor,
-): Promise<ReturnType<typeof toGenerationResponse>> {
-  let generation = await loadGeneration(generationId, actor);
+  let generation = initialGeneration;
   if (
     ["succeeded", "partially_succeeded", "failed", "timed_out"].includes(
       generation.status,
     )
   ) {
-    return responseFor(generation);
+    return generation;
   }
   if (
     generation.next_poll_at &&
     new Date(generation.next_poll_at).getTime() > Date.now()
   ) {
-    return responseFor(generation);
+    return generation;
   }
+  const now = new Date().toISOString();
+  const { data: claimed, error: claimError } = await createSupabaseAdminClient()
+    .from("generations")
+    .update({ next_poll_at: nextPollAt() })
+    .eq("id", generation.id)
+    .lte("next_poll_at", now)
+    .select()
+    .maybeSingle();
+  if (claimError) {
+    throw new AppError(
+      "GENERATION_STATE_FAILED",
+      "We could not claim this generation for polling.",
+      503,
+    );
+  }
+  if (!claimed) {
+    return readGeneration(generation.id);
+  }
+  generation = claimed;
   if (
     Date.now() - new Date(generation.submitted_at).getTime() >
     MAX_GENERATION_MS
   ) {
-    generation = await failGeneration(
+    return failGeneration(
       generation,
-      actor,
       "This generation took too long and your credits were returned.",
       "timed_out",
     );
-    return responseFor(generation);
   }
   if (!generation.provider_task_id) {
     throw new AppError(
@@ -294,21 +126,32 @@ export async function pollGeneration(
       503,
     );
   }
-  try {
-    generation = await applyTask(
-      generation,
-      actor,
-      await getTask(generation.provider_task_id),
-    );
-  } catch (error) {
-    generation = await failGeneration(
-      generation,
-      actor,
-      error instanceof Error
-        ? error.message
-        : "The image provider failed to complete this poster.",
-      "failed",
-    );
-  }
-  return responseFor(generation);
+  return applyProviderTask(
+    generation,
+    await getTask(generation.provider_task_id),
+  );
+}
+
+// 轻量轮询：只读状态 + 图片 URL，不在请求内做 APIMart/下载/水印/上传等重活
+// （重活由 POST /api/generations/:id/advance 和 cron maintenance 负责）
+export async function pollGeneration(
+  generationId: string,
+  actor: GenerationActor,
+): Promise<ReturnType<typeof toGenerationResponse>> {
+  return responseFor(await loadGeneration(generationId, actor));
+}
+
+// 推进任务（重活：查 APIMart + 下载/水印/上传）。幂等：next_poll_at 未到期直接返回。
+export async function advanceGenerationById(
+  generationId: string,
+  actor: GenerationActor,
+): Promise<ReturnType<typeof toGenerationResponse>> {
+  const generation = await loadGeneration(generationId, actor);
+  return responseFor(await advanceGeneration(generation));
+}
+
+export async function recoverGeneration(
+  generationId: string,
+): Promise<GenerationRow> {
+  return advanceGeneration(await readGeneration(generationId));
 }

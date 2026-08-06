@@ -2,14 +2,28 @@
 
 import ky, { HTTPError } from "ky";
 import { useState } from "react";
+import type { CheckoutPlan } from "@/lib/domain/plans";
 
 type Props = Readonly<{
-  plan: "monthly" | "yearly";
+  plan: CheckoutPlan;
   isPro: boolean;
   isSignedIn: boolean;
+  isConfigured: boolean;
 }>;
 
-export function PricingAction({ plan, isPro, isSignedIn }: Props) {
+const PLAN_LABELS: Readonly<Record<CheckoutPlan, string>> = {
+  creator_monthly: "Start Creator monthly",
+  creator_yearly: "Choose Creator yearly",
+  studio_monthly: "Start Studio monthly",
+  studio_yearly: "Choose Studio yearly",
+};
+
+export function PricingAction({
+  plan,
+  isPro,
+  isSignedIn,
+  isConfigured,
+}: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,6 +70,13 @@ export function PricingAction({ plan, isPro, isSignedIn }: Props) {
       </a>
     );
   }
+  if (!isConfigured) {
+    return (
+      <button className="outline-button" type="button" disabled>
+        Available soon
+      </button>
+    );
+  }
   if (!isSignedIn) {
     return (
       <a className="solid-button" href="/login?next=/pricing">
@@ -72,11 +93,7 @@ export function PricingAction({ plan, isPro, isSignedIn }: Props) {
         onClick={() => void startCheckout()}
         disabled={loading}
       >
-        {loading
-          ? "Opening checkout..."
-          : plan === "monthly"
-            ? "Start monthly"
-            : "Choose yearly"}
+        {loading ? "Opening checkout..." : PLAN_LABELS[plan]}
       </button>
       {error && (
         <p className="error-message" role="alert">

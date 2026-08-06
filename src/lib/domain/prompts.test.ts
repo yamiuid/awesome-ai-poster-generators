@@ -9,6 +9,7 @@ describe("buildPosterPrompt", () => {
       aspectRatio: "4:5",
       resolution: "1k",
       quality: "medium",
+      imageCount: 4,
     });
 
     expect(prompt).toContain("A summer music festival by the sea");

@@ -2,15 +2,20 @@
 
 import ky from "ky";
 import { useEffect, useState } from "react";
+import { creditsForTier, type SubscriptionTier } from "@/lib/domain/plans";
 
 type Status = Readonly<{
   signedIn: boolean;
   isPro: boolean;
-  subscription?: Readonly<{ status: string }> | null;
+  subscription?: Readonly<{
+    status: string;
+    tier: SubscriptionTier;
+  }> | null;
 }>;
 
 export function SubscriptionStatus() {
   const [status, setStatus] = useState<Status | null>(null);
+  const credits = creditsForTier(status?.subscription?.tier ?? "creator");
   useEffect(() => {
     let active = true;
     const check = async (): Promise<void> => {
@@ -27,7 +32,7 @@ export function SubscriptionStatus() {
   return (
     <div className="status-pulse" role="status">
       {status?.isPro
-        ? "Pro is active. Your 100-credit period is ready."
+        ? `Pro is active. Your ${credits}-credit period is ready.`
         : "Waiting for the verified payment event..."}
     </div>
   );

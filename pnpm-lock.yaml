@@ -9,19 +9,19 @@ importers:
   .:
     dependencies:
       '@supabase/ssr':
-        specifier: latest
+        specifier: 0.12.4
         version: 0.12.4(@supabase/supabase-js@2.111.0)
       '@supabase/supabase-js':
-        specifier: latest
+        specifier: 2.111.0
         version: 2.111.0
       '@waffo/pancake-ts':
-        specifier: latest
+        specifier: 0.16.1
         version: 0.16.1
       ky:
-        specifier: latest
+        specifier: 2.0.2
         version: 2.0.2
       lucide-react:
-        specifier: latest
+        specifier: 1.28.0
         version: 1.28.0(react@19.2.4)
       next:
         specifier: 16.2.12
@@ -33,47 +33,47 @@ importers:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
       sharp:
-        specifier: latest
+        specifier: 0.35.3
         version: 0.35.3(@types/node@20.19.43)
       zod:
-        specifier: latest
+        specifier: 4.4.3
         version: 4.4.3
     devDependencies:
       '@biomejs/biome':
-        specifier: latest
+        specifier: 2.5.6
         version: 2.5.6
       '@playwright/test':
-        specifier: latest
+        specifier: 1.62.1
         version: 1.62.1
       '@tailwindcss/postcss':
-        specifier: ^4
+        specifier: 4.3.3
         version: 4.3.3
       '@types/node':
-        specifier: ^20
+        specifier: 20.19.43
         version: 20.19.43
       '@types/react':
-        specifier: ^19
+        specifier: 19.2.18
         version: 19.2.18
       '@types/react-dom':
-        specifier: ^19
+        specifier: 19.2.4
         version: 19.2.4(@types/react@19.2.18)
       react-doctor:
-        specifier: latest
+        specifier: 0.9.3
         version: 0.9.3(@opentelemetry/core@2.10.0(@opentelemetry/api@1.9.1))(@types/react@19.2.18)(eslint@10.8.0(jiti@2.7.0))
       react-grab:
-        specifier: latest
+        specifier: 0.1.50
         version: 0.1.50(react@19.2.4)
       react-scan:
-        specifier: latest
+        specifier: 0.5.7
         version: 0.5.7(@opentelemetry/core@2.10.0(@opentelemetry/api@1.9.1))(@types/react@19.2.18)(eslint@10.8.0(jiti@2.7.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(rolldown@1.2.1)(vite@8.2.0(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.0))
       tailwindcss:
-        specifier: ^4
+        specifier: 4.3.3
         version: 4.3.3
       typescript:
-        specifier: ^5
+        specifier: 5.9.3
         version: 5.9.3
       vitest:
-        specifier: latest
+        specifier: 4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@20.19.43)(vite@8.2.0(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.0))
 
 packages:

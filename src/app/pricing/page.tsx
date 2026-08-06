@@ -1,15 +1,85 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PricingAction } from "@/components/pricing-actions";
+import { UserMenu } from "@/components/user-menu";
 import { getAuthContext } from "@/lib/server/auth";
+import { isStudioPlanConfigured } from "@/lib/server/env";
 
 export const metadata: Metadata = {
   title: "Pricing | Text to Poster",
-  description: "Pro credits and clean AI poster exports from Text to Poster.",
+  description:
+    "Creator and Studio credits with clean AI poster exports from Text to Poster.",
 };
 
 export default async function PricingPage() {
   const auth = await getAuthContext();
+  const studioConfigured = isStudioPlanConfigured();
+  const plans = [
+    {
+      eyebrow: "Creator / monthly",
+      price: "$9.90",
+      cadence: "/ month",
+      description:
+        "100 credits every month — a flexible starting point for regular poster work.",
+      features: [
+        "100 credits every month",
+        "1K / 2K / 4K output",
+        "Medium and High finish",
+        "No watermark, private history",
+      ],
+      plan: "creator_monthly",
+      featured: false,
+      isConfigured: true,
+    },
+    {
+      eyebrow: "Creator / yearly",
+      price: "$79",
+      cadence: "/ year",
+      description:
+        "100 credits in each monthly window — the lower-cost annual rhythm for individual creators.",
+      features: [
+        "100 credits in each monthly window",
+        "Same full Creator studio access",
+        "Credits reset monthly, never roll",
+        "Private history and clean downloads",
+      ],
+      plan: "creator_yearly",
+      featured: true,
+      isConfigured: true,
+    },
+    {
+      eyebrow: "Studio / monthly",
+      price: "$19.90",
+      cadence: "/ month",
+      description:
+        "300 credits every month — more room for campaigns, client rounds, and print work.",
+      features: [
+        "300 credits every month",
+        "1K / 2K / 4K output",
+        "High finish for final exports",
+        "No watermark, private history",
+      ],
+      plan: "studio_monthly",
+      featured: false,
+      isConfigured: studioConfigured,
+    },
+    {
+      eyebrow: "Studio / yearly",
+      price: "$169",
+      cadence: "/ year",
+      description:
+        "300 credits in each monthly window — the best value for a high-volume creative practice.",
+      features: [
+        "300 credits in each monthly window",
+        "Same full Studio access",
+        "Credits reset monthly, never roll",
+        "Priority billing support",
+      ],
+      plan: "studio_yearly",
+      featured: true,
+      isConfigured: studioConfigured,
+    },
+  ] as const;
   return (
     <main className="pricing-page">
       <header className="site-header">
@@ -20,11 +90,9 @@ export default async function PricingPage() {
         <nav className="header-nav">
           <Link href="/#studio">Studio</Link>
           {auth.userId ? (
-            <Link className="header-cta" href="/account">
-              Your history
-            </Link>
+            <UserMenu email={auth.email} avatarUrl={auth.avatarUrl} />
           ) : (
-            <Link className="header-cta" href="/login">
+            <Link className="header-cta" href="/login?next=/pricing">
               Sign in
             </Link>
           )}
@@ -34,47 +102,34 @@ export default async function PricingPage() {
         <p className="eyebrow">Simple, weighted credits</p>
         <h1>Pay for the directions worth keeping.</h1>
         <p>
-          Every generation returns four posters. Pro gives you 100 credits each
-          billing period, with no rollover and no surprise per-image plans.
+          Every generation returns four posters. Choose the credit volume that
+          fits your practice; annual plans still refresh credits monthly.
         </p>
       </section>
       <section className="plan-grid">
-        <article className="plan-card">
-          <p className="eyebrow">Monthly</p>
-          <h2>
-            $9.90 <small>/ month</small>
-          </h2>
-          <p>Flexible month to month.</p>
-          <ul>
-            <li>100 credits every month</li>
-            <li>1K / 2K / 4K output</li>
-            <li>Medium and High finish</li>
-            <li>No watermark, private history</li>
-          </ul>
-          <PricingAction
-            plan="monthly"
-            isPro={auth.isPro}
-            isSignedIn={Boolean(auth.userId)}
-          />
-        </article>
-        <article className="plan-card featured">
-          <p className="eyebrow">Yearly / best value</p>
-          <h2>
-            $59 <small>/ year</small>
-          </h2>
-          <p>One clean annual commitment.</p>
-          <ul>
-            <li>100 credits per monthly window</li>
-            <li>Same full Pro studio access</li>
-            <li>Credits reset monthly, never roll</li>
-            <li>Priority support for billing</li>
-          </ul>
-          <PricingAction
-            plan="yearly"
-            isPro={auth.isPro}
-            isSignedIn={Boolean(auth.userId)}
-          />
-        </article>
+        {plans.map((plan) => (
+          <article
+            className={`plan-card ${plan.featured ? "featured" : ""}`}
+            key={plan.plan}
+          >
+            <p className="eyebrow">{plan.eyebrow}</p>
+            <h2>
+              {plan.price} <small>{plan.cadence}</small>
+            </h2>
+            <p>{plan.description}</p>
+            <ul>
+              {plan.features.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
+            <PricingAction
+              plan={plan.plan}
+              isPro={auth.isPro}
+              isSignedIn={Boolean(auth.userId)}
+              isConfigured={plan.isConfigured}
+            />
+          </article>
+        ))}
       </section>
       <p className="pricing-footnote">
         Image engine: GPT Image 2 via APIMart. Outputs are AI-generated and

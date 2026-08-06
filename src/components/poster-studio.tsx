@@ -1,12 +1,12 @@
 "use client";
 
-import ky, { HTTPError } from "ky";
+import ky, { HTTPError, TimeoutError } from "ky";
 import {
   ArrowDownToLine,
   CircleAlert,
-  LoaderCircle,
   LockKeyhole,
   Sparkles,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -17,6 +17,8 @@ import {
   type GenerationResponse,
   generationAcceptedSchema,
   generationResponseSchema,
+  IMAGE_COUNTS,
+  type ImageCount,
   isResolution,
   type PosterStyle,
   type Quality,
@@ -51,33 +53,79 @@ export function PosterStudio({ isPro }: Props) {
   const [style, setStyle] = useState<PosterStyle>("movie");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("4:5");
   const [resolution, setResolution] = useState<Resolution>("1k");
-  const [quality, setQuality] = useState<Quality>("medium");
-  const [generation, setGeneration] = useState<GenerationResponse | null>(null);
+  const [quality, setQuality] = useState<Quality>("low");
+  // 默认 1 张；免费用户最大 2 张，Pro 可选 1-4 张
+  const [imageCount, setImageCount] = useState<ImageCount>(1);
+  const [generations, setGenerations] = useState<GenerationResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  // 多任务各自轮询，用 Set 统一管理计时器以便卸载时清理
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+
+  function schedulePoll(id: string, delayMs: number): void {
+    const timer = setTimeout(() => {
+      timers.current.delete(timer);
+      void poll(id);
+    }, delayMs);
+    timers.current.add(timer);
+  }
 
   const selectedStyle = useMemo(() => styleLabels[style], [style]);
 
+  // lightbox：Esc 关闭 + 锁定页面滚动
+  useEffect(() => {
+    if (!lightbox) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setLightbox(null);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [lightbox]);
+
   useEffect(
     () => () => {
-      if (timer.current) {
-        clearTimeout(timer.current);
+      for (const timer of timers.current) {
+        clearTimeout(timer);
       }
+      timers.current.clear();
     },
     [],
   );
 
   async function poll(id: string): Promise<void> {
     try {
-      const raw: unknown = await ky.get(`/api/generations/${id}`).json();
+      // GET 轻量：只查状态 + 图片，快速返回
+      const raw: unknown = await ky
+        .get(`/api/generations/${id}`, { timeout: 20_000 })
+        .json();
       const parsed = generationResponseSchema.safeParse(raw);
       if (!parsed.success) {
         throw new Error("The generation response was invalid.");
       }
-      setGeneration(parsed.data);
+      setGenerations((prev) =>
+        prev.map((g) => (g.id === parsed.data.id ? parsed.data : g)),
+      );
       if (["submitted", "processing"].includes(parsed.data.status)) {
-        timer.current = setTimeout(() => void poll(id), 4_000);
+        // 后台推进（重活：查 APIMart + 下载/水印/上传）。按 nextPollAt 到期触发，
+        // 接口幂等（未到期立即返回）；超时静默——服务端会继续处理，下次轮询拿结果
+        const next = parsed.data.nextPollAt
+          ? new Date(parsed.data.nextPollAt).getTime()
+          : 0;
+        if (Date.now() >= next) {
+          void ky
+            .post(`/api/generations/${id}/advance`, { timeout: 120_000 })
+            .catch(() => {});
+        }
+        schedulePoll(id, 4_000);
       } else if (
         parsed.data.status === "succeeded" ||
         parsed.data.status === "partially_succeeded"
@@ -87,6 +135,11 @@ export function PosterStudio({ isPro }: Props) {
         track("generation_failed");
       }
     } catch (pollError) {
+      // 超时：服务端可能正在下载/水印/上传图片，静默继续轮询，不打扰用户
+      if (pollError instanceof TimeoutError) {
+        schedulePoll(id, 4_000);
+        return;
+      }
       if (pollError instanceof HTTPError) {
         setError("We could not check the studio status. Please try again.");
       } else if (pollError instanceof Error) {
@@ -99,13 +152,12 @@ export function PosterStudio({ isPro }: Props) {
 
   async function generate(): Promise<void> {
     setError(null);
-    setGeneration(null);
     setIsSubmitting(true);
     track("generation_started");
     try {
       const raw: unknown = await ky
         .post("/api/generations", {
-          json: { prompt, style, aspectRatio, resolution, quality },
+          json: { prompt, style, aspectRatio, resolution, quality, imageCount },
           timeout: 30_000,
         })
         .json();
@@ -120,7 +172,10 @@ export function PosterStudio({ isPro }: Props) {
             : "We could not start this generation.";
         throw new Error(message);
       }
-      setGeneration({ ...parsed.data, images: [] });
+      setGenerations((prev) => [
+        { ...parsed.data, images: [], imageCount },
+        ...prev,
+      ]);
       void poll(parsed.data.id);
     } catch (submitError) {
       if (submitError instanceof HTTPError) {
@@ -144,9 +199,13 @@ export function PosterStudio({ isPro }: Props) {
     }
   }
 
-  const canGenerate = prompt.trim().length >= 3 && !isSubmitting && !generation;
-  const isWorking =
-    generation?.status === "submitted" || generation?.status === "processing";
+  // 免费用户同时只能一个生成任务；Pro 可并发多个
+  const anyWorking = generations.some(
+    (g) => g.status === "submitted" || g.status === "processing",
+  );
+  const canGenerate =
+    prompt.trim().length >= 3 && !isSubmitting && (isPro || !anyWorking);
+  const isWorking = anyWorking;
 
   return (
     <section
@@ -244,12 +303,39 @@ export function PosterStudio({ isPro }: Props) {
                 value={quality}
                 onChange={(event) => {
                   const next = event.target.value;
-                  if (next === "medium" || next === "high") setQuality(next);
+                  if (next === "low" || next === "medium" || next === "high") {
+                    setQuality(next);
+                  }
                 }}
                 disabled={isWorking || !isPro}
               >
+                <option value="low">Low / fast</option>
                 <option value="medium">Medium</option>
                 <option value="high">High / precise</option>
+              </select>
+              {!isPro && <LockKeyhole size={14} aria-label="Pro only" />}
+            </label>
+            <label className="option-select">
+              <span>Images</span>
+              <select
+                value={imageCount}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  if (IMAGE_COUNTS.some((count) => count === next)) {
+                    setImageCount(next as ImageCount);
+                  }
+                }}
+                disabled={isWorking}
+              >
+                {IMAGE_COUNTS.map((count) => (
+                  <option
+                    key={count}
+                    value={count}
+                    disabled={!isPro && count > 2}
+                  >
+                    {count} {count === 1 ? "poster" : "posters"}
+                  </option>
+                ))}
               </select>
               {!isPro && <LockKeyhole size={14} aria-label="Pro only" />}
             </label>
@@ -257,7 +343,8 @@ export function PosterStudio({ isPro }: Props) {
           {!isPro && (
             <p className="pro-note">
               <LockKeyhole size={14} /> Free studio runs are 1K Low with a small
-              watermark. Pro unlocks resolution, finish, and private history.
+              watermark and up to two posters. Pro unlocks resolution, finish,
+              up to four posters, and private history.
             </p>
           )}
           <p className="ai-disclosure">
@@ -273,7 +360,7 @@ export function PosterStudio({ isPro }: Props) {
             disabled={!canGenerate}
           >
             <Sparkles size={18} />{" "}
-            {isSubmitting ? "Preparing the studio..." : "Generate four posters"}
+            {isSubmitting ? "Generating..." : "Generate"}
           </button>
           {error && (
             <p className="error-message" role="alert">
@@ -283,7 +370,7 @@ export function PosterStudio({ isPro }: Props) {
         </div>
 
         <div className="studio-results" aria-live="polite">
-          {!generation && (
+          {generations.length === 0 && (
             <div className="empty-studio">
               <span className="empty-mark">01</span>
               <p>
@@ -303,91 +390,144 @@ export function PosterStudio({ isPro }: Props) {
               </div>
             </div>
           )}
-          {generation && (
-            <>
-              <div className="result-status">
-                <div>
-                  <p className="eyebrow">{STATUS_LABELS[generation.status]}</p>
-                  <p>
-                    {isWorking
-                      ? "The studio is working through your brief."
-                      : (generation.error ?? "Choose a direction to download.")}
-                  </p>
+          {generations.map((generation) => {
+            const working =
+              generation.status === "submitted" ||
+              generation.status === "processing";
+            return (
+              <div className="generation-block" key={generation.id}>
+                <div className="result-status">
+                  <div>
+                    <p className="eyebrow">
+                      {STATUS_LABELS[generation.status]}
+                    </p>
+                    <p>
+                      {working
+                        ? "The studio is working through your brief."
+                        : (generation.error ??
+                          "Choose a direction to download.")}
+                    </p>
+                  </div>
                 </div>
-                {isWorking && (
-                  <LoaderCircle
-                    className="spin"
-                    size={22}
-                    aria-label="Loading"
-                  />
+                {working && generation.images.length === 0 && (
+                  <div className="result-grid result-grid--pending">
+                    {Array.from({
+                      length: generation.imageCount || imageCount,
+                    }).map((_, index) => (
+                      <div
+                        className="result-card"
+                        // biome-ignore lint/suspicious/noArrayIndexKey: 静态占位格子，无稳定 id
+                        key={`pending-${index}`}
+                        style={{ animationDelay: `${index * 140}ms` }}
+                      >
+                        <div className="result-number">0{index + 1}</div>
+                        <div className="pending-tile" />
+                        <div className="pending-caption">Rendering…</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {generation.images.length > 0 && (
+                  <div className="result-grid">
+                    {generation.images.map((image, index) => (
+                      <article className="result-card" key={image.id}>
+                        <div className="result-number">0{index + 1}</div>
+                        <button
+                          type="button"
+                          className="result-zoom"
+                          onClick={() => setLightbox(image.url)}
+                          aria-label={`View ${image.alt} full size`}
+                        >
+                          <Image
+                            src={image.url}
+                            alt={image.alt}
+                            width={1024}
+                            height={1280}
+                            unoptimized
+                          />
+                        </button>
+                        <a
+                          className="download-link"
+                          href={image.url}
+                          download={`text-to-poster-${index + 1}.png`}
+                          onClick={() => track("download_completed")}
+                        >
+                          <ArrowDownToLine size={15} /> Download
+                        </a>
+                        {image.watermarked && (
+                          <span className="watermark-note">Free preview</span>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+                {!working && generation.images.length === 0 && (
+                  <div className="failure-card">
+                    <CircleAlert size={22} />
+                    <p>
+                      Nothing was charged for this run. Try a shorter, more
+                      visual brief.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setGenerations((prev) =>
+                          prev.filter((g) => g.id !== generation.id),
+                        )
+                      }
+                    >
+                      Dismiss
+                    </button>
+                  </div>
                 )}
               </div>
-              {isWorking && (
-                <div
-                  className="progress-track"
-                  role="progressbar"
-                  aria-label={`${generation.progress}% complete`}
-                  aria-valuenow={generation.progress}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                >
-                  <span
-                    style={{ width: `${Math.max(6, generation.progress)}%` }}
-                  />
-                </div>
-              )}
-              {generation.images.length > 0 && (
-                <div className="result-grid">
-                  {generation.images.map((image, index) => (
-                    <article className="result-card" key={image.id}>
-                      <div className="result-number">0{index + 1}</div>
-                      <Image
-                        src={image.url}
-                        alt={image.alt}
-                        width={1024}
-                        height={1280}
-                        unoptimized
-                      />
-                      <a
-                        className="download-link"
-                        href={image.url}
-                        download={`text-to-poster-${index + 1}.png`}
-                        onClick={() => track("download_completed")}
-                      >
-                        <ArrowDownToLine size={15} /> Download
-                      </a>
-                      {image.watermarked && (
-                        <span className="watermark-note">Free preview</span>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              )}
-              {!isWorking && generation.images.length === 0 && (
-                <div className="failure-card">
-                  <CircleAlert size={22} />
-                  <p>
-                    Nothing was charged for this run. Try a shorter, more visual
-                    brief.
-                  </p>
-                  <button type="button" onClick={() => setGeneration(null)}>
-                    Try another brief
-                  </button>
-                </div>
-              )}
-              {!isWorking && (
-                <button
-                  className="reset-button"
-                  type="button"
-                  onClick={() => setGeneration(null)}
-                >
-                  Start a new brief
-                </button>
-              )}
-            </>
+            );
+          })}
+          {generations.length > 0 && (
+            <button
+              className="reset-button"
+              type="button"
+              onClick={() => {
+                setGenerations([]);
+                setLightbox(null);
+              }}
+            >
+              Start a new brief
+            </button>
           )}
         </div>
       </div>
+      {lightbox && (
+        <div
+          className="lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full size preview"
+          onClick={() => setLightbox(null)}
+          onKeyUp={(event) => {
+            if (event.key === "Escape") {
+              setLightbox(null);
+            }
+          }}
+        >
+          <button
+            type="button"
+            className="lightbox-close"
+            aria-label="Close preview"
+            onClick={() => setLightbox(null)}
+          >
+            <X size={20} />
+          </button>
+          <Image
+            src={lightbox}
+            alt="Poster preview"
+            width={1024}
+            height={1280}
+            unoptimized
+            className="lightbox-image"
+          />
+        </div>
+      )}
     </section>
   );
 }

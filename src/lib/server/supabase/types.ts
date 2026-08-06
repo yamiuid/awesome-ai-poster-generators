@@ -29,6 +29,7 @@ export type Database = {
         waffo_order_id: string | null;
         waffo_subscription_id: string | null;
         plan: "monthly" | "yearly";
+        tier: "creator" | "studio";
         status: "active" | "canceling" | "canceled" | "past_due" | "refunded";
         activated_at: string;
         period_start: string;
@@ -56,6 +57,7 @@ export type Database = {
         aspect_ratio: string;
         resolution: string;
         quality: string;
+        image_count: number;
         mode: string;
         status: string;
         progress: number;

@@ -1,7 +1,7 @@
 export const RESOLUTIONS = ["1k", "2k", "4k"] as const;
 export type Resolution = (typeof RESOLUTIONS)[number];
 
-export const QUALITIES = ["medium", "high"] as const;
+export const QUALITIES = ["low", "medium", "high"] as const;
 export type Quality = (typeof QUALITIES)[number];
 
 const MEDIUM_CREDIT_COSTS = {
@@ -16,20 +16,28 @@ const HIGH_CREDIT_COSTS = {
   "4k": 16,
 } as const satisfies Readonly<Record<Resolution, number>>;
 
+export const IMAGE_COUNTS = [1, 2, 3, 4] as const;
+export type ImageCount = (typeof IMAGE_COUNTS)[number];
+
 export const IMAGES_PER_GENERATION = 4 as const;
 export const MONTHLY_CREDITS = 100 as const;
 
 export function creditCost(resolution: Resolution, quality: Quality): number {
-  return quality === "medium"
-    ? MEDIUM_CREDIT_COSTS[resolution]
-    : HIGH_CREDIT_COSTS[resolution];
+  return quality === "high"
+    ? HIGH_CREDIT_COSTS[resolution]
+    : MEDIUM_CREDIT_COSTS[resolution];
 }
 
 export function batchCreditCost(
   resolution: Resolution,
   quality: Quality,
+  imageCount: ImageCount = IMAGES_PER_GENERATION,
 ): number {
-  return creditCost(resolution, quality) * IMAGES_PER_GENERATION;
+  return creditCost(resolution, quality) * imageCount;
+}
+
+export function isImageCount(value: number): value is ImageCount {
+  return IMAGE_COUNTS.some((candidate) => candidate === value);
 }
 
 export function isResolution(value: string): value is Resolution {

@@ -19,6 +19,15 @@ export type GenerationWithAssets = Readonly<{
   assets: readonly AssetRow[];
 }>;
 
+export function ownsGeneration(
+  generation: Pick<GenerationRow, "user_id" | "guest_key">,
+  actor: Pick<GenerationActor, "userId" | "guestKey">,
+): boolean {
+  return generation.user_id
+    ? generation.user_id === actor.userId
+    : generation.guest_key === actor.guestKey;
+}
+
 export function toGenerationStatus(value: string): GenerationStatus {
   switch (value) {
     case "submitted":
@@ -52,6 +61,7 @@ export function toGenerationResponse(
       ? { error: value.generation.error_message }
       : {}),
     creditsReserved: value.generation.reserved_credits,
+    imageCount: value.generation.image_count,
     ...(value.generation.next_poll_at
       ? { nextPollAt: value.generation.next_poll_at }
       : {}),

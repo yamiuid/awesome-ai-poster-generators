@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { AppError, responseForError } from "@/lib/server/errors";
 import { createSupabaseAdminClient } from "@/lib/server/supabase/admin";
 import { verifyWaffoWebhook } from "@/lib/server/waffo";
-import { periodEnd, planFor, statusFor } from "@/lib/server/waffo-subscription";
+import {
+  periodEnd,
+  planFor,
+  shouldProcessPaymentEvent,
+  statusFor,
+  tierFor,
+} from "@/lib/server/waffo-subscription";
 
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -27,7 +33,24 @@ export async function POST(request: Request): Promise<Response> {
         503,
       );
     }
-    if (eventInsertError?.code === "23505") {
+    const isDuplicate = eventInsertError?.code === "23505";
+    let processedAt: string | null = null;
+    if (isDuplicate) {
+      const { data: existingEvent, error: eventReadError } = await admin
+        .from("payment_events")
+        .select("processed_at")
+        .eq("waffo_event_id", event.id)
+        .maybeSingle();
+      if (eventReadError || !existingEvent) {
+        throw new AppError(
+          "PAYMENT_EVENT_READ_FAILED",
+          "The payment event state could not be read.",
+          503,
+        );
+      }
+      processedAt = existingEvent.processed_at;
+    }
+    if (!shouldProcessPaymentEvent(isDuplicate, processedAt)) {
       return NextResponse.json({ received: true, duplicate: true });
     }
 
@@ -48,7 +71,7 @@ export async function POST(request: Request): Promise<Response> {
     if (userId && handledTypes.has(event.eventType)) {
       const { data: existing } = await admin
         .from("subscriptions")
-        .select("last_event_at, period_start, period_end, plan")
+        .select("last_event_at, period_start, period_end, plan, tier")
         .eq("user_id", userId)
         .maybeSingle();
       if (
@@ -57,6 +80,7 @@ export async function POST(request: Request): Promise<Response> {
           new Date(event.timestamp).getTime()
       ) {
         const plan = planFor(data, existing?.plan ?? null);
+        const tier = tierFor(data, existing?.tier ?? "creator");
         const status = statusFor(event.eventType, data.orderStatus);
         if (plan && status) {
           const start =
@@ -75,6 +99,7 @@ export async function POST(request: Request): Promise<Response> {
                 waffo_order_id: data.orderId,
                 waffo_subscription_id: data.orderId,
                 plan,
+                tier,
                 status,
                 activated_at: start,
                 period_start: start,
@@ -94,10 +119,17 @@ export async function POST(request: Request): Promise<Response> {
         }
       }
     }
-    await admin
+    const { error: processedError } = await admin
       .from("payment_events")
       .update({ processed_at: new Date().toISOString() })
       .eq("waffo_event_id", event.id);
+    if (processedError) {
+      throw new AppError(
+        "PAYMENT_EVENT_WRITE_FAILED",
+        "The payment event could not be marked as processed.",
+        503,
+      );
+    }
     return NextResponse.json({ received: true });
   } catch (error) {
     if (error instanceof AppError) {

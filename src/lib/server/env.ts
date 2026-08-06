@@ -11,12 +11,11 @@ const serverEnvSchema = z.object({
   WAFFO_ENVIRONMENT: z.enum(["test", "prod"]).default("prod"),
   WAFFO_MONTHLY_PRODUCT_ID: z.string().min(1),
   WAFFO_YEARLY_PRODUCT_ID: z.string().min(1),
+  WAFFO_STUDIO_MONTHLY_PRODUCT_ID: z.string().min(1).optional(),
+  WAFFO_STUDIO_YEARLY_PRODUCT_ID: z.string().min(1).optional(),
   SUPPORT_EMAIL: z.string().email().default("support@texttoposter.com"),
-  CRON_SECRET: z.string().min(16).default("local-development-cron-secret"),
-  RATE_LIMIT_PEPPER: z
-    .string()
-    .min(16)
-    .default("local-development-rate-limit-pepper"),
+  CRON_SECRET: z.string().min(32),
+  RATE_LIMIT_PEPPER: z.string().min(32),
   NEXT_PUBLIC_UMAMI_WEBSITE_ID: z.string().optional(),
   NEXT_PUBLIC_UMAMI_SCRIPT_URL: z.string().url().optional(),
 });
@@ -25,11 +24,22 @@ export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 let cachedEnv: ServerEnv | undefined;
 
+export function parseServerEnv(env: NodeJS.ProcessEnv): ServerEnv {
+  return serverEnvSchema.parse(env);
+}
+
 export function getServerEnv(): ServerEnv {
   if (cachedEnv) {
     return cachedEnv;
   }
 
-  cachedEnv = serverEnvSchema.parse(process.env);
+  cachedEnv = parseServerEnv(process.env);
   return cachedEnv;
+}
+
+export function isStudioPlanConfigured(): boolean {
+  return Boolean(
+    process.env["WAFFO_STUDIO_MONTHLY_PRODUCT_ID"] &&
+      process.env["WAFFO_STUDIO_YEARLY_PRODUCT_ID"],
+  );
 }

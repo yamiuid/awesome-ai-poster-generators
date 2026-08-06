@@ -9,7 +9,7 @@ export async function GET(): Promise<NextResponse> {
   }
   const { data: subscription } = await (await createSupabaseServerClient())
     .from("subscriptions")
-    .select("plan, status, period_end, cancel_at_period_end")
+    .select("plan, tier, status, period_end, cancel_at_period_end")
     .eq("user_id", auth.userId)
     .maybeSingle();
   return NextResponse.json({ signedIn: true, isPro: auth.isPro, subscription });

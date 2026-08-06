@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
-import { Newsreader, Public_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 
-const displayFont = Newsreader({
-  variable: "--font-display",
-  subsets: ["latin"],
-});
-
-const bodyFont = Public_Sans({
-  variable: "--font-body",
-  subsets: ["latin"],
+const localTypeface = localFont({
+  src: "./fonts/Geist-Regular.ttf",
+  variable: "--font-local",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -50,10 +46,7 @@ export default function RootLayout({
   const umamiWebsiteId = process.env["NEXT_PUBLIC_UMAMI_WEBSITE_ID"];
   const umamiScriptUrl = process.env["NEXT_PUBLIC_UMAMI_SCRIPT_URL"];
   return (
-    <html
-      lang="en"
-      className={`${displayFont.variable} ${bodyFont.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${localTypeface.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
         {umamiWebsiteId && umamiScriptUrl && (

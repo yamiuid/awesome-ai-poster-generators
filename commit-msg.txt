@@ -1,0 +1,29 @@
+feat: 验证码登录、生图多任务、支付订阅完善 + 上线准备
+
+登录/认证：
+- 邮箱验证码两步登录（PKCE code_verifier 存 cookie、60s 重发倒计时内嵌输入框、错误提示）
+- 登录回调处理 error 参数（过期/无效链接显示原因）
+- Google 登录按钮加官方 logo
+
+生图：
+- 多任务并行（免费用户单任务限制，前后端双保险）
+- 生成张数 1-4 可选（免费锁定 1-2，后端强制）
+- 质量档 low/medium/high（免费锁定 low）
+- ChatGPT 风格渐进 shimmer 网格替代进度条
+- 图片 lightbox 大图预览
+- /advance 接口推进重活（下载/水印/上传），GET 轮询只读状态
+
+支付/订阅：
+- Waffo checkout + webhook 签名验证 + 订阅写入
+- 取消订阅二次确认 modal，账单页状态展示
+- 订阅状态轮询
+
+历史页：
+- HistoryGallery 图片为主布局（下载/lightbox），空状态处理
+
+上线准备：
+- 恢复 guest 24h 限流（007 migration，撤销测试期临时取消）
+- account 页移除 SSR recoverGeneration 重活（改 client /advance + cron）
+- 字体本地化（src/app/fonts），不再依赖 next 内部路径
+- 依赖版本锁定（package.json + pnpm-lock.yaml 同步）
+- migrations 002-007 全量应用

@@ -66,7 +66,7 @@ export async function submitGeneration(
           resolution: request.resolution,
           quality: request.quality,
           output_format: "png",
-          n: 4,
+          n: request.imageCount,
         },
         retry: { limit: 0 },
       })

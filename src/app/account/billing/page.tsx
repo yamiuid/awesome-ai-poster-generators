@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CancelSubscriptionButton } from "@/components/cancel-subscription-button";
+import { UserMenu } from "@/components/user-menu";
 import { getAuthContext } from "@/lib/server/auth";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
 
@@ -12,10 +13,10 @@ export const metadata: Metadata = {
 
 export default async function BillingPage() {
   const auth = await getAuthContext();
-  if (!auth.userId) redirect("/login");
+  if (!auth.userId) redirect("/login?next=/account/billing");
   const { data: subscription } = await (await createSupabaseServerClient())
     .from("subscriptions")
-    .select("plan, status, period_end, cancel_at_period_end")
+    .select("plan, tier, status, period_end, cancel_at_period_end")
     .eq("user_id", auth.userId)
     .maybeSingle();
   return (
@@ -25,9 +26,12 @@ export default async function BillingPage() {
           <span className="wordmark-mark">T</span>
           <span>Text to Poster</span>
         </Link>
-        <Link className="header-cta" href="/account">
-          History
-        </Link>
+        <nav className="header-nav">
+          <Link className="header-cta" href="/account">
+            History
+          </Link>
+          <UserMenu email={auth.email} avatarUrl={auth.avatarUrl} />
+        </nav>
       </header>
       <section className="account-heading">
         <div>
@@ -41,17 +45,18 @@ export default async function BillingPage() {
             <div className="billing-top">
               <div>
                 <p className="eyebrow">
-                  {subscription.plan === "yearly"
-                    ? "Yearly Pro"
-                    : "Monthly Pro"}
+                  {subscription.tier === "studio" ? "Studio" : "Creator"} /{" "}
+                  {subscription.plan === "yearly" ? "yearly" : "monthly"}
                 </p>
                 <h2>
                   {subscription.status === "canceling"
-                    ? "Cancels at period end"
+                    ? "Subscription canceled"
                     : "Active"}
                 </h2>
               </div>
-              <span className="billing-price">100 credits / month</span>
+              <span className="billing-price">
+                {subscription.tier === "studio" ? 300 : 100} credits / month
+              </span>
             </div>
             <p>
               Your current period ends{" "}
@@ -73,11 +78,11 @@ export default async function BillingPage() {
             <p className="eyebrow">Free studio</p>
             <h2>Try four directions every day.</h2>
             <p>
-              Upgrade for 100 weighted credits each month, clean exports, and
-              private history.
+              Upgrade to Creator or Studio for more weighted credits, clean
+              exports, and private history.
             </p>
             <Link className="solid-button" href="/pricing">
-              See Pro plans
+              See plans
             </Link>
           </>
         )}

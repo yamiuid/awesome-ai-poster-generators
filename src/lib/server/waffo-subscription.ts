@@ -1,10 +1,20 @@
+import { type SubscriptionTier, tierForMetadata } from "../domain/plans";
+
 export type SubscriptionPlan = "monthly" | "yearly";
+export type { SubscriptionTier } from "@/lib/domain/plans";
 export type SubscriptionStatus =
   | "active"
   | "canceling"
   | "canceled"
   | "past_due"
   | "refunded";
+
+export function shouldProcessPaymentEvent(
+  isDuplicate: boolean,
+  processedAt: string | null,
+): boolean {
+  return !isDuplicate || processedAt === null;
+}
 
 export function periodEnd(start: string, plan: SubscriptionPlan): string {
   const date = new Date(start);
@@ -33,6 +43,15 @@ export function planFor(
     return data.billingPeriod;
   }
   return fallback;
+}
+
+export function tierFor(
+  data: Readonly<{
+    orderMetadata?: Record<string, string>;
+  }>,
+  fallback: SubscriptionTier = "creator",
+): SubscriptionTier {
+  return tierForMetadata(data.orderMetadata, fallback);
 }
 
 export function statusFor(

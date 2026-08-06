@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  HistoryGallery,
+  type HistoryImage,
+  type HistoryItem,
+} from "@/components/history-gallery";
+import { UserMenu } from "@/components/user-menu";
 import { getAuthContext } from "@/lib/server/auth";
 import { createPosterUrl } from "@/lib/server/storage";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
@@ -14,7 +19,7 @@ export const metadata: Metadata = {
 export default async function AccountPage() {
   const auth = await getAuthContext();
   if (!auth.userId) {
-    redirect("/login");
+    redirect("/login?next=/account");
   }
   const client = await createSupabaseServerClient();
   const { data: generations } = await client
@@ -23,7 +28,12 @@ export default async function AccountPage() {
     .eq("user_id", auth.userId)
     .order("created_at", { ascending: false })
     .limit(30);
+  // SSR 只读状态，不在此做下载/水印/上传等重活（生产 serverless 会超时）。
+  // 推进由前端 HistoryGallery 调 /advance + Vercel cron 双通道完成。
   const rows = generations ?? [];
+  const hasPendingGeneration = rows.some((generation) =>
+    ["submitted", "processing"].includes(generation.status),
+  );
   const ids = rows.map((row) => row.id);
   const { data: assets } =
     ids.length > 0
@@ -40,11 +50,42 @@ export default async function AccountPage() {
     assetsByGeneration.set(asset.generation_id, current);
   }
   const imageUrls = new Map<string, string>();
-  for (const asset of assets ?? []) {
-    imageUrls.set(asset.id, await createPosterUrl(asset.storage_path));
-  }
+  const allAssets = assets ?? [];
+  const signedUrls = await Promise.all(
+    allAssets.map((asset) => createPosterUrl(asset.storage_path)),
+  );
+  allAssets.forEach((asset, index) => {
+    const url = signedUrls[index];
+    if (url) {
+      imageUrls.set(asset.id, url);
+    }
+  });
+  const items: HistoryItem[] = (rows ?? []).map((row) => {
+    const rowAssets = assetsByGeneration.get(row.id) ?? [];
+    const images: HistoryImage[] = rowAssets.flatMap((asset) => {
+      const url = imageUrls.get(asset.id);
+      return url
+        ? [
+            {
+              id: asset.id,
+              url,
+              alt: asset.alt_text,
+              watermarked: asset.watermarked,
+            },
+          ]
+        : [];
+    });
+    return {
+      id: row.id,
+      prompt: row.prompt,
+      createdAt: row.created_at,
+      status: row.status,
+      images,
+    };
+  });
   return (
     <main className="account-page">
+      {hasPendingGeneration && <meta httpEquiv="refresh" content="5" />}
       <header className="site-header">
         <Link className="wordmark" href="/">
           <span className="wordmark-mark">T</span>
@@ -55,6 +96,7 @@ export default async function AccountPage() {
           <Link className="header-cta" href="/#studio">
             New brief
           </Link>
+          <UserMenu email={auth.email} avatarUrl={auth.avatarUrl} />
         </nav>
       </header>
       <section className="account-heading">
@@ -63,67 +105,22 @@ export default async function AccountPage() {
           <h1>Your directions.</h1>
         </div>
         <p>
+          {auth.email ? `${auth.email} · ` : ""}
           {auth.isPro
             ? "Pro studio / no watermark"
             : "Free account / seven-day history"}
         </p>
       </section>
-      <section className="history-grid" aria-label="Generation history">
-        {rows.length === 0 && (
-          <div className="empty-history">
-            <p className="eyebrow">Nothing here yet</p>
-            <h2>Your first direction is waiting.</h2>
-            <Link className="solid-button" href="/#studio">
-              Open the studio
-            </Link>
-          </div>
-        )}
-        {rows.map((row) => {
-          const rowAssets = assetsByGeneration.get(row.id) ?? [];
-          return (
-            <article className="history-card" key={row.id}>
-              <div className="history-card-head">
-                <span>
-                  {new Date(row.created_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
-                <span>{row.status.replace("_", " ")}</span>
-              </div>
-              <p className="history-prompt">{row.prompt}</p>
-              {rowAssets.length > 0 && (
-                <div className="history-thumbs">
-                  {rowAssets.map((asset) => {
-                    const url = imageUrls.get(asset.id);
-                    return url ? (
-                      <Image
-                        key={asset.id}
-                        src={url}
-                        alt={asset.alt_text}
-                        width={180}
-                        height={225}
-                        unoptimized
-                      />
-                    ) : null;
-                  })}
-                </div>
-              )}
-              <div className="history-meta">
-                <span>
-                  {row.style} / {row.aspect_ratio}
-                </span>
-                <span>
-                  {row.mode === "pro"
-                    ? `${row.resolution.toUpperCase()} ${row.quality}`
-                    : "Free preview"}
-                </span>
-              </div>
-            </article>
-          );
-        })}
-      </section>
+      {items.length === 0 && (
+        <div className="empty-history">
+          <p className="eyebrow">Nothing here yet</p>
+          <h2>Your first direction is waiting.</h2>
+          <Link className="solid-button" href="/#studio">
+            Open the studio
+          </Link>
+        </div>
+      )}
+      {items.length > 0 && <HistoryGallery items={items} />}
     </main>
   );
 }

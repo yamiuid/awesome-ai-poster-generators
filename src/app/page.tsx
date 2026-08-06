@@ -1,6 +1,7 @@
 import { ArrowUpRight, MoveDown } from "lucide-react";
 import Link from "next/link";
 import { PosterStudio } from "@/components/poster-studio";
+import { UserMenu } from "@/components/user-menu";
 import { getAuthContext } from "@/lib/server/auth";
 
 const faqs = [
@@ -35,7 +36,13 @@ export default async function Home() {
     url: "https://texttoposter.com",
     applicationCategory: "DesignApplication",
     operatingSystem: "Web",
-    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    offers: {
+      "@type": "AggregateOffer",
+      lowPrice: "0",
+      highPrice: "19.90",
+      priceCurrency: "USD",
+      offerCount: 5,
+    },
   };
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -65,6 +72,11 @@ export default async function Home() {
         <nav className="header-nav" aria-label="Primary navigation">
           <Link href="#how-it-works">How it works</Link>
           <Link href="#pricing">Pricing</Link>
+          {auth.userId ? (
+            <UserMenu email={auth.email} avatarUrl={auth.avatarUrl} />
+          ) : (
+            <Link href="/login">Sign in</Link>
+          )}
           <Link className="header-cta" href="#studio">
             Try the studio <ArrowUpRight size={15} />
           </Link>
@@ -125,23 +137,24 @@ export default async function Home() {
         id="compare"
         aria-labelledby="compare-heading"
       >
-        <p className="eyebrow">Choose your finish</p>
+        <p className="eyebrow">Choose your volume</p>
         <h2 id="compare-heading">Preview freely. Keep seriously.</h2>
         <div className="comparison-grid">
           <article>
-            <span className="eyebrow">Free preview</span>
-            <h3>Enough signal to start.</h3>
+            <span className="eyebrow">Creator studio</span>
+            <h3>Enough room to keep going.</h3>
             <p>
-              One four-poster batch every 24 hours, fixed at 1K Low, with a
-              small texttoposter.com watermark.
+              100 weighted credits each monthly window, 1K/2K/4K, Medium/High
+              finish, private history, and clean downloads. From $9.90/month.
             </p>
           </article>
           <article>
-            <span className="eyebrow">Pro studio</span>
-            <h3>More room for the right one.</h3>
+            <span className="eyebrow">Studio plan</span>
+            <h3>More room for client rounds.</h3>
             <p>
-              100 weighted credits each monthly window, 1K/2K/4K, Medium/High
-              finish, private history, and clean downloads.
+              300 weighted credits each monthly window, higher-volume 4K
+              exports, and the same private, watermark-free workflow. From
+              $19.90/month.
             </p>
           </article>
         </div>
@@ -190,12 +203,12 @@ export default async function Home() {
         <p className="eyebrow">The serious version</p>
         <h2 id="pricing-heading">Room for the good idea.</h2>
         <div className="pricing-card">
-          <h3>Pro studio</h3>
+          <h3>Creator + Studio</h3>
           <p className="pricing-price">
-            $9.90 <small>/ month</small>
+            $9.90–$19.90 <small>/ month</small>
           </p>
           <ul>
-            <li>100 weighted credits each month</li>
+            <li>100 or 300 weighted credits each month</li>
             <li>1K, 2K, and 4K exports</li>
             <li>Medium and High finishes</li>
             <li>Private history with no watermark</li>

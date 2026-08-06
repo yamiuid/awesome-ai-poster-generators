@@ -78,7 +78,7 @@ const content: Readonly<
       ],
       [
         "Accounts and subscriptions",
-        "Pro is available at the price shown at checkout. Waffo processes payment and subscription events. A subscription grants 100 weighted credits in each monthly window: credits do not roll over. Cancellation takes effect at the end of the current paid period. Refund eligibility is described in the Refunds policy and does not limit mandatory consumer rights.",
+        "Creator and Studio subscriptions are available at the price shown at checkout. Waffo processes payment and subscription events. Creator grants 100 weighted credits in each monthly window; Studio grants 300. Annual plans still refresh credits monthly, and credits do not roll over. Cancellation takes effect at the end of the current paid period. Refund eligibility is described in the Refunds policy and does not limit mandatory consumer rights.",
       ],
       [
         "No professional advice",

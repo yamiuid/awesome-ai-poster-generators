@@ -6,7 +6,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; error?: string }>;
+}) {
+  const { next, error } = await searchParams;
   return (
     <main className="narrow-page">
       <header className="site-header">
@@ -23,7 +28,7 @@ export default function LoginPage() {
           history; Pro removes the watermark and keeps high-definition exports
           private.
         </p>
-        <LoginForm />
+        <LoginForm next={next} initialError={error} />
       </section>
     </main>
   );

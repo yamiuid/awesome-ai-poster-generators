@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerEnv } from "@/lib/server/env";
+import { recoverGeneration } from "@/lib/server/generation-poll";
 import { createSupabaseAdminClient } from "@/lib/server/supabase/admin";
 
 export async function GET(request: Request): Promise<Response> {
@@ -57,39 +58,37 @@ export async function GET(request: Request): Promise<Response> {
     }
   }
 
-  const timeoutBefore = new Date(now.getTime() - 15 * 60 * 1_000).toISOString();
-  const { data: staleGenerations } = await admin
+  const { data: pendingGenerations, error: pendingError } = await admin
     .from("generations")
-    .select("id, mode, guest_key")
+    .select("id")
     .in("status", ["submitted", "processing"])
-    .lt("submitted_at", timeoutBefore)
+    .lte("next_poll_at", now.toISOString())
     .limit(100);
-  for (const generation of staleGenerations ?? []) {
-    await admin
-      .from("generations")
-      .update({
-        status: "timed_out",
-        progress: 100,
-        reserved_credits: 0,
-        error_message:
-          "This generation timed out and your credits were returned.",
-        completed_at: now.toISOString(),
-      })
-      .eq("id", generation.id);
-    if (generation.mode === "pro") {
-      await admin.rpc("settle_credits", {
-        p_generation_id: generation.id,
-        p_successful_images: 0,
-        p_cost_per_image: 0,
-      });
-    } else if (generation.guest_key) {
-      await admin.rpc("release_guest_generation", {
-        p_guest_key: generation.guest_key,
-      });
+  if (pendingError) {
+    return NextResponse.json(
+      { error: "Pending generations could not be read." },
+      { status: 503 },
+    );
+  }
+  let recoveredGenerations = 0;
+  let failedRecoveries = 0;
+  // 并发恢复挂起任务，避免串行调外部 API 超时；失败不中断其余任务
+  const pending = pendingGenerations ?? [];
+  const results = await Promise.allSettled(
+    pending.map((generation) => recoverGeneration(generation.id)),
+  );
+  for (const [index, result] of results.entries()) {
+    if (result.status === "fulfilled") {
+      recoveredGenerations += 1;
+    } else {
+      failedRecoveries += 1;
+      const generationId = pending[index]?.id;
+      console.error("Generation recovery failed", generationId, result.reason);
     }
   }
   return NextResponse.json({
     deletedAssets: expiredAssets?.length ?? 0,
-    timedOutGenerations: staleGenerations?.length ?? 0,
+    recoveredGenerations,
+    failedRecoveries,
   });
 }

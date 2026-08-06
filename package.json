@@ -13,29 +13,29 @@
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@supabase/ssr": "latest",
-    "@supabase/supabase-js": "latest",
-    "@waffo/pancake-ts": "latest",
-    "ky": "latest",
-    "lucide-react": "latest",
+    "@supabase/ssr": "0.12.4",
+    "@supabase/supabase-js": "2.111.0",
+    "@waffo/pancake-ts": "0.16.1",
+    "ky": "2.0.2",
+    "lucide-react": "1.28.0",
     "next": "16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "sharp": "latest",
-    "zod": "latest"
+    "sharp": "0.35.3",
+    "zod": "4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "latest",
-    "@playwright/test": "latest",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "react-doctor": "latest",
-    "react-grab": "latest",
-    "react-scan": "latest",
-    "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "latest"
+    "@biomejs/biome": "2.5.6",
+    "@playwright/test": "1.62.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "20.19.43",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "react-doctor": "0.9.3",
+    "react-grab": "0.1.50",
+    "react-scan": "0.5.7",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
   }
 }

@@ -3,6 +3,10 @@ import type { GenerationRequest, ProviderQuality } from "@/lib/domain/poster";
 import { buildPosterPrompt } from "@/lib/domain/prompts";
 import { type ProviderGenerationRequest, submitGeneration } from "./apimart";
 import { AppError } from "./errors";
+import {
+  releaseGuestGeneration,
+  settleGenerationCredits,
+} from "./generation-settlement";
 import type { GenerationActor, GenerationRow } from "./generation-types";
 import { getGuestIdentity } from "./guest";
 import { createSupabaseAdminClient } from "./supabase/admin";
@@ -29,6 +33,13 @@ function providerRequest(
     ...request,
     resolution: actor.mode === "pro" ? request.resolution : "1k",
     quality,
+    // 免费用户（guest/free）最多 2 张，Pro 可用 1-4 张
+    imageCount:
+      actor.mode === "pro"
+        ? request.imageCount
+        : request.imageCount > 2
+          ? 2
+          : request.imageCount,
   };
 }
 
@@ -40,9 +51,37 @@ export async function createGeneration(
   const providerInput = providerRequest(request, actor);
   const credits =
     actor.mode === "pro"
-      ? batchCreditCost(request.resolution, request.quality)
+      ? batchCreditCost(
+          request.resolution,
+          request.quality,
+          providerInput.imageCount,
+        )
       : 0;
   const guestClaim = actor.mode !== "pro";
+
+  // 免费用户同时只能一个生成任务（Pro 可并发）
+  if (guestClaim) {
+    const { data: active, error: activeError } = await admin
+      .from("generations")
+      .select("id")
+      .eq(actor.userId ? "user_id" : "guest_key", actor.userId ?? actor.guestKey)
+      .in("status", ["submitted", "processing"])
+      .limit(1);
+    if (activeError) {
+      throw new AppError(
+        "GENERATION_BUSY_UNAVAILABLE",
+        "We could not check your active generations.",
+        503,
+      );
+    }
+    if (active && active.length > 0) {
+      throw new AppError(
+        "GENERATION_IN_PROGRESS",
+        "Finish your current generation before starting another one.",
+        429,
+      );
+    }
+  }
 
   if (guestClaim) {
     const { data, error } = await admin.rpc("claim_guest_generation", {
@@ -74,6 +113,7 @@ export async function createGeneration(
       aspect_ratio: request.aspectRatio,
       resolution: providerInput.resolution,
       quality: providerInput.quality,
+      image_count: providerInput.imageCount,
       mode: actor.mode,
       status: "submitted",
       progress: 0,
@@ -85,9 +125,7 @@ export async function createGeneration(
 
   if (insertError || !inserted) {
     if (guestClaim) {
-      await admin.rpc("release_guest_generation", {
-        p_guest_key: actor.guestKey,
-      });
+      await releaseGuestGeneration(actor.guestKey);
     }
     throw new AppError(
       "GENERATION_CREATE_FAILED",
@@ -147,25 +185,28 @@ export async function createGeneration(
     }
     return updated;
   } catch (error) {
-    await admin
+    if (credits > 0) {
+      await settleGenerationCredits(inserted.id, 0, 0);
+    }
+    if (guestClaim) {
+      await releaseGuestGeneration(actor.guestKey);
+    }
+    const { error: failureWriteError } = await admin
       .from("generations")
       .update({
         status: "failed",
+        reserved_credits: 0,
+        completed_at: new Date().toISOString(),
         error_message:
           error instanceof Error ? error.message : "Provider error",
       })
       .eq("id", inserted.id);
-    if (credits > 0) {
-      await admin.rpc("settle_credits", {
-        p_generation_id: inserted.id,
-        p_successful_images: 0,
-        p_cost_per_image: 0,
-      });
-    }
-    if (guestClaim) {
-      await admin.rpc("release_guest_generation", {
-        p_guest_key: actor.guestKey,
-      });
+    if (failureWriteError) {
+      throw new AppError(
+        "GENERATION_STATE_FAILED",
+        "We could not save the generation failure.",
+        503,
+      );
     }
     if (error instanceof AppError) {
       throw error;

@@ -6,8 +6,8 @@ import {
   type Resolution,
 } from "./credits";
 
-export type { Quality, Resolution } from "./credits";
-export { isResolution, QUALITIES, RESOLUTIONS } from "./credits";
+export type { ImageCount, Quality, Resolution } from "./credits";
+export { IMAGE_COUNTS, isResolution, QUALITIES, RESOLUTIONS } from "./credits";
 
 export const STYLES = [
   "movie",
@@ -44,6 +44,12 @@ export const generationRequestSchema = z.object({
   aspectRatio: z.enum(ASPECT_RATIOS),
   resolution: z.enum(RESOLUTIONS),
   quality: z.enum(QUALITIES),
+  imageCount: z.union([
+    z.literal(1),
+    z.literal(2),
+    z.literal(3),
+    z.literal(4),
+  ]),
 });
 
 export type GenerationRequest = z.infer<typeof generationRequestSchema>;
@@ -71,6 +77,7 @@ export type GenerationResponse = Readonly<{
   status: GenerationStatus;
   progress: number;
   images: readonly GenerationImage[];
+  imageCount: number;
   error?: string | undefined;
   creditsReserved: number;
   nextPollAt?: string | undefined;
@@ -95,6 +102,7 @@ export const generationResponseSchema = z.object({
       watermarked: z.boolean(),
     }),
   ),
+  imageCount: z.number().int().min(1).max(4),
   error: z.string().optional(),
   creditsReserved: z.number().int().nonnegative(),
   nextPollAt: z.string().optional(),
