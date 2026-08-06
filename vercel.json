@@ -1,3 +1,4 @@
 {
+  "installCommand": "pnpm install --frozen-lockfile",
   "crons": [{ "path": "/api/cron/maintenance", "schedule": "0 3 * * *" }]
 }
