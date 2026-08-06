@@ -14,6 +14,22 @@ export async function GET(): Promise<Response> {
     results["sharp"] = `FAIL ${error instanceof Error ? error.message : String(error)}`;
   }
 
+  // 平台二进制包检查（Linux x64）
+  const fs = require("node:fs") as typeof import("node:fs");
+  const path = require("node:path") as typeof import("node:path");
+  try {
+    const sharpPath = require.resolve("sharp");
+    results["sharpPath"] = sharpPath;
+    const imgDir = path.join(path.dirname(sharpPath), "..", "..", "..", "@img");
+    if (fs.existsSync(imgDir)) {
+      results["imgDir"] = fs.readdirSync(imgDir).join(", ");
+    } else {
+      results["imgDir"] = `NOT FOUND at ${imgDir}`;
+    }
+  } catch (error) {
+    results["resolveSharp"] = `FAIL ${error instanceof Error ? error.message : String(error)}`;
+  }
+
   try {
     require("../../../../lib/server/storage");
     results["storage"] = "OK";

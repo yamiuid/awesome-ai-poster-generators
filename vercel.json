@@ -1,4 +1,4 @@
 {
-  "installCommand": "rm -rf node_modules && pnpm install --frozen-lockfile",
+  "installCommand": "rm -rf node_modules && npm install --include=optional --foreground-scripts",
   "crons": [{ "path": "/api/cron/maintenance", "schedule": "0 3 * * *" }]
 }
