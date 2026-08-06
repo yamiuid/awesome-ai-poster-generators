@@ -47,6 +47,7 @@ next-env.d.ts
 # local tooling / workspace
 .omo/
 .workbuddy/
+.codegraph/
 PROJECT_AUDIT_REPORT.html
 .tmp-build*/
 .git-ttp-index*
