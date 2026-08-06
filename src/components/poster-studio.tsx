@@ -152,6 +152,18 @@ export function PosterStudio({ isPro }: Props) {
 
   async function generate(): Promise<void> {
     setError(null);
+    // 按钮默认启用（对爬虫友好：HTML 中不显示 disabled），无输入时在提交前校验提示
+    if (prompt.trim().length < 3) {
+      setError("Describe the poster you want — a subject, mood, or line of copy.");
+      return;
+    }
+    if (isSubmitting) {
+      return;
+    }
+    if (!isPro && anyWorking) {
+      setError("Wait for the current run to finish before starting another.");
+      return;
+    }
     setIsSubmitting(true);
     track("generation_started");
     try {
@@ -203,9 +215,9 @@ export function PosterStudio({ isPro }: Props) {
   const anyWorking = generations.some(
     (g) => g.status === "submitted" || g.status === "processing",
   );
-  const canGenerate =
-    prompt.trim().length >= 3 && !isSubmitting && (isPro || !anyWorking);
   const isWorking = anyWorking;
+  // 爬虫默认看到可点击的按钮（HTML 不写 disabled）；仅提交中禁用防重复
+  const buttonDisabled = isSubmitting;
 
   return (
     <section
@@ -357,7 +369,7 @@ export function PosterStudio({ isPro }: Props) {
             className="generate-button"
             type="button"
             onClick={() => void generate()}
-            disabled={!canGenerate}
+            disabled={buttonDisabled}
           >
             <Sparkles size={18} />{" "}
             {isSubmitting ? "Generating..." : "Generate"}

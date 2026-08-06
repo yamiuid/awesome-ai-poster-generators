@@ -129,7 +129,7 @@ export default async function Home({
         id="what-is"
         aria-labelledby="what-is-heading"
       >
-        <p className="eyebrow">What is Text to Poster?</p>
+        <p className="eyebrow">What is an AI poster maker?</p>
         <div className="split-heading">
           <h2 id="what-is-heading">
             A sentence in. Four visual directions out.

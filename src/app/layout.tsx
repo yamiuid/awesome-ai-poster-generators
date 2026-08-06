@@ -11,8 +11,7 @@ const localTypeface = localFont({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://texttoposter.com"),
-  title:
-    "Best AI Poster Maker 2026 — Create Stunning Posters from Text, Free & No Login",
+  title: "AI Poster Maker 2026 — Free Posters from Text, No Login",
   description:
     "Turn any text into beautiful AI posters instantly. No sign-up needed. Choose from 6 styles, generate 4 variants at once. Free AI poster maker from text, powered by the latest model.",
   alternates: { canonical: "/" },
