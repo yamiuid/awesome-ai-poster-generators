@@ -8,7 +8,7 @@ import { getAuthContext } from "@/lib/server/auth";
 const faqs = [
   [
     "Is this really free?",
-    "Yes. Guests can create one four-poster batch every 24 hours, with a small watermark and a 1K preview. No account is needed to try it.",
+    "Yes. Guests can generate up to four posters every 24 hours (up to two per run), with a small watermark and a 1K preview. No account is needed to try it.",
   ],
   [
     "What is an AI poster maker from text?",
