@@ -3,6 +3,10 @@ lockfileVersion: '9.0'
 settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
+  onlyBuiltDependencies:
+    - sharp
+    - '@img/sharp-linux-x64'
+    - '@img/sharp-win32-x64'
 
 importers:
 

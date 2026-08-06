@@ -1,4 +1,4 @@
 {
-  "installCommand": "rm -rf node_modules && pnpm install --frozen-lockfile --allow-build=sharp --allow-build=@img/sharp-linux-x64 --allow-build=@img/sharp-win32-x64",
+  "installCommand": "rm -rf node_modules && pnpm install --frozen-lockfile",
   "crons": [{ "path": "/api/cron/maintenance", "schedule": "0 3 * * *" }]
 }
