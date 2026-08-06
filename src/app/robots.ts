@@ -1,5 +1,8 @@
 import type { MetadataRoute } from "next";
 
+const siteUrl =
+  process.env["NEXT_PUBLIC_APP_URL"] ?? "https://www.texttoposter.com";
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
@@ -7,6 +10,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/account", "/login", "/checkout", "/auth", "/api"],
     },
-    sitemap: "https://texttoposter.com/sitemap.xml",
+    sitemap: `${siteUrl}/sitemap.xml`,
   };
 }

@@ -40,11 +40,13 @@ export default async function Home({
     redirect(`/login?error=${encodeURIComponent(authError)}`);
   }
   const auth = await getAuthContext();
+  const siteUrl =
+    process.env["NEXT_PUBLIC_APP_URL"] ?? "https://www.texttoposter.com";
   const applicationJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     name: "Text to Poster",
-    url: "https://texttoposter.com",
+    url: siteUrl,
     applicationCategory: "DesignApplication",
     operatingSystem: "Web",
     offers: {

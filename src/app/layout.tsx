@@ -9,8 +9,11 @@ const localTypeface = localFont({
   display: "swap",
 });
 
+const siteUrl =
+  process.env["NEXT_PUBLIC_APP_URL"] ?? "https://www.texttoposter.com";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://texttoposter.com"),
+  metadataBase: new URL(siteUrl),
   title: "AI Poster Maker 2026 — Free Posters from Text, No Login",
   description:
     "Turn any text into beautiful AI posters instantly. No sign-up needed. Choose from 6 styles, generate 4 variants at once. Free AI poster maker from text, powered by the latest model.",
@@ -21,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "AI Poster Maker — Generate Posters from Text in Seconds",
     description: "Turn a thought into four poster directions in seconds.",
-    url: "https://texttoposter.com",
+    url: siteUrl,
     siteName: "Text to Poster",
     type: "website",
     images: [
