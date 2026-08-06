@@ -1,4 +1,18 @@
-# Text to Poster
+# Awesome AI Poster Generators
+
+> A curated list of AI-powered poster makers — turn text into posters in seconds.
+
+## The list
+
+- [**Text to Poster**](https://www.texttoposter.com) — Describe a subject, mood, or words, and get **four poster directions in seconds**. Free to try without login (watermarked 1K previews); Pro unlocks 4K resolution, quality presets, and private history. Built with Next.js, Supabase, and GPT-image. **Our project.**
+- [Canva](https://www.canva.com/ai-image-generator/) — All-in-one design platform with AI image generation and poster templates.
+- [Ideogram](https://ideogram.ai) — AI image generator known for reliable text rendering, popular for posters and typography.
+- [Recraft](https://www.recraft.ai) — AI generation focused on text, brand styles, and vector-style posters.
+- [Microsoft Designer](https://designer.microsoft.com) — Free AI design tool with poster, social, and brand templates.
+
+---
+
+## Text to Poster
 
 > **AI Poster Maker — Generate Posters from Text in Seconds**
 
