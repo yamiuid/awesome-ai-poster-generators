@@ -54,6 +54,7 @@ export async function createGeneration(
       ? batchCreditCost(
           request.resolution,
           request.quality,
+          request.aspectRatio,
           providerInput.imageCount,
         )
       : 0;
@@ -64,7 +65,10 @@ export async function createGeneration(
     const { data: active, error: activeError } = await admin
       .from("generations")
       .select("id")
-      .eq(actor.userId ? "user_id" : "guest_key", actor.userId ?? actor.guestKey)
+      .eq(
+        actor.userId ? "user_id" : "guest_key",
+        actor.userId ?? actor.guestKey,
+      )
       .in("status", ["submitted", "processing"])
       .limit(1);
     if (activeError) {

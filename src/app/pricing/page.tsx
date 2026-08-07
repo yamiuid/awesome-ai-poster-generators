@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LogoMark } from "@/components/logo";
 import { PricingAction } from "@/components/pricing-actions";
 import { UserMenu } from "@/components/user-menu";
 import { getAuthContext } from "@/lib/server/auth";
@@ -84,13 +85,17 @@ export default async function PricingPage() {
     <main className="pricing-page">
       <header className="site-header">
         <Link className="wordmark" href="/">
-          <span className="wordmark-mark">T</span>
+          <LogoMark className="wordmark-mark" />
           <span>Text to Poster</span>
         </Link>
         <nav className="header-nav">
           <Link href="/#studio">Studio</Link>
           {auth.userId ? (
-            <UserMenu email={auth.email} avatarUrl={auth.avatarUrl} />
+            <UserMenu
+              email={auth.email}
+              avatarUrl={auth.avatarUrl}
+              tier={auth.tier}
+            />
           ) : (
             <Link className="header-cta" href="/login?next=/pricing">
               Sign in

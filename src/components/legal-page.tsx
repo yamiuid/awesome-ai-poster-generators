@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogoMark } from "@/components/logo";
 
 type Kind = "privacy" | "terms" | "refunds" | "ai-policy";
 
@@ -172,7 +173,7 @@ export function LegalPage({ kind }: Readonly<{ kind: Kind }>) {
     <main className="legal-page">
       <header className="site-header">
         <Link className="wordmark" href="/">
-          <span className="wordmark-mark">T</span>
+          <LogoMark className="wordmark-mark" />
           <span>Text to Poster</span>
         </Link>
         <Link className="header-cta" href="/#studio">

@@ -4,12 +4,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import type { SubscriptionTier } from "@/lib/server/auth";
 import { createSupabaseBrowserClient } from "@/lib/server/supabase/browser";
 
 type Props = Readonly<{
   email: string | null;
   avatarUrl: string | null;
+  tier: SubscriptionTier | null;
 }>;
+
+const TIER_LABEL: Readonly<Record<SubscriptionTier | "free", string>> = {
+  free: "Free",
+  creator: "Creator",
+  studio: "Studio",
+};
+
+function tierLabel(tier: SubscriptionTier | null): string {
+  return TIER_LABEL[tier ?? "free"];
+}
 
 function Avatar({
   email,
@@ -44,7 +56,7 @@ function Avatar({
   );
 }
 
-export function UserMenu({ email, avatarUrl }: Props) {
+export function UserMenu({ email, avatarUrl, tier }: Props) {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -99,7 +111,9 @@ export function UserMenu({ email, avatarUrl }: Props) {
             <Avatar email={email} avatarUrl={avatarUrl} size={40} />
             <div>
               <p className="user-menu-name">{email ?? "Signed in"}</p>
-              <p className="user-menu-hint">Account</p>
+              <span className={`tier-badge is-${tier ?? "free"}`}>
+                {tierLabel(tier)}
+              </span>
             </div>
           </div>
           <div className="user-menu-separator" />

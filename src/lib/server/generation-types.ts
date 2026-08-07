@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   GenerationMode,
   GenerationResponse,
@@ -18,6 +19,36 @@ export type GenerationWithAssets = Readonly<{
   generation: GenerationRow;
   assets: readonly AssetRow[];
 }>;
+
+/**
+ * 查询一批生成已实际结算（consume）的积分，按 generation_id 求和。
+ * 部分成功时 consume 行金额小于 reserved，差值即"节省"的积分。
+ */
+export async function loadConsumedCredits(
+  admin: SupabaseClient<Database>,
+  generationIds: readonly string[],
+): Promise<Readonly<Record<string, number>>> {
+  if (generationIds.length === 0) {
+    return {};
+  }
+  const { data, error } = await admin
+    .from("credit_transactions")
+    .select("generation_id, amount")
+    .in("generation_id", generationIds)
+    .eq("kind", "consume");
+  if (error) {
+    return {};
+  }
+  const consumed: Record<string, number> = {};
+  for (const row of data ?? []) {
+    if (!row.generation_id) {
+      continue;
+    }
+    consumed[row.generation_id] =
+      (consumed[row.generation_id] ?? 0) + row.amount;
+  }
+  return consumed;
+}
 
 export function ownsGeneration(
   generation: Pick<GenerationRow, "user_id" | "guest_key">,
@@ -45,8 +76,10 @@ export function toGenerationStatus(value: string): GenerationStatus {
 export function toGenerationResponse(
   value: GenerationWithAssets,
   imageUrls: readonly string[],
+  consumedByGenerationId: Readonly<Record<string, number>> = {},
 ): GenerationResponse {
   const status = toGenerationStatus(value.generation.status);
+  const consumed = consumedByGenerationId[value.generation.id];
   return {
     id: value.generation.id,
     status,
@@ -61,6 +94,7 @@ export function toGenerationResponse(
       ? { error: value.generation.error_message }
       : {}),
     creditsReserved: value.generation.reserved_credits,
+    ...(consumed !== undefined ? { creditsConsumed: consumed } : {}),
     imageCount: value.generation.image_count,
     ...(value.generation.next_poll_at
       ? { nextPollAt: value.generation.next_poll_at }

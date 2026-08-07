@@ -1,13 +1,22 @@
 import { z } from "zod";
 import {
+  ASPECT_RATIOS,
+  type AspectRatio,
   QUALITIES,
   type Quality,
   RESOLUTIONS,
   type Resolution,
 } from "./credits";
 
-export type { ImageCount, Quality, Resolution } from "./credits";
-export { IMAGE_COUNTS, isResolution, QUALITIES, RESOLUTIONS } from "./credits";
+export type { AspectRatio, ImageCount, Quality, Resolution } from "./credits";
+export {
+  ASPECT_RATIOS,
+  IMAGE_COUNTS,
+  isAspectRatio,
+  isResolution,
+  QUALITIES,
+  RESOLUTIONS,
+} from "./credits";
 
 export const STYLES = [
   "movie",
@@ -18,9 +27,6 @@ export const STYLES = [
   "neon",
 ] as const;
 export type PosterStyle = (typeof STYLES)[number];
-
-export const ASPECT_RATIOS = ["1:1", "4:5", "2:3", "16:9"] as const;
-export type AspectRatio = (typeof ASPECT_RATIOS)[number];
 
 export const styleLabels: Readonly<Record<PosterStyle, string>> = {
   movie: "Movie",
@@ -44,12 +50,7 @@ export const generationRequestSchema = z.object({
   aspectRatio: z.enum(ASPECT_RATIOS),
   resolution: z.enum(RESOLUTIONS),
   quality: z.enum(QUALITIES),
-  imageCount: z.union([
-    z.literal(1),
-    z.literal(2),
-    z.literal(3),
-    z.literal(4),
-  ]),
+  imageCount: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
 });
 
 export type GenerationRequest = z.infer<typeof generationRequestSchema>;
@@ -80,6 +81,7 @@ export type GenerationResponse = Readonly<{
   imageCount: number;
   error?: string | undefined;
   creditsReserved: number;
+  creditsConsumed?: number | undefined;
   nextPollAt?: string | undefined;
 }>;
 
@@ -105,6 +107,7 @@ export const generationResponseSchema = z.object({
   imageCount: z.number().int().min(1).max(4),
   error: z.string().optional(),
   creditsReserved: z.number().int().nonnegative(),
+  creditsConsumed: z.number().int().nonnegative().optional(),
   nextPollAt: z.string().optional(),
 });
 

@@ -44,6 +44,7 @@ export function LoginForm({ next, initialError }: Props) {
   const [code, setCode] = useState("");
   const [message, setMessage] = useState<string | null>(initialError ?? null);
   const [loading, setLoading] = useState(false);
+  const [googlePending, setGooglePending] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
   // 重发倒计时：countdown > 0 时每秒减 1，到 0 停止（此时允许重发）
@@ -62,6 +63,8 @@ export function LoginForm({ next, initialError }: Props) {
     : "/auth/callback";
 
   async function google(): Promise<void> {
+    // 点击瞬间先出全屏遮罩（await 之前），成功跳转 Google 时保持显示
+    setGooglePending(true);
     setLoading(true);
     setMessage(null);
     try {
@@ -72,10 +75,12 @@ export function LoginForm({ next, initialError }: Props) {
         },
       });
       if (result.error) {
+        setGooglePending(false);
         setMessage(result.error.message);
         setLoading(false);
       }
     } catch (error) {
+      setGooglePending(false);
       setMessage(
         error instanceof Error
           ? "Google sign-in is temporarily unavailable. Check the Supabase configuration."
@@ -290,6 +295,12 @@ export function LoginForm({ next, initialError }: Props) {
         <p className="form-message" role="status">
           {message}
         </p>
+      )}
+      {googlePending && (
+        <div className="auth-overlay" role="status" aria-live="polite">
+          <span className="auth-overlay-spinner spin" aria-hidden="true" />
+          <p className="auth-overlay-label">Signing in with Google...</p>
+        </div>
       )}
     </div>
   );

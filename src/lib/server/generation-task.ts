@@ -1,4 +1,9 @@
-import { creditCost, isQuality, isResolution } from "@/lib/domain/credits";
+import {
+  creditCost,
+  isAspectRatio,
+  isQuality,
+  isResolution,
+} from "@/lib/domain/credits";
 import type { ProviderTask } from "./apimart";
 import { AppError } from "./errors";
 import {
@@ -59,7 +64,9 @@ async function storeTaskImages(
   task: ProviderTask,
 ): Promise<number> {
   const images =
-    task.result?.images.flatMap((image) => image.url).slice(0, generation.image_count) ?? [];
+    task.result?.images
+      .flatMap((image) => image.url)
+      .slice(0, generation.image_count) ?? [];
   if (images.length === 0) {
     throw new AppError(
       "NO_IMAGES",
@@ -136,12 +143,17 @@ async function finalizeCompleted(
   if (
     generation.mode === "pro" &&
     isResolution(generation.resolution) &&
-    isQuality(generation.quality)
+    isQuality(generation.quality) &&
+    isAspectRatio(generation.aspect_ratio)
   ) {
     await settleGenerationCredits(
       generation.id,
       stored,
-      creditCost(generation.resolution, generation.quality),
+      creditCost(
+        generation.resolution,
+        generation.quality,
+        generation.aspect_ratio,
+      ),
     );
   }
   const { data, error } = await createSupabaseAdminClient()

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/login-form";
+import { LogoMark } from "@/components/logo";
 
 export const metadata: Metadata = {
   title: "Sign in | Text to Poster",
@@ -16,7 +17,7 @@ export default async function LoginPage({
     <main className="narrow-page">
       <header className="site-header">
         <a className="wordmark" href="/">
-          <span className="wordmark-mark">T</span>
+          <LogoMark className="wordmark-mark" />
           <span>Text to Poster</span>
         </a>
       </header>

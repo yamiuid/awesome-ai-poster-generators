@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LogoMark } from "@/components/logo";
 import { SubscriptionStatus } from "@/components/subscription-status";
 
 export const metadata: Metadata = {
@@ -12,7 +13,7 @@ export default function CheckoutSuccessPage() {
     <main className="narrow-page">
       <header className="site-header">
         <Link className="wordmark" href="/">
-          <span className="wordmark-mark">T</span>
+          <LogoMark className="wordmark-mark" />
           <span>Text to Poster</span>
         </Link>
       </header>

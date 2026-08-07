@@ -2,11 +2,14 @@ import { z } from "zod";
 import { AppError } from "./errors";
 import { createSupabaseServerClient } from "./supabase/server";
 
+export type SubscriptionTier = "creator" | "studio";
+
 export type AuthContext = Readonly<{
   userId: string | null;
   email: string | null;
   avatarUrl: string | null;
   isPro: boolean;
+  tier: SubscriptionTier | null;
 }>;
 
 export async function getAuthContext(): Promise<AuthContext> {
@@ -15,19 +18,31 @@ export async function getAuthContext(): Promise<AuthContext> {
     client = await createSupabaseServerClient();
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { userId: null, email: null, avatarUrl: null, isPro: false };
+      return {
+        userId: null,
+        email: null,
+        avatarUrl: null,
+        isPro: false,
+        tier: null,
+      };
     }
     throw error;
   }
   const { data } = await client.auth.getUser();
   const user = data.user;
   if (!user) {
-    return { userId: null, email: null, avatarUrl: null, isPro: false };
+    return {
+      userId: null,
+      email: null,
+      avatarUrl: null,
+      isPro: false,
+      tier: null,
+    };
   }
 
   const { data: subscription, error } = await client
     .from("subscriptions")
-    .select("status, period_end")
+    .select("status, period_end, tier")
     .eq("user_id", user.id)
     .maybeSingle();
   if (error) {
@@ -50,6 +65,7 @@ export async function getAuthContext(): Promise<AuthContext> {
     email: user.email ?? null,
     avatarUrl: typeof rawAvatar === "string" ? rawAvatar : null,
     isPro,
+    tier: isPro ? (subscription?.tier ?? null) : null,
   };
 }
 

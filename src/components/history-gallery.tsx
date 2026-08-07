@@ -1,8 +1,8 @@
 "use client";
 
+import ky from "ky";
 import { ArrowDownToLine, X } from "lucide-react";
 import Image from "next/image";
-import ky from "ky";
 import { useEffect, useState } from "react";
 
 export type HistoryImage = Readonly<{
@@ -18,6 +18,9 @@ export type HistoryItem = Readonly<{
   createdAt: string;
   status: string;
   images: readonly HistoryImage[];
+  mode?: string | undefined;
+  creditsReserved?: number | undefined;
+  creditsConsumed?: number | undefined;
 }>;
 
 const STATUS_LABELS: Readonly<Record<string, string>> = {
@@ -28,6 +31,22 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   failed: "Failed",
   timed_out: "Timed out",
 };
+
+function creditChipText(item: HistoryItem): string | null {
+  const reserved = item.creditsReserved;
+  if (!reserved || reserved <= 0 || item.mode !== "pro") {
+    return null;
+  }
+  if (item.status === "submitted" || item.status === "processing") {
+    return `Reserving ${reserved}`;
+  }
+  if (item.status === "failed" || item.status === "timed_out") {
+    return `Released ${reserved}`;
+  }
+  const consumed = item.creditsConsumed ?? reserved;
+  const saved = reserved - consumed;
+  return saved > 0 ? `Used ${consumed} · ${saved} saved` : `Used ${consumed}`;
+}
 
 export function HistoryGallery({
   items,
@@ -77,7 +96,14 @@ export function HistoryGallery({
                 year: "numeric",
               })}
             </span>
-            <span>{STATUS_LABELS[item.status] ?? item.status}</span>
+            <span className="history-card-meta">
+              {creditChipText(item) && (
+                <span className="history-credit-chip">
+                  {creditChipText(item)}
+                </span>
+              )}
+              {STATUS_LABELS[item.status] ?? item.status}
+            </span>
           </div>
           <div className="history-thumbs">
             {item.images.length === 0 && (
@@ -91,7 +117,7 @@ export function HistoryGallery({
               <figure className="history-figure" key={image.id}>
                 <button
                   type="button"
-                  className="result-zoom"
+                  className="history-zoom"
                   onClick={() => setLightbox(image.url)}
                   aria-label={`View ${image.alt} full size`}
                 >

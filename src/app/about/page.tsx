@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LogoMark } from "@/components/logo";
 
 export const metadata: Metadata = {
   title: "About | Text to Poster",
@@ -12,7 +13,7 @@ export default function AboutPage() {
     <main className="legal-page">
       <header className="site-header">
         <Link className="wordmark" href="/">
-          <span className="wordmark-mark">T</span>
+          <LogoMark className="wordmark-mark" />
           <span>Text to Poster</span>
         </Link>
         <Link className="header-cta" href="/#studio">

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { PosterStudio } from "@/components/poster-studio";
 import { UserMenu } from "@/components/user-menu";
 import { getAuthContext } from "@/lib/server/auth";
+import { LogoMark } from "@/components/logo";
 
 const faqs = [
   [
@@ -79,14 +80,18 @@ export default async function Home({
       />
       <header className="site-header">
         <Link className="wordmark" href="/">
-          <span className="wordmark-mark">T</span>
+          <LogoMark className="wordmark-mark" />
           <span>Text to Poster</span>
         </Link>
         <nav className="header-nav" aria-label="Primary navigation">
           <Link href="#how-it-works">How it works</Link>
           <Link href="#pricing">Pricing</Link>
           {auth.userId ? (
-            <UserMenu email={auth.email} avatarUrl={auth.avatarUrl} />
+            <UserMenu
+              email={auth.email}
+              avatarUrl={auth.avatarUrl}
+              tier={auth.tier}
+            />
           ) : (
             <Link href="/login">Sign in</Link>
           )}

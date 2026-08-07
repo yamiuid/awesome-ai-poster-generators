@@ -2,7 +2,11 @@ import { getTask } from "./apimart";
 import { AppError } from "./errors";
 import { applyProviderTask, failGeneration } from "./generation-task";
 import type { GenerationActor, GenerationRow } from "./generation-types";
-import { ownsGeneration, toGenerationResponse } from "./generation-types";
+import {
+  loadConsumedCredits,
+  ownsGeneration,
+  toGenerationResponse,
+} from "./generation-types";
 import { createPosterUrl } from "./storage";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
@@ -70,7 +74,12 @@ async function responseFor(
   const urls = await Promise.all(
     (assets ?? []).map((asset) => createPosterUrl(asset.storage_path)),
   );
-  return toGenerationResponse({ generation, assets: assets ?? [] }, urls);
+  const consumed = await loadConsumedCredits(admin, [generation.id]);
+  return toGenerationResponse(
+    { generation, assets: assets ?? [] },
+    urls,
+    consumed,
+  );
 }
 
 async function advanceGeneration(
