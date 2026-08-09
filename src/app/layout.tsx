@@ -10,7 +10,7 @@ const localTypeface = localFont({
 });
 
 const siteUrl =
-  process.env["NEXT_PUBLIC_APP_URL"] ?? "https://www.texttoposter.com";
+  process.env["NEXT_PUBLIC_APP_URL"] ?? "https://texttoposter.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

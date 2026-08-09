@@ -36,19 +36,24 @@ import {
   STYLES,
   styleLabels,
 } from "@/lib/domain/poster";
+import {
+  POSTER_EXAMPLES,
+  type PosterExample,
+} from "@/lib/domain/poster-examples";
 
 type Props = Readonly<{ isPro: boolean }>;
 
-const EXAMPLES = [
-  "A midnight jazz festival in a rain-soaked city, copper type, quiet luxury",
-  "Community garden open day, bold hand-painted lettering, optimistic summer light",
-  "Independent film premiere, a lone figure under a red moon, art-house tension",
-] as const;
+const FEATURED_EXAMPLE_STYLES: PosterStyle[] = [
+  "movie",
+  "minimal",
+  "vintage",
+  "neon",
+];
 
 const STATUS_LABELS: Readonly<Record<GenerationResponse["status"], string>> = {
   submitted: "Sending to the studio",
-  processing: "Painting four directions",
-  succeeded: "Four posters ready",
+  processing: "Painting your directions",
+  succeeded: "Your posters are ready",
   partially_succeeded: "Most posters ready",
   failed: "Generation stopped",
   timed_out: "Generation timed out",
@@ -355,6 +360,18 @@ export function PosterStudio({ isPro }: Props) {
   }
 
   const selectedStyle = useMemo(() => styleLabels[style], [style]);
+  const featuredExamples = useMemo(
+    () =>
+      FEATURED_EXAMPLE_STYLES.map((featuredStyle) =>
+        POSTER_EXAMPLES.find((example) => example.style === featuredStyle),
+      ).filter((example): example is PosterExample => example !== undefined),
+    [],
+  );
+
+  function chooseExample(example: PosterExample): void {
+    setPrompt(example.prompt);
+    setStyle(example.style);
+  }
 
   // lightbox：Esc 关闭 + 锁定页面滚动
   useEffect(() => {
@@ -530,7 +547,7 @@ export function PosterStudio({ isPro }: Props) {
           <p className="eyebrow">The poster studio</p>
           <h2 id="studio-heading">Give the idea a shape.</h2>
         </div>
-        <span className="studio-count">4 directions / one brief</span>
+        <span className="studio-count">Multiple directions / one brief</span>
       </div>
 
       <div className="studio-grid">
@@ -711,21 +728,50 @@ export function PosterStudio({ isPro }: Props) {
         <div className="studio-results" aria-live="polite">
           {generations.length === 0 && !pendingPlaceholder && (
             <div className="empty-studio">
-              <span className="empty-mark">01</span>
-              <p>
-                Four different readings of the same idea. Start with a feeling,
-                a place, or a line of copy.
-              </p>
-              <div className="example-list">
-                {EXAMPLES.map((example) => (
+              <fieldset
+                className="empty-preview-grid"
+                aria-label="Example poster outputs"
+              >
+                {featuredExamples.map((example, index) => (
                   <button
-                    key={example}
+                    className="empty-preview"
+                    key={example.style}
                     type="button"
-                    onClick={() => setPrompt(example)}
+                    onClick={() => chooseExample(example)}
+                    aria-label={`Use the ${example.label} example brief`}
                   >
-                    {example}
+                    <Image
+                      src={example.image}
+                      alt=""
+                      width={1024}
+                      height={1280}
+                      sizes="(max-width: 520px) 45vw, 20vw"
+                    />
+                    <span>
+                      {String(index + 1).padStart(2, "0")} / {example.label}
+                    </span>
                   </button>
                 ))}
+              </fieldset>
+              <div className="empty-copy">
+                <span className="empty-mark">01</span>
+                <div>
+                  <p>
+                    Multiple readings of the same idea. Start with a feeling, a
+                    place, or a line of copy.
+                  </p>
+                  <div className="example-list">
+                    {featuredExamples.map((example) => (
+                      <button
+                        key={`${example.style}-prompt`}
+                        type="button"
+                        onClick={() => chooseExample(example)}
+                      >
+                        {example.prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}

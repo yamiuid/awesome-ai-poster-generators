@@ -1,0 +1,15 @@
+<svg width="480" height="300" viewBox="0 0 480 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="480" height="300" fill="#E9E1D4"/>
+  <rect x="44" y="34" width="176" height="102" rx="10" fill="#F5F0E8" stroke="#1D1A17" stroke-width="2"/>
+  <rect x="260" y="34" width="176" height="102" rx="10" fill="#1D1A17"/>
+  <rect x="44" y="164" width="176" height="102" rx="10" fill="#1D1A17"/>
+  <rect x="260" y="164" width="176" height="102" rx="10" fill="#F5F0E8" stroke="#1D1A17" stroke-width="2"/>
+  <path d="M62 119L108 68L143 104L166 78L204 119H62Z" fill="#E24A32"/>
+  <path d="M278 119L318 64L348 97L377 72L418 119H278Z" fill="#E24A32"/>
+  <path d="M62 249L104 194L139 229L168 201L204 249H62Z" fill="#E24A32"/>
+  <path d="M278 249L321 197L351 227L379 202L418 249H278Z" fill="#E24A32"/>
+  <rect x="63" y="49" width="58" height="8" rx="4" fill="#1D1A17"/>
+  <rect x="279" y="49" width="58" height="8" rx="4" fill="#F5F0E8"/>
+  <rect x="63" y="179" width="58" height="8" rx="4" fill="#F5F0E8"/>
+  <rect x="279" y="179" width="58" height="8" rx="4" fill="#1D1A17"/>
+</svg>

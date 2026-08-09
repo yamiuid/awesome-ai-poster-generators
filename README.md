@@ -92,7 +92,7 @@ Vercel and other hosted build environments provide their own clean `NODE_OPTIONS
 
 ## Deployment notes
 
-- Production domain: `https://www.texttoposter.com` (bare domain 308-redirects to `www`)
+- Production domain: `https://texttoposter.com` (`www` 308-redirects to the bare domain)
 - Vercel env must include all keys from `.env.example`; **do not** commit `.env.local`
 - Keep `WAFFO_ENVIRONMENT=prod` and a production Waffo API key in production
 - Run every migration in `supabase/migrations/` against the remote database before releasing
