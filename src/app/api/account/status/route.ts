@@ -5,12 +5,21 @@ import { createSupabaseServerClient } from "@/lib/server/supabase/server";
 export async function GET(): Promise<NextResponse> {
   const auth = await getAuthContext();
   if (!auth.userId) {
-    return NextResponse.json({ signedIn: false, isPro: false });
+    return NextResponse.json({
+      signedIn: false,
+      isPro: false,
+      subscriptionState: auth.subscriptionState,
+    });
   }
   const { data: subscription } = await (await createSupabaseServerClient())
     .from("subscriptions")
     .select("plan, tier, status, period_end, cancel_at_period_end")
     .eq("user_id", auth.userId)
     .maybeSingle();
-  return NextResponse.json({ signedIn: true, isPro: auth.isPro, subscription });
+  return NextResponse.json({
+    signedIn: true,
+    isPro: auth.isPro,
+    subscriptionState: auth.subscriptionState,
+    subscription,
+  });
 }

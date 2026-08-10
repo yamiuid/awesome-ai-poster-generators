@@ -60,13 +60,20 @@ supabase/migrations/  SQL schema + RPCs (run in filename order)
 ## Local setup
 
 1. Copy `.env.example` to `.env.local` and fill Supabase, APIMart, Waffo, and Umami values.
-2. Run the SQL migrations in filename order through `supabase/migrations/003_security_hardening.sql`. Enable Google OAuth and email Magic Link in Supabase Auth.
+2. Run the SQL migrations in filename order through `supabase/migrations/003_security_hardening.sql`. Enable Google OAuth and email Magic Link in Supabase Auth. Add `http://localhost:3000/**`, `http://127.0.0.1:3000/**`, and each preview domain's `/**` path to Supabase Auth redirect URLs; OAuth and email sign-in return to the origin where they were requested, including the `next` query.
 3. In Waffo Test Mode, create the Creator products (`$9.90/month` and `$79/year`) and the Studio products (`$19.90/month` and `$169/year`). Put their Product IDs in `WAFFO_MONTHLY_PRODUCT_ID`, `WAFFO_YEARLY_PRODUCT_ID`, `WAFFO_STUDIO_MONTHLY_PRODUCT_ID`, and `WAFFO_STUDIO_YEARLY_PRODUCT_ID`. Set `WAFFO_ENVIRONMENT=test` for local or preview deployments. The Store ID is used when configuring products and webhooks in Waffo; checkout only needs the Product IDs.
 4. Configure the Test Webhook URL as `https://<your-preview-domain>/api/webhooks/waffo` and the Production Webhook URL as `https://texttoposter.com/api/webhooks/waffo`. Use separate Waffo API keys for test and production.
 5. Test with Waffo card `4576750000000110`, then confirm the webhook delivery is accepted and the account shows Pro.
 6. Run `pnpm dev`.
 
 The server never trusts checkout redirects or browser-provided prices. Waffo webhooks are verified from the raw request body, and generated images stay in private Supabase Storage behind short-lived signed URLs.
+
+### Subscription lifecycle
+
+- Canceling keeps Pro access until `period_end`; a second cancellation request is safe and does not call Waffo again.
+- After the period ends, Billing links back to Pricing so the customer can choose any new plan. A still-canceling subscription cannot create a second checkout.
+- `past_due` and stale billing states pause new purchases and route the customer to support to prevent duplicate charges.
+- In Waffo Test Mode, verify this sequence: activate a plan, cancel it, confirm the `canceling` message and end date, drive the end/canceled state, start a different plan, then deliver an old-order cancellation event and confirm the new subscription remains active.
 
 ## Verification
 

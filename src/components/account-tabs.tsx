@@ -34,7 +34,12 @@ export function AccountTabs({
         ))}
       </div>
       {panes.map((pane) => (
-        <div key={pane.id} role="tabpanel" hidden={active !== pane.id}>
+        <div
+          key={pane.id}
+          className="account-tabpanel"
+          role="tabpanel"
+          hidden={active !== pane.id}
+        >
           {pane.content}
         </div>
       ))}

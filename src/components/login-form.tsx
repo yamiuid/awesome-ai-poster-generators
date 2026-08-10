@@ -13,6 +13,10 @@ type Step = "email" | "code";
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
+export function authRedirectUrl(origin: string, callbackUrl: string): string {
+  return `${origin}${callbackUrl}`;
+}
+
 function errorMessage(
   result: Readonly<{ error?: { message?: unknown; code?: unknown } | null }>,
   fallback: string,
@@ -99,7 +103,10 @@ export function LoginForm({ next, initialError }: Props) {
     try {
       const result = await createSupabaseBrowserClient().auth.signInWithOtp({
         email,
-        options: { shouldCreateUser: true },
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: authRedirectUrl(window.location.origin, callbackUrl),
+        },
       });
       if (result.error) {
         setMessage(
@@ -126,7 +133,10 @@ export function LoginForm({ next, initialError }: Props) {
     try {
       const result = await createSupabaseBrowserClient().auth.signInWithOtp({
         email,
-        options: { shouldCreateUser: true },
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: authRedirectUrl(window.location.origin, callbackUrl),
+        },
       });
       if (result.error) {
         setMessage(

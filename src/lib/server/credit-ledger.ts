@@ -51,7 +51,7 @@ export async function getAccountBalance(
 ): Promise<AccountBalance | null> {
   const { data: periods } = await client
     .from("entitlement_periods")
-    .select("period_start, period_end, credits_granted")
+    .select("id, period_start, period_end, credits_granted")
     .eq("user_id", userId)
     .order("period_start", { ascending: false })
     .limit(1);
@@ -66,11 +66,13 @@ export async function getAccountBalance(
         .from("credit_reservations")
         .select("amount")
         .eq("user_id", userId)
+        .eq("period_id", period.id)
         .eq("status", "reserved"),
       client
         .from("credit_transactions")
         .select("amount")
         .eq("user_id", userId)
+        .eq("period_id", period.id)
         .eq("kind", "consume"),
       client
         .from("subscriptions")

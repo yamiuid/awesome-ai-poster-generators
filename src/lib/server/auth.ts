@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { AppError } from "./errors";
 import { createSupabaseServerClient } from "./supabase/server";
+import {
+  lifecycleState,
+  type SubscriptionLifecycleState,
+} from "./waffo-subscription";
 
 export type SubscriptionTier = "creator" | "studio";
 
@@ -10,6 +14,7 @@ export type AuthContext = Readonly<{
   avatarUrl: string | null;
   isPro: boolean;
   tier: SubscriptionTier | null;
+  subscriptionState: SubscriptionLifecycleState;
 }>;
 
 export async function getAuthContext(): Promise<AuthContext> {
@@ -24,6 +29,7 @@ export async function getAuthContext(): Promise<AuthContext> {
         avatarUrl: null,
         isPro: false,
         tier: null,
+        subscriptionState: "none",
       };
     }
     throw error;
@@ -37,6 +43,7 @@ export async function getAuthContext(): Promise<AuthContext> {
       avatarUrl: null,
       isPro: false,
       tier: null,
+      subscriptionState: "none",
     };
   }
 
@@ -53,12 +60,13 @@ export async function getAuthContext(): Promise<AuthContext> {
     );
   }
 
-  const isPro = Boolean(
-    subscription &&
-      (subscription.status === "active" ||
-        subscription.status === "canceling") &&
-      new Date(subscription.period_end).getTime() > Date.now(),
+  const subscriptionState = lifecycleState(
+    subscription
+      ? { status: subscription.status, periodEnd: subscription.period_end }
+      : null,
   );
+  const isPro =
+    subscriptionState === "active" || subscriptionState === "canceling";
   const rawAvatar = user.user_metadata?.["avatar_url"];
   return {
     userId: user.id,
@@ -66,15 +74,26 @@ export async function getAuthContext(): Promise<AuthContext> {
     avatarUrl: typeof rawAvatar === "string" ? rawAvatar : null,
     isPro,
     tier: isPro ? (subscription?.tier ?? null) : null,
+    subscriptionState,
   };
 }
 
 export async function requireUser(): Promise<
-  Readonly<{ userId: string; email: string | null }>
+  Readonly<{
+    userId: string;
+    email: string | null;
+    isPro: boolean;
+    subscriptionState: SubscriptionLifecycleState;
+  }>
 > {
   const context = await getAuthContext();
   if (!context.userId) {
     throw new AppError("AUTH_REQUIRED", "Please sign in to continue.", 401);
   }
-  return { userId: context.userId, email: context.email };
+  return {
+    userId: context.userId,
+    email: context.email,
+    isPro: context.isPro,
+    subscriptionState: context.subscriptionState,
+  };
 }

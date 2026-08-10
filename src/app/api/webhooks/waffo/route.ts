@@ -5,6 +5,7 @@ import { verifyWaffoWebhook } from "@/lib/server/waffo";
 import {
   periodEnd,
   planFor,
+  shouldApplySubscriptionEvent,
   shouldProcessPaymentEvent,
   statusFor,
   tierFor,
@@ -71,51 +72,61 @@ export async function POST(request: Request): Promise<Response> {
     if (userId && handledTypes.has(event.eventType)) {
       const { data: existing } = await admin
         .from("subscriptions")
-        .select("last_event_at, period_start, period_end, plan, tier")
+        .select(
+          "waffo_order_id, last_event_at, period_start, period_end, plan, tier, status",
+        )
         .eq("user_id", userId)
         .maybeSingle();
-      if (
-        !existing?.last_event_at ||
-        new Date(existing.last_event_at).getTime() <
-          new Date(event.timestamp).getTime()
-      ) {
-        const plan = planFor(data, existing?.plan ?? null);
-        const tier = tierFor(data, existing?.tier ?? "creator");
-        const status = statusFor(event.eventType, data.orderStatus);
-        if (plan && status) {
-          const start =
-            data.currentPeriodStart ??
-            existing?.period_start ??
-            event.timestamp;
-          const end =
-            data.currentPeriodEnd ??
-            existing?.period_end ??
-            periodEnd(start, plan);
-          const { error: subscriptionError } = await admin
-            .from("subscriptions")
-            .upsert(
-              {
-                user_id: userId,
-                waffo_order_id: data.orderId,
-                waffo_subscription_id: data.orderId,
-                plan,
-                tier,
-                status,
-                activated_at: start,
-                period_start: start,
-                period_end: end,
-                cancel_at_period_end: status === "canceling",
-                last_event_at: event.timestamp,
-              },
-              { onConflict: "user_id" },
-            );
-          if (subscriptionError) {
-            throw new AppError(
-              "SUBSCRIPTION_WRITE_FAILED",
-              "The subscription could not be updated.",
-              503,
-            );
-          }
+      const plan = planFor(data, existing?.plan ?? null);
+      const tier = tierFor(data, existing?.tier ?? "creator");
+      const status = statusFor(event.eventType, data.orderStatus);
+      const shouldApply =
+        status !== null &&
+        shouldApplySubscriptionEvent(
+          existing
+            ? {
+                orderId: existing.waffo_order_id,
+                status: existing.status,
+                periodEnd: existing.period_end,
+                lastEventAt: existing.last_event_at,
+              }
+            : null,
+          { orderId: data.orderId, status, timestamp: event.timestamp },
+        );
+      if (plan && status && shouldApply) {
+        const isCurrentOrder = existing?.waffo_order_id === data.orderId;
+        const start =
+          data.currentPeriodStart ??
+          (isCurrentOrder ? existing?.period_start : undefined) ??
+          event.timestamp;
+        const end =
+          data.currentPeriodEnd ??
+          (isCurrentOrder ? existing?.period_end : undefined) ??
+          periodEnd(start, plan);
+        const { error: subscriptionError } = await admin
+          .from("subscriptions")
+          .upsert(
+            {
+              user_id: userId,
+              waffo_order_id: data.orderId,
+              waffo_subscription_id: data.orderId,
+              plan,
+              tier,
+              status,
+              activated_at: start,
+              period_start: start,
+              period_end: end,
+              cancel_at_period_end: status === "canceling",
+              last_event_at: event.timestamp,
+            },
+            { onConflict: "user_id" },
+          );
+        if (subscriptionError) {
+          throw new AppError(
+            "SUBSCRIPTION_WRITE_FAILED",
+            "The subscription could not be updated.",
+            503,
+          );
         }
       }
     }

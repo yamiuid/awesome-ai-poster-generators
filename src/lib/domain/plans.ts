@@ -66,6 +66,13 @@ export function creditsForTier(tier: SubscriptionTier): number {
   }
 }
 
+export function yearlySavings(
+  monthlyPrice: number,
+  yearlyPrice: number,
+): number {
+  return Math.max(0, Math.round((monthlyPrice * 12 - yearlyPrice) * 100) / 100);
+}
+
 export function tierForMetadata(
   metadata: Readonly<Record<string, string>> | undefined,
   fallback: SubscriptionTier = "creator",

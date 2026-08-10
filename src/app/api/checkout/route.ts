@@ -5,12 +5,17 @@ import { requireUser } from "@/lib/server/auth";
 import { getServerEnv } from "@/lib/server/env";
 import { AppError, responseForError } from "@/lib/server/errors";
 import { getWaffoClient } from "@/lib/server/waffo";
+import { checkoutBlockFor } from "@/lib/server/waffo-subscription";
 
 const checkoutSchema = z.object({ plan: z.string().min(1) });
 
 export async function POST(request: Request): Promise<Response> {
   try {
     const user = await requireUser();
+    const checkoutBlock = checkoutBlockFor(user.subscriptionState);
+    if (checkoutBlock) {
+      throw new AppError(checkoutBlock.code, checkoutBlock.message, 409);
+    }
     const input = checkoutSchema.parse(await request.json());
     const selection = normalizeCheckoutPlan(input.plan);
     if (!selection) {

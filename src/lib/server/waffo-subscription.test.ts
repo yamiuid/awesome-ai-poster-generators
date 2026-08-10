@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  canStartCheckout,
+  lifecycleState,
   periodEnd,
   planFor,
+  shouldApplySubscriptionEvent,
   shouldProcessPaymentEvent,
   statusFor,
   tierFor,
 } from "./waffo-subscription";
+
+const NOW = "2026-08-10T00:00:00.000Z";
 
 describe("shouldProcessPaymentEvent", () => {
   it("processes a fresh non-duplicate event", () => {
@@ -128,5 +133,91 @@ describe("statusFor", () => {
 
   it("returns null for unknown events without a terminal order status", () => {
     expect(statusFor("unknown.event")).toBeNull();
+  });
+});
+
+describe("subscription lifecycle", () => {
+  it("classifies an account without a subscription as none", () => {
+    expect(lifecycleState(null)).toBe("none");
+    expect(canStartCheckout("none")).toBe(true);
+  });
+
+  it("keeps an active subscription active before its period end", () => {
+    expect(
+      lifecycleState(
+        { status: "active", periodEnd: "2026-08-11T00:00:00.000Z" },
+        new Date(NOW),
+      ),
+    ).toBe("active");
+    expect(canStartCheckout("active")).toBe(false);
+  });
+
+  it("treats an active subscription at its exact period end as stale", () => {
+    expect(
+      lifecycleState({ status: "active", periodEnd: NOW }, new Date(NOW)),
+    ).toBe("stale");
+  });
+
+  it("allows checkout after a canceling subscription reaches its period end", () => {
+    const state = lifecycleState(
+      { status: "canceling", periodEnd: NOW },
+      new Date(NOW),
+    );
+    expect(state).toBe("ended");
+    expect(canStartCheckout(state)).toBe(true);
+  });
+
+  it("blocks checkout while a subscription is past due", () => {
+    expect(canStartCheckout("past_due")).toBe(false);
+  });
+
+  it("classifies canceled and refunded subscriptions as ended", () => {
+    expect(
+      lifecycleState({ status: "canceled", periodEnd: "2026-01-01T00:00:00Z" }),
+    ).toBe("ended");
+    expect(
+      lifecycleState({ status: "refunded", periodEnd: "2026-01-01T00:00:00Z" }),
+    ).toBe("ended");
+    expect(canStartCheckout("ended")).toBe(true);
+  });
+});
+
+describe("shouldApplySubscriptionEvent", () => {
+  it("ignores an old order cancellation after a new order is active", () => {
+    expect(
+      shouldApplySubscriptionEvent(
+        {
+          orderId: "ORD_new",
+          status: "active",
+          periodEnd: "2026-09-10T00:00:00.000Z",
+          lastEventAt: "2026-08-10T00:00:00.000Z",
+        },
+        {
+          orderId: "ORD_old",
+          status: "canceled",
+          timestamp: "2026-08-11T00:00:00.000Z",
+        },
+        new Date("2026-08-11T00:00:00.000Z"),
+      ),
+    ).toBe(false);
+  });
+
+  it("accepts a new active order after the previous one ended", () => {
+    expect(
+      shouldApplySubscriptionEvent(
+        {
+          orderId: "ORD_old",
+          status: "canceled",
+          periodEnd: "2026-08-01T00:00:00.000Z",
+          lastEventAt: "2026-08-01T00:00:00.000Z",
+        },
+        {
+          orderId: "ORD_new",
+          status: "active",
+          timestamp: "2026-08-10T00:00:00.000Z",
+        },
+        new Date("2026-08-10T00:00:00.000Z"),
+      ),
+    ).toBe(true);
   });
 });

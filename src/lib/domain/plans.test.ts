@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { creditsForTier, normalizeCheckoutPlan } from "./plans";
+import { creditsForTier, normalizeCheckoutPlan, yearlySavings } from "./plans";
 
 describe("subscription plans", () => {
   it("normalizes every supported checkout selection", () => {
@@ -41,4 +41,14 @@ describe("subscription plans", () => {
   ] as const)("grants %s credits per monthly window", (tier, credits) => {
     expect(creditsForTier(tier)).toBe(credits);
   });
+
+  it.each([
+    [9.9, 79, 39.8],
+    [19.9, 169, 69.8],
+  ] as const)(
+    "calculates yearly savings for %s monthly and %s yearly",
+    (monthly, yearly, savings) => {
+      expect(yearlySavings(monthly, yearly)).toBe(savings);
+    },
+  );
 });

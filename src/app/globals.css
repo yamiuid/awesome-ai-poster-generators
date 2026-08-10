@@ -1244,6 +1244,7 @@ textarea:focus-visible {
 .pricing-page,
 .account-page,
 .legal-page {
+  width: 100%;
   min-height: 100vh;
 }
 .narrow-page {
@@ -1483,13 +1484,61 @@ textarea:focus-visible {
   color: var(--ink-muted);
   line-height: 1.6;
 }
+.pricing-plans {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+}
+.billing-tabs {
+  display: flex;
+  width: fit-content;
+  gap: 0.25rem;
+  margin: 0 auto 1.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-deep);
+}
+.billing-tab {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.billing-tab:hover {
+  color: var(--ink);
+}
+.billing-tab[aria-selected="true"] {
+  background: var(--paper);
+  color: var(--ink);
+}
+.billing-tab-note {
+  color: var(--accent-dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.billing-tab[aria-selected="true"] .billing-tab-note {
+  color: var(--accent);
+}
 .plan-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
-  max-width: 62rem;
+  max-width: none;
   margin: 0 auto;
-  padding: 0 1.5rem 3rem;
+  padding: 0;
 }
 .plan-card {
   padding: clamp(1.3rem, 3vw, 2.2rem);
@@ -1512,6 +1561,15 @@ textarea:focus-visible {
   font-family: var(--font-body);
   font-size: 0.78rem;
   letter-spacing: 0;
+}
+.plan-original-price {
+  margin-left: 0.75rem;
+  color: var(--ink-muted);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  letter-spacing: 0;
+  text-decoration-color: var(--ink-muted);
+  text-decoration-thickness: 1px;
 }
 .plan-card > p:not(.eyebrow) {
   color: var(--ink-muted);
@@ -1692,6 +1750,10 @@ textarea:focus-visible {
   gap: 0.4rem;
   margin: 1.5rem 1.5rem 0;
 }
+.account-tabpanel {
+  min-width: 0;
+  margin: 1.5rem 1.5rem 0;
+}
 .account-tab {
   padding: 0.45rem 0.9rem;
   border: 1px solid var(--line);
@@ -1734,6 +1796,10 @@ textarea:focus-visible {
 }
 .credit-activity {
   padding: 1.5rem;
+}
+.account-tabpanel > .history-grid,
+.account-tabpanel > .credit-activity {
+  padding: 0;
 }
 .credit-activity-table {
   width: 100%;

@@ -9,6 +9,129 @@ export type SubscriptionStatus =
   | "past_due"
   | "refunded";
 
+export const SUBSCRIPTION_LIFECYCLE_STATES = [
+  "none",
+  "active",
+  "canceling",
+  "ended",
+  "past_due",
+  "stale",
+] as const;
+export type SubscriptionLifecycleState =
+  (typeof SUBSCRIPTION_LIFECYCLE_STATES)[number];
+
+export type SubscriptionStateRecord = Readonly<{
+  status: SubscriptionStatus;
+  periodEnd: string;
+}>;
+
+export type SubscriptionEventCursor = Readonly<{
+  orderId: string;
+  status: SubscriptionStatus;
+  timestamp: string;
+}>;
+
+export type CurrentSubscriptionCursor = Readonly<{
+  orderId: string | null;
+  status: SubscriptionStatus;
+  periodEnd: string;
+  lastEventAt: string | null;
+}>;
+
+export function lifecycleState(
+  subscription: SubscriptionStateRecord | null | undefined,
+  now: Date = new Date(),
+): SubscriptionLifecycleState {
+  if (!subscription) {
+    return "none";
+  }
+  const hasTimeRemaining =
+    new Date(subscription.periodEnd).getTime() > now.getTime();
+  switch (subscription.status) {
+    case "active":
+      return hasTimeRemaining ? "active" : "stale";
+    case "canceling":
+      return hasTimeRemaining ? "canceling" : "ended";
+    case "canceled":
+    case "refunded":
+      return "ended";
+    case "past_due":
+      return "past_due";
+  }
+}
+
+export function canStartCheckout(state: SubscriptionLifecycleState): boolean {
+  return state === "none" || state === "ended";
+}
+
+export type CheckoutBlock = Readonly<{
+  code:
+    | "SUBSCRIPTION_ACTIVE"
+    | "SUBSCRIPTION_CANCELING"
+    | "SUBSCRIPTION_PAST_DUE"
+    | "SUBSCRIPTION_STALE";
+  message: string;
+}>;
+
+export function checkoutBlockFor(
+  state: SubscriptionLifecycleState,
+): CheckoutBlock | null {
+  switch (state) {
+    case "none":
+    case "ended":
+      return null;
+    case "active":
+      return {
+        code: "SUBSCRIPTION_ACTIVE",
+        message: "Your subscription is already active.",
+      };
+    case "canceling":
+      return {
+        code: "SUBSCRIPTION_CANCELING",
+        message: "Choose a new plan after your current period ends.",
+      };
+    case "past_due":
+      return {
+        code: "SUBSCRIPTION_PAST_DUE",
+        message: "Your billing needs attention. Please contact support.",
+      };
+    case "stale":
+      return {
+        code: "SUBSCRIPTION_STALE",
+        message:
+          "We are confirming your subscription status. Please contact support.",
+      };
+  }
+}
+
+export function shouldApplySubscriptionEvent(
+  existing: CurrentSubscriptionCursor | null,
+  incoming: SubscriptionEventCursor,
+  now: Date = new Date(),
+): boolean {
+  if (!existing) {
+    return true;
+  }
+  const belongsToAnotherOrder =
+    existing.orderId !== null && existing.orderId !== incoming.orderId;
+  if (belongsToAnotherOrder) {
+    return (
+      incoming.status === "active" &&
+      canStartCheckout(
+        lifecycleState(
+          { status: existing.status, periodEnd: existing.periodEnd },
+          now,
+        ),
+      )
+    );
+  }
+  return (
+    existing.lastEventAt === null ||
+    new Date(incoming.timestamp).getTime() >
+      new Date(existing.lastEventAt).getTime()
+  );
+}
+
 export function shouldProcessPaymentEvent(
   isDuplicate: boolean,
   processedAt: string | null,

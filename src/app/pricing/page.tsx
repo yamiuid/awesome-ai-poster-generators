@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoMark } from "@/components/logo";
-import { PricingAction } from "@/components/pricing-actions";
+import { PricingPlans } from "@/components/pricing-plans";
 import { UserMenu } from "@/components/user-menu";
+import { yearlySavings } from "@/lib/domain/plans";
 import { getAuthContext } from "@/lib/server/auth";
 import { isStudioPlanConfigured } from "@/lib/server/env";
 
@@ -17,6 +18,7 @@ export default async function PricingPage() {
   const studioConfigured = isStudioPlanConfigured();
   const plans = [
     {
+      billingPeriod: "monthly",
       eyebrow: "Creator / monthly",
       price: "$9.90",
       cadence: "/ month",
@@ -31,8 +33,11 @@ export default async function PricingPage() {
       plan: "creator_monthly",
       featured: false,
       isConfigured: true,
+      originalPrice: null,
+      savings: null,
     },
     {
+      billingPeriod: "yearly",
       eyebrow: "Creator / yearly",
       price: "$79",
       cadence: "/ year",
@@ -45,10 +50,13 @@ export default async function PricingPage() {
         "Private history and clean downloads",
       ],
       plan: "creator_yearly",
-      featured: true,
+      featured: false,
       isConfigured: true,
+      originalPrice: "$118.80",
+      savings: yearlySavings(9.9, 79),
     },
     {
+      billingPeriod: "monthly",
       eyebrow: "Studio / monthly",
       price: "$19.90",
       cadence: "/ month",
@@ -63,8 +71,11 @@ export default async function PricingPage() {
       plan: "studio_monthly",
       featured: false,
       isConfigured: studioConfigured,
+      originalPrice: null,
+      savings: null,
     },
     {
+      billingPeriod: "yearly",
       eyebrow: "Studio / yearly",
       price: "$169",
       cadence: "/ year",
@@ -77,8 +88,10 @@ export default async function PricingPage() {
         "Priority billing support",
       ],
       plan: "studio_yearly",
-      featured: true,
+      featured: false,
       isConfigured: studioConfigured,
+      originalPrice: "$238.80",
+      savings: yearlySavings(19.9, 169),
     },
   ] as const;
   return (
@@ -111,31 +124,11 @@ export default async function PricingPage() {
           fits your practice; annual plans still refresh credits monthly.
         </p>
       </section>
-      <section className="plan-grid">
-        {plans.map((plan) => (
-          <article
-            className={`plan-card ${plan.featured ? "featured" : ""}`}
-            key={plan.plan}
-          >
-            <p className="eyebrow">{plan.eyebrow}</p>
-            <h2>
-              {plan.price} <small>{plan.cadence}</small>
-            </h2>
-            <p>{plan.description}</p>
-            <ul>
-              {plan.features.map((feature) => (
-                <li key={feature}>{feature}</li>
-              ))}
-            </ul>
-            <PricingAction
-              plan={plan.plan}
-              isPro={auth.isPro}
-              isSignedIn={Boolean(auth.userId)}
-              isConfigured={plan.isConfigured}
-            />
-          </article>
-        ))}
-      </section>
+      <PricingPlans
+        plans={plans}
+        subscriptionState={auth.subscriptionState}
+        isSignedIn={Boolean(auth.userId)}
+      />
       <p className="pricing-footnote">
         Image engine: GPT Image 2 via APIMart. Outputs are AI-generated and
         should be reviewed before publication. Refunds are eligible within 7

@@ -3,10 +3,11 @@
 import ky, { HTTPError } from "ky";
 import { useState } from "react";
 import type { CheckoutPlan } from "@/lib/domain/plans";
+import type { SubscriptionLifecycleState } from "@/lib/server/waffo-subscription";
 
 type Props = Readonly<{
   plan: CheckoutPlan;
-  isPro: boolean;
+  subscriptionState: SubscriptionLifecycleState;
   isSignedIn: boolean;
   isConfigured: boolean;
 }>;
@@ -20,7 +21,7 @@ const PLAN_LABELS: Readonly<Record<CheckoutPlan, string>> = {
 
 export function PricingAction({
   plan,
-  isPro,
+  subscriptionState,
   isSignedIn,
   isConfigured,
 }: Props) {
@@ -63,10 +64,17 @@ export function PricingAction({
     }
   }
 
-  if (isPro) {
+  if (subscriptionState === "active" || subscriptionState === "canceling") {
     return (
       <a className="outline-button" href="/account/billing">
         Manage subscription
+      </a>
+    );
+  }
+  if (subscriptionState === "past_due" || subscriptionState === "stale") {
+    return (
+      <a className="outline-button" href="/account/billing">
+        Billing needs attention
       </a>
     );
   }

@@ -45,7 +45,9 @@ export default async function BillingPage() {
         </div>
       </section>
       <section className="billing-card">
-        {subscription && auth.isPro ? (
+        {subscription &&
+        (auth.subscriptionState === "active" ||
+          auth.subscriptionState === "canceling") ? (
           <>
             <div className="billing-top">
               <div>
@@ -54,8 +56,8 @@ export default async function BillingPage() {
                   {subscription.plan === "yearly" ? "yearly" : "monthly"}
                 </p>
                 <h2>
-                  {subscription.status === "canceling"
-                    ? "Subscription canceled"
+                  {auth.subscriptionState === "canceling"
+                    ? "Cancellation scheduled"
                     : "Active"}
                 </h2>
               </div>
@@ -70,13 +72,39 @@ export default async function BillingPage() {
               })}
               . Credits reset each period and never roll over.
             </p>
-            {subscription.status === "canceling" ? (
+            {auth.subscriptionState === "canceling" ? (
               <p className="form-message">
-                Your Pro access remains available until the period ends.
+                Your Pro access remains available until the period ends. You can
+                choose any new plan after that date.
               </p>
             ) : (
               <CancelSubscriptionButton />
             )}
+          </>
+        ) : auth.subscriptionState === "ended" ? (
+          <>
+            <p className="eyebrow">Subscription ended</p>
+            <h2>Choose your next plan.</h2>
+            <p>
+              Your previous subscription has ended. Choose Creator or Studio to
+              start a new billing period.
+            </p>
+            <Link className="solid-button" href="/pricing">
+              Choose a plan
+            </Link>
+          </>
+        ) : auth.subscriptionState === "past_due" ||
+          auth.subscriptionState === "stale" ? (
+          <>
+            <p className="eyebrow">Billing needs attention</p>
+            <h2>We need to check your subscription.</h2>
+            <p>
+              We could not confirm the latest billing state. New purchases are
+              paused so you are not charged twice.
+            </p>
+            <a className="solid-button" href="mailto:support@texttoposter.com">
+              Contact support
+            </a>
           </>
         ) : (
           <>
