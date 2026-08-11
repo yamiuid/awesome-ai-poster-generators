@@ -19,29 +19,86 @@ export {
 } from "./credits";
 
 export const STYLES = [
+  "auto",
   "movie",
   "minimal",
   "anime",
   "business",
   "vintage",
   "neon",
+  "swiss",
+  "typography",
+  "collage",
+  "photography",
+  "illustration",
+  "surreal",
+  "fashion",
+  "brutalist",
+  "art_deco",
+  "y2k",
 ] as const;
 export type PosterStyle = (typeof STYLES)[number];
 
 export const styleLabels: Readonly<Record<PosterStyle, string>> = {
+  auto: "Auto",
   movie: "Movie",
   minimal: "Minimal",
   anime: "Anime",
   business: "Business",
   vintage: "Vintage",
   neon: "Neon",
+  swiss: "Swiss",
+  typography: "Typography",
+  collage: "Collage",
+  photography: "Photography",
+  illustration: "Illustration",
+  surreal: "Surreal",
+  fashion: "Fashion",
+  brutalist: "Brutalist",
+  art_deco: "Art Deco",
+  y2k: "Y2K",
 };
+
+export const FEATURED_STYLES = [
+  "auto",
+  "movie",
+  "minimal",
+  "anime",
+  "business",
+  "vintage",
+  "neon",
+] as const satisfies readonly PosterStyle[];
+
+export const MORE_STYLE_GROUPS = [
+  { label: "Editorial", styles: ["swiss", "typography", "collage"] },
+  {
+    label: "Image-led",
+    styles: ["photography", "illustration", "surreal"],
+  },
+  {
+    label: "Statement",
+    styles: ["fashion", "brutalist", "art_deco", "y2k"],
+  },
+] as const satisfies readonly Readonly<{
+  label: string;
+  styles: readonly PosterStyle[];
+}>[];
+
+export function isMoreStyle(style: PosterStyle): boolean {
+  return MORE_STYLE_GROUPS.some((group) =>
+    group.styles.some((candidate) => candidate === style),
+  );
+}
 
 export const aspectLabels: Readonly<Record<AspectRatio, string>> = {
   "1:1": "Square",
   "4:5": "Portrait",
+  "3:4": "Editorial",
   "2:3": "Classic",
+  "9:16": "Story",
   "16:9": "Wide",
+  "4:3": "Slide",
+  "3:2": "Landscape",
 };
 
 export const generationRequestSchema = z.object({

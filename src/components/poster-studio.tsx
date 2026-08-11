@@ -33,13 +33,13 @@ import {
   type PosterStyle,
   type Quality,
   type Resolution,
-  STYLES,
   styleLabels,
 } from "@/lib/domain/poster";
 import {
   POSTER_EXAMPLES,
   type PosterExample,
 } from "@/lib/domain/poster-examples";
+import { ArtDirectionPicker } from "./art-direction-picker";
 
 type Props = Readonly<{ isPro: boolean }>;
 
@@ -334,7 +334,7 @@ function PosterCard({
 
 export function PosterStudio({ isPro }: Props) {
   const [prompt, setPrompt] = useState("");
-  const [style, setStyle] = useState<PosterStyle>("movie");
+  const [style, setStyle] = useState<PosterStyle>("auto");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("4:5");
   const [resolution, setResolution] = useState<Resolution>("1k");
   const [quality, setQuality] = useState<Quality>("low");
@@ -575,29 +575,20 @@ export function PosterStudio({ isPro }: Props) {
               <legend className="field-label">Art direction</legend>
               <span>{selectedStyle}</span>
             </div>
-            <div className="chip-grid">
-              {STYLES.map((option) => (
-                <button
-                  key={option}
-                  className={`choice-chip ${style === option ? "is-active" : ""}`}
-                  type="button"
-                  onClick={() => setStyle(option)}
-                  disabled={isWorking}
-                  aria-pressed={style === option}
-                >
-                  {styleLabels[option]}
-                </button>
-              ))}
-            </div>
+            <ArtDirectionPicker
+              value={style}
+              onChange={setStyle}
+              disabled={isWorking}
+            />
           </fieldset>
 
           <fieldset className="control-block">
             <legend className="field-label">Output settings</legend>
             <div className="studio-options">
               <div className="option-select">
-                <span>Format</span>
+                <span>Aspect Ratio</span>
                 <TierSelect
-                  label="Format"
+                  label="Aspect Ratio"
                   value={aspectRatio}
                   onChange={(next) => {
                     if (ASPECT_RATIOS.some((option) => option === next)) {
@@ -608,7 +599,7 @@ export function PosterStudio({ isPro }: Props) {
                   disabled={isWorking}
                   options={ASPECT_RATIOS.map((option) => ({
                     value: option,
-                    label: aspectLabels[option],
+                    label: `${aspectLabels[option]} (${option})`,
                     locked: false,
                   }))}
                 />

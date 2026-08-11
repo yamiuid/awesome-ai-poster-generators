@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { batchCreditCost, creditCost } from "./credits";
+import { batchCreditCost, creditCost, isAspectRatio } from "./credits";
 
 describe("creditCost — GPT Image 2 official channel", () => {
   it("charges 1K tiers by aspect ratio group", () => {
@@ -57,5 +57,16 @@ describe("batchCreditCost", () => {
     expect(batchCreditCost("1k", "medium", "1:1", 2)).toBe(20);
     expect(batchCreditCost("2k", "high", "4:5", 2)).toBe(372);
     expect(batchCreditCost("2k", "medium", "16:9", 4)).toBe(112);
+  });
+});
+
+describe("common poster aspect ratios", () => {
+  it("accepts editorial, story, slide, and landscape ratios", () => {
+    expect(isAspectRatio("3:4")).toBe(true);
+    expect(isAspectRatio("9:16")).toBe(true);
+    expect(isAspectRatio("4:3")).toBe(true);
+    expect(isAspectRatio("3:2")).toBe(true);
+    expect(creditCost("2k", "medium", "3:4")).toBe(47);
+    expect(creditCost("2k", "medium", "9:16")).toBe(28);
   });
 });
