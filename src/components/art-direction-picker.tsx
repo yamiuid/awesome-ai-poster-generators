@@ -82,7 +82,7 @@ export function ArtDirectionPicker({ value, disabled, onChange }: Props) {
           aria-expanded={open}
           aria-controls="more-styles-menu"
         >
-          <span>More styles</span>
+          <span>More</span>
           <ChevronDown size={14} aria-hidden="true" />
         </button>
         {open && (

@@ -617,7 +617,7 @@ export function PosterStudio({ isPro }: Props) {
                   }}
                   disabled={isWorking}
                   options={[
-                    { value: "1k", label: "1K / everyday", locked: false },
+                    { value: "1k", label: "1K", locked: false },
                     { value: "2k", label: "2K / crisp", locked: !isPro },
                     { value: "4k", label: "4K / print", locked: !isPro },
                   ]}

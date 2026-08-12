@@ -355,7 +355,7 @@ textarea:focus-visible {
   padding-top: 0.55rem;
 }
 .control-block {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   border: 0;
   padding: 0;
 }
@@ -368,11 +368,11 @@ textarea:focus-visible {
 .art-direction-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.45rem;
+  gap: 0.35rem;
   margin-top: 0.65rem;
 }
 .choice-chip {
-  min-height: 2.75rem;
+  min-height: 2.4rem;
   border: 1px solid var(--line);
   border-radius: 0.5rem;
   background: transparent;
@@ -384,6 +384,11 @@ textarea:focus-visible {
     background-color 0.2s ease,
     color 0.2s ease,
     border-color 0.2s ease;
+}
+@media (pointer: coarse) and (max-width: 800px) {
+  .choice-chip {
+    min-height: 2.75rem;
+  }
 }
 .choice-chip:hover {
   transform: translateY(-2px);
@@ -418,7 +423,7 @@ textarea:focus-visible {
   z-index: 20;
   top: calc(100% + 0.45rem);
   left: 0;
-  width: min(31rem, calc(100vw - 3rem));
+  width: min(26rem, calc(100vw - 3rem));
   min-inline-size: 0;
   margin: 0;
   padding: 0.85rem;
@@ -436,9 +441,7 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 .more-styles-group + .more-styles-group {
-  margin-top: 0.8rem;
-  padding-top: 0.8rem;
-  border-top: 1px solid var(--line);
+  margin-top: 0.55rem;
 }
 .more-styles-group > p {
   margin: 0 0 0.45rem;
@@ -456,7 +459,8 @@ textarea:focus-visible {
 .more-styles-group button {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  position: relative;
   min-height: 2.75rem;
   gap: 0.4rem;
   padding: 0.45rem 0.55rem;
@@ -466,8 +470,12 @@ textarea:focus-visible {
   color: var(--ink);
   font: inherit;
   font-size: 0.74rem;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
+}
+.more-styles-group button > svg {
+  position: absolute;
+  right: 0.55rem;
 }
 .more-styles-group button:hover,
 .more-styles-group button.is-selected {
@@ -482,7 +490,7 @@ textarea:focus-visible {
 .studio-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
+  gap: 0.45rem;
   margin-top: 1.6rem;
 }
 .control-block .studio-options {
@@ -495,9 +503,9 @@ textarea:focus-visible {
   display: flex;
   align-items: flex-start;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.2rem;
   min-width: 0;
-  padding: 0.55rem 0.7rem;
+  padding: 0.4rem 0.6rem;
   border: 1px solid var(--line);
   border-radius: 0.5rem;
   color: var(--ink-muted);
@@ -514,7 +522,7 @@ textarea:focus-visible {
   justify-content: space-between;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.2rem 0;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--ink);
@@ -669,7 +677,7 @@ textarea:focus-visible {
   display: flex;
   flex: 1;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   width: 100%;
   color: var(--ink-muted);
 }
@@ -735,7 +743,7 @@ textarea:focus-visible {
   grid-template-columns: auto minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
-  margin-top: 1.25rem;
+  margin-top: 3rem;
 }
 .empty-mark {
   color: var(--accent);
