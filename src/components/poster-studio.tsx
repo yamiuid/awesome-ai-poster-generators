@@ -318,6 +318,28 @@ function track(name: string): void {
   window.umami?.track(name);
 }
 
+// 图片是 Supabase 的跨域签名 URL，浏览器的 download 属性会被忽略（直接打开图片），
+// 所以改为抓取 blob 后触发本地下载；CORS/网络异常时退回新标签打开。
+async function downloadImage(url: string, filename: string): Promise<void> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Download failed with status ${response.status}`);
+    }
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    window.open(url, "_blank", "noopener");
+  }
+}
+
 /**
  * 单张结果卡：媒体槽内骨架层常驻底层，图片加载完成后淡入覆盖，
  * 卡片 DOM 从占位到成品全程不变，避免替换抖动。
@@ -364,7 +386,11 @@ function PosterCard({
             className="download-link"
             href={image.url}
             download={`text-to-poster-${index + 1}.png`}
-            onClick={() => track("download_completed")}
+            onClick={(event) => {
+              event.preventDefault();
+              track("download_completed");
+              void downloadImage(image.url, `text-to-poster-${index + 1}.png`);
+            }}
           >
             <ArrowDownToLine size={15} /> Download
           </a>
