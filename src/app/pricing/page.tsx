@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { LogoMark } from "@/components/logo";
 import { PricingPlans } from "@/components/pricing-plans";
+import { SiteHeader } from "@/components/site-header";
 import { UserMenu } from "@/components/user-menu";
 import { yearlySavings } from "@/lib/domain/plans";
 import { pageMeta } from "@/lib/seo";
@@ -97,26 +97,20 @@ export default async function PricingPage() {
   ] as const;
   return (
     <main className="pricing-page">
-      <header className="site-header">
-        <Link className="wordmark" href="/">
-          <LogoMark className="wordmark-mark" />
-          <span>Text to Poster</span>
-        </Link>
-        <nav className="header-nav">
-          <Link href="/#studio">Studio</Link>
-          {auth.userId ? (
-            <UserMenu
-              email={auth.email}
-              avatarUrl={auth.avatarUrl}
-              tier={auth.tier}
-            />
-          ) : (
-            <Link className="header-cta" href="/login?next=/pricing">
-              Sign in
-            </Link>
-          )}
-        </nav>
-      </header>
+      <SiteHeader>
+        <Link href="/#studio">Studio</Link>
+        {auth.userId ? (
+          <UserMenu
+            email={auth.email}
+            avatarUrl={auth.avatarUrl}
+            tier={auth.tier}
+          />
+        ) : (
+          <Link className="header-cta" href="/login?next=/pricing">
+            Sign in
+          </Link>
+        )}
+      </SiteHeader>
       <section className="pricing-intro">
         <p className="eyebrow">Simple, weighted credits</p>
         <h1>Pay for the directions worth keeping.</h1>

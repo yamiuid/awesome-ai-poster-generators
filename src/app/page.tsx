@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LogoMark } from "@/components/logo";
 import { PosterStudio } from "@/components/poster-studio";
+import { SiteHeader } from "@/components/site-header";
 import { UserMenu } from "@/components/user-menu";
 import { POSTER_EXAMPLES } from "@/lib/domain/poster-examples";
 import { STYLE_LANDINGS } from "@/lib/domain/style-landing";
@@ -125,29 +125,23 @@ export default async function Home({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <header className="site-header">
-        <Link className="wordmark" href="/">
-          <LogoMark className="wordmark-mark" />
-          <span>Text to Poster</span>
+      <SiteHeader>
+        <Link href="#examples">Examples</Link>
+        <Link href="#how-it-works">How it works</Link>
+        <Link href="#pricing">Pricing</Link>
+        {auth.userId ? (
+          <UserMenu
+            email={auth.email}
+            avatarUrl={auth.avatarUrl}
+            tier={auth.tier}
+          />
+        ) : (
+          <Link href="/login">Sign in</Link>
+        )}
+        <Link className="header-cta" href="#studio">
+          Try the studio <ArrowUpRight size={15} />
         </Link>
-        <nav className="header-nav" aria-label="Primary navigation">
-          <Link href="#examples">Examples</Link>
-          <Link href="#how-it-works">How it works</Link>
-          <Link href="#pricing">Pricing</Link>
-          {auth.userId ? (
-            <UserMenu
-              email={auth.email}
-              avatarUrl={auth.avatarUrl}
-              tier={auth.tier}
-            />
-          ) : (
-            <Link href="/login">Sign in</Link>
-          )}
-          <Link className="header-cta" href="#studio">
-            Try the studio <ArrowUpRight size={15} />
-          </Link>
-        </nav>
-      </header>
+      </SiteHeader>
 
       <section className="hero" aria-labelledby="hero-heading">
         <div className="hero-grid">

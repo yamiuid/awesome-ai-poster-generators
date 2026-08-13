@@ -67,7 +67,11 @@ textarea:focus-visible {
   gap: 1rem;
   max-width: 82rem;
   margin: 0 auto;
-  padding: 1.25rem 1.5rem;
+  padding: 0.625rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
 .wordmark {
@@ -99,6 +103,9 @@ textarea:focus-visible {
 }
 .header-nav a:hover {
   color: var(--ink);
+}
+.header-menu-button {
+  display: none;
 }
 .header-cta {
   display: inline-flex;
@@ -388,6 +395,14 @@ textarea:focus-visible {
 @media (pointer: coarse) and (max-width: 800px) {
   .choice-chip {
     min-height: 2.75rem;
+  }
+}
+
+@media (pointer: coarse) {
+  .header-nav a {
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
   }
 }
 .choice-chip:hover {
@@ -1248,12 +1263,51 @@ textarea:focus-visible {
     max-width: 14ch;
   }
 }
+@media (max-width: 767px) {
+  .header-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--ink);
+  }
+  .header-nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+    box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.08);
+    z-index: 50;
+  }
+  .header-nav.is-open {
+    display: flex;
+  }
+  .header-nav a {
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    color: var(--ink);
+  }
+  .header-nav .header-cta {
+    justify-content: center;
+    padding: 0.7rem 0.95rem;
+  }
+}
 @media (max-width: 520px) {
   .site-header {
     padding-inline: 1rem;
-  }
-  .header-nav a:not(.header-cta) {
-    display: none;
   }
   .hero,
   .studio-shell,
