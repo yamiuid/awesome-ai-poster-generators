@@ -267,6 +267,53 @@ function TierSelect({
   );
 }
 
+const POLL_DELAY_MS = 4_000;
+const POLL_MAX_BACKOFF_MS = 30_000;
+const PENDING_GENERATIONS_KEY = "ttp_pending_generations";
+
+const TERMINAL_STATUSES: ReadonlySet<GenerationResponse["status"]> = new Set([
+  "succeeded",
+  "partially_succeeded",
+  "failed",
+  "timed_out",
+]);
+
+function isTerminalStatus(status: GenerationResponse["status"]): boolean {
+  return TERMINAL_STATUSES.has(status);
+}
+
+function readPendingGenerationIds(): string[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+  try {
+    const raw = window.sessionStorage.getItem(PENDING_GENERATIONS_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePendingGenerationIds(ids: readonly string[]): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.sessionStorage.setItem(
+      PENDING_GENERATIONS_KEY,
+      JSON.stringify([...new Set(ids)]),
+    );
+  } catch {
+    // sessionStorage 不可用时轮询仍可用，只是刷新后无法恢复
+  }
+}
+
 function track(name: string): void {
   window.umami?.track(name);
 }
@@ -350,6 +397,11 @@ export function PosterStudio({ isPro }: Props) {
   const [lightbox, setLightbox] = useState<string | null>(null);
   // 多任务各自轮询，用 Set 统一管理计时器以便卸载时清理
   const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const pollAttempts = useRef(new Map<string, number>());
+  const advanceFailures = useRef(new Map<string, number>());
+  const workingIds = useRef(new Set<string>());
+  const trackedIds = useRef(new Set<string>());
+  const dismissedIds = useRef(new Set<string>());
 
   function schedulePoll(id: string, delayMs: number): void {
     const timer = setTimeout(() => {
@@ -357,6 +409,80 @@ export function PosterStudio({ isPro }: Props) {
       void poll(id);
     }, delayMs);
     timers.current.add(timer);
+  }
+
+  function pollDelay(id: string): number {
+    const attempts = pollAttempts.current.get(id) ?? 0;
+    return Math.min(POLL_DELAY_MS * 2 ** attempts, POLL_MAX_BACKOFF_MS);
+  }
+
+  function recordPollFailure(id: string): number {
+    const attempts = (pollAttempts.current.get(id) ?? 0) + 1;
+    pollAttempts.current.set(id, attempts);
+    return pollDelay(id);
+  }
+
+  function trackGenerationOutcome(
+    id: string,
+    status: GenerationResponse["status"],
+  ): void {
+    // 只在本次会话中确实见过“生成中”后再上报，避免刷新恢复时重复统计
+    if (!workingIds.current.has(id) || trackedIds.current.has(id)) {
+      return;
+    }
+    trackedIds.current.add(id);
+    track(
+      status === "succeeded" || status === "partially_succeeded"
+        ? "generation_succeeded"
+        : "generation_failed",
+    );
+  }
+
+  function applyGeneration(response: GenerationResponse): void {
+    if (dismissedIds.current.has(response.id)) {
+      return;
+    }
+    if (!isTerminalStatus(response.status)) {
+      workingIds.current.add(response.id);
+    }
+    setGenerations((prev) =>
+      prev.some((g) => g.id === response.id)
+        ? prev.map((g) => (g.id === response.id ? response : g))
+        : [response, ...prev],
+    );
+    // 失败的不用恢复；成功的保留在 sessionStorage，刷新后仍能看到图片
+    if (response.status === "failed" || response.status === "timed_out") {
+      writePendingGenerationIds(
+        readPendingGenerationIds().filter((id) => id !== response.id),
+      );
+    }
+  }
+
+  async function advance(id: string): Promise<void> {
+    try {
+      const raw: unknown = await ky
+        .post(`/api/generations/${id}/advance`, { timeout: 120_000 })
+        .json();
+      const parsed = generationResponseSchema.safeParse(raw);
+      if (!parsed.success) {
+        return;
+      }
+      pollAttempts.current.set(id, 0);
+      advanceFailures.current.set(id, 0);
+      applyGeneration(parsed.data);
+      if (isTerminalStatus(parsed.data.status)) {
+        trackGenerationOutcome(id, parsed.data.status);
+      }
+    } catch {
+      // 主轮询继续重试，服务端恢复后会自动完成；连续失败给出提示
+      const failures = (advanceFailures.current.get(id) ?? 0) + 1;
+      advanceFailures.current.set(id, failures);
+      if (failures >= 3) {
+        setError(
+          "The studio is taking longer than usual. We will keep trying automatically.",
+        );
+      }
+    }
   }
 
   const selectedStyle = useMemo(() => styleLabels[style], [style]);
@@ -401,9 +527,16 @@ export function PosterStudio({ isPro }: Props) {
     [],
   );
 
+  // 刷新后恢复进行中/已完成的生图，避免页面状态丢失
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 只在挂载时恢复一次
+  useEffect(() => {
+    for (const id of readPendingGenerationIds()) {
+      void poll(id);
+    }
+  }, []);
+
   async function poll(id: string): Promise<void> {
     try {
-      // GET 轻量：只查状态 + 图片，快速返回
       const raw: unknown = await ky
         .get(`/api/generations/${id}`, { timeout: 20_000 })
         .json();
@@ -411,42 +544,39 @@ export function PosterStudio({ isPro }: Props) {
       if (!parsed.success) {
         throw new Error("The generation response was invalid.");
       }
-      setGenerations((prev) =>
-        prev.map((g) => (g.id === parsed.data.id ? parsed.data : g)),
+      pollAttempts.current.set(id, 0);
+      setError((prev) =>
+        (advanceFailures.current.get(id) ?? 0) >= 3 ? prev : null,
       );
-      if (["submitted", "processing"].includes(parsed.data.status)) {
-        // 后台推进（重活：查 APIMart + 下载/水印/上传）。按 nextPollAt 到期触发，
-        // 接口幂等（未到期立即返回）；超时静默——服务端会继续处理，下次轮询拿结果
-        const next = parsed.data.nextPollAt
-          ? new Date(parsed.data.nextPollAt).getTime()
-          : 0;
-        if (Date.now() >= next) {
-          void ky
-            .post(`/api/generations/${id}/advance`, { timeout: 120_000 })
-            .catch(() => {});
-        }
-        schedulePoll(id, 4_000);
-      } else if (
-        parsed.data.status === "succeeded" ||
-        parsed.data.status === "partially_succeeded"
-      ) {
-        track("generation_succeeded");
-      } else {
-        track("generation_failed");
+      applyGeneration(parsed.data);
+      if (isTerminalStatus(parsed.data.status)) {
+        trackGenerationOutcome(id, parsed.data.status);
+        return;
       }
+      // 后台推进（重活：查 APIMart + 下载/水印/上传）。按 nextPollAt 到期触发，
+      // 接口幂等（未到期立即返回）；失败时下次轮询会重试
+      const next = parsed.data.nextPollAt
+        ? new Date(parsed.data.nextPollAt).getTime()
+        : 0;
+      if (Date.now() >= next) {
+        void advance(id);
+      }
+      schedulePoll(id, POLL_DELAY_MS);
     } catch (pollError) {
-      // 超时：服务端可能正在下载/水印/上传图片，静默继续轮询，不打扰用户
+      // 无论什么错误都继续轮询（带退避），避免页面永久停在“生成中”
+      const delay = recordPollFailure(id);
       if (pollError instanceof TimeoutError) {
-        schedulePoll(id, 4_000);
+        schedulePoll(id, delay);
         return;
       }
       if (pollError instanceof HTTPError) {
-        setError("We could not check the studio status. Please try again.");
+        setError("We could not check the studio status. We will keep trying.");
       } else if (pollError instanceof Error) {
         setError(pollError.message);
       } else {
-        setError("We could not check the studio status. Please try again.");
+        setError("We could not check the studio status. We will keep trying.");
       }
+      schedulePoll(id, delay);
     }
   }
 
@@ -497,6 +627,10 @@ export function PosterStudio({ isPro }: Props) {
       setGenerations((prev) => [
         { ...parsed.data, images: [], imageCount },
         ...prev,
+      ]);
+      writePendingGenerationIds([
+        ...readPendingGenerationIds(),
+        parsed.data.id,
       ]);
       void poll(parsed.data.id);
     } catch (submitError) {
@@ -835,11 +969,17 @@ export function PosterStudio({ isPro }: Props) {
                     </p>
                     <button
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
+                        dismissedIds.current.add(generation.id);
                         setGenerations((prev) =>
                           prev.filter((g) => g.id !== generation.id),
-                        )
-                      }
+                        );
+                        writePendingGenerationIds(
+                          readPendingGenerationIds().filter(
+                            (id) => id !== generation.id,
+                          ),
+                        );
+                      }}
                     >
                       Dismiss
                     </button>
@@ -853,8 +993,10 @@ export function PosterStudio({ isPro }: Props) {
               className="reset-button"
               type="button"
               onClick={() => {
+                dismissedIds.current.clear();
                 setGenerations([]);
                 setLightbox(null);
+                writePendingGenerationIds([]);
               }}
             >
               Start a new brief

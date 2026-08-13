@@ -1,4 +1,6 @@
 import ky, { HTTPError } from "ky";
+import type { Dispatcher } from "undici";
+import { ProxyAgent, Socks5ProxyAgent, fetch as undiciFetch } from "undici";
 import { z } from "zod";
 import type { GenerationRequest, ProviderQuality } from "@/lib/domain/poster";
 import { getServerEnv } from "./env";
@@ -38,9 +40,19 @@ export class ApimartError extends AppError {
   }
 }
 
+let proxyDispatcher: Dispatcher | undefined;
+
+function createProxyDispatcher(proxyUrl: string): Dispatcher {
+  if (proxyUrl.trim().toLowerCase().startsWith("socks")) {
+    // Socks5ProxyAgent 在代理端解析域名，可绕过本地被污染的 DNS
+    return new Socks5ProxyAgent(proxyUrl);
+  }
+  return new ProxyAgent(proxyUrl);
+}
+
 function client() {
   const env = getServerEnv();
-  return ky.create({
+  const options: Parameters<typeof ky.create>[0] = {
     prefix: "https://api.apimart.ai/v1/",
     headers: { Authorization: `Bearer ${env.APIMART_API_KEY}` },
     timeout: 30_000,
@@ -49,7 +61,46 @@ function client() {
       methods: ["get"],
       statusCodes: [408, 429, 500, 502, 503, 504],
     },
-  });
+  };
+  // 本地开发网络无法直连 APIMart 时，可设 APIMART_PROXY / HTTPS_PROXY 走代理
+  // （如 v2rayN 的 socks5://127.0.0.1:10909）。ky 的类型没收录 fetch-only 的
+  // dispatcher，但运行时会把未知选项透传给 Node 的 fetch（undici）。
+  const proxyUrl =
+    process.env["APIMART_PROXY"] ??
+    process.env["HTTPS_PROXY"] ??
+    process.env["https_proxy"];
+  if (proxyUrl) {
+    if (!proxyDispatcher) {
+      proxyDispatcher = createProxyDispatcher(proxyUrl);
+    }
+    const dispatcher = proxyDispatcher;
+    // ky 的 fetch 选项换成 undici 自带的 fetch，并挂上代理 dispatcher
+    // undici 8 的 fetch 不认 ky 传入的全局 Request 对象，这里重建成显式参数
+    const proxiedFetch = (async (
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ) => {
+      const request =
+        input instanceof globalThis.Request
+          ? input
+          : new globalThis.Request(String(input), init);
+      const body =
+        request.method === "GET" ||
+        request.method === "HEAD" ||
+        request.body === null
+          ? undefined
+          : Buffer.from(await request.arrayBuffer());
+      return undiciFetch(request.url, {
+        method: request.method,
+        headers: request.headers,
+        signal: request.signal,
+        dispatcher,
+        ...(body === undefined ? {} : { body }),
+      } as unknown as Parameters<typeof undiciFetch>[1]);
+    }) as unknown as typeof fetch;
+    options.fetch = proxiedFetch;
+  }
+  return ky.create(options);
 }
 
 export async function submitGeneration(

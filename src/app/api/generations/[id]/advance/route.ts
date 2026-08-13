@@ -5,6 +5,9 @@ import { advanceGenerationById } from "@/lib/server/generation-poll";
 import type { GenerationActor } from "@/lib/server/generation-types";
 import { getGuestIdentity } from "@/lib/server/guest";
 
+// 下载/水印/上传是重活，给足超时（Hobby 上限 60s，Pro 可更长）
+export const maxDuration = 60;
+
 type RouteContext = Readonly<{ params: Promise<{ id: string }> }>;
 
 // 推进生成任务（重活：查 APIMart + 下载/水印/上传）。
