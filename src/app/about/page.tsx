@@ -1,12 +1,13 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoMark } from "@/components/logo";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = pageMeta({
   title: "About | Text to Poster",
   description:
     "Text to Poster turns a written brief into four poster directions in seconds. Built by a small independent team on Next.js, Supabase, and GPT Image 2.",
-};
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (

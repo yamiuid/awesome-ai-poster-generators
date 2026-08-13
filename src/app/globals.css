@@ -2140,3 +2140,20 @@ textarea:focus-visible {
   height: 2.25rem;
   border-radius: 50%;
 }
+
+.style-example {
+  margin: 2rem 0;
+}
+
+.style-landing-list {
+  margin: 1rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.55rem;
+  color: var(--ink-muted);
+  line-height: 1.65;
+}
+
+.style-links {
+  margin-top: 0.75rem;
+}

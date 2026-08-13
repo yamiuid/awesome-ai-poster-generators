@@ -4,7 +4,7 @@
 
 ## The list
 
-- [**Text to Poster**](https://www.texttoposter.com) — Describe a subject, mood, or words, and get **four poster directions in seconds**. Free to try without login (watermarked 1K previews); Pro unlocks 4K resolution, quality presets, and private history. Built with Next.js, Supabase, and GPT-image. **Our project.**
+- [**Text to Poster**](https://texttoposter.com) — Describe a subject, mood, or words, and get **four poster directions in seconds**. Free to try without login (watermarked 1K previews); Pro unlocks 4K resolution, quality presets, and private history. Built with Next.js, Supabase, and GPT-image. **Our project.**
 - [Canva](https://www.canva.com/ai-image-generator/) — All-in-one design platform with AI image generation and poster templates.
 - [Ideogram](https://ideogram.ai) — AI image generator known for reliable text rendering, popular for posters and typography.
 - [Recraft](https://www.recraft.ai) — AI generation focused on text, brand styles, and vector-style posters.
@@ -16,7 +16,7 @@
 
 > **AI Poster Maker — Generate Posters from Text in Seconds**
 
-[**texttoposter.com**](https://www.texttoposter.com)
+[**texttoposter.com**](https://texttoposter.com)
 
 Turn a written brief into four private poster directions in seconds. Describe the subject, mood, audience, or the words you want to see, and the studio generates four distinct compositions you can compare, keep, and download — no design skills needed.
 

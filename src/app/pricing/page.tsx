@@ -1,17 +1,18 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoMark } from "@/components/logo";
 import { PricingPlans } from "@/components/pricing-plans";
 import { UserMenu } from "@/components/user-menu";
 import { yearlySavings } from "@/lib/domain/plans";
+import { pageMeta } from "@/lib/seo";
 import { getAuthContext } from "@/lib/server/auth";
 import { isStudioPlanConfigured } from "@/lib/server/env";
 
-export const metadata: Metadata = {
+export const metadata = pageMeta({
   title: "Pricing | Text to Poster",
   description:
-    "Creator and Studio credits with clean AI poster exports from Text to Poster.",
-};
+    "Creator and Studio plans with 100 or 300 monthly credits, 1K-4K exports, no watermark, and private history. From $9.90/month.",
+  path: "/pricing",
+});
 
 export default async function PricingPage() {
   const auth = await getAuthContext();

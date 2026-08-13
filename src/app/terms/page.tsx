@@ -1,7 +1,12 @@
-import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal-page";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Terms | Text to Poster" };
+export const metadata = pageMeta({
+  title: "Terms | Text to Poster",
+  description:
+    "The terms for using Text to Poster, including your responsibility for prompts, generated output, rights, and AI disclosure.",
+  path: "/terms",
+});
 export default function TermsPage() {
   return <LegalPage kind="terms" />;
 }

@@ -1,4 +1,5 @@
 import { ArrowUpRight, MoveDown } from "lucide-react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -6,7 +7,12 @@ import { LogoMark } from "@/components/logo";
 import { PosterStudio } from "@/components/poster-studio";
 import { UserMenu } from "@/components/user-menu";
 import { POSTER_EXAMPLES } from "@/lib/domain/poster-examples";
+import { STYLE_LANDINGS } from "@/lib/domain/style-landing";
 import { getAuthContext } from "@/lib/server/auth";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 const faqs = [
   [
@@ -227,6 +233,19 @@ export default async function Home({
             </figure>
           ))}
         </div>
+      </section>
+
+      <section className="content-section" aria-labelledby="styles-heading">
+        <p className="eyebrow">Browse by style</p>
+        <h2 id="styles-heading">Poster styles</h2>
+        <p className="section-intro">
+          {STYLE_LANDINGS.map((landing, index) => (
+            <span key={landing.slug}>
+              {index > 0 ? " / " : ""}
+              <Link href={`/${landing.slug}`}>{landing.linkLabel}</Link>
+            </span>
+          ))}
+        </p>
       </section>
 
       <section
