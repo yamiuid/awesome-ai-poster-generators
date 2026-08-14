@@ -402,14 +402,27 @@ export default async function Home({
 
       <footer className="site-footer">
         <span>© 2026 Text to Poster</span>
-        <nav aria-label="Legal">
-          <Link href="/about">About</Link>
-          <Link href="/privacy">Privacy</Link>
-          <Link href="/terms">Terms</Link>
-          <Link href="/refunds">Refunds</Link>
-          <Link href="/ai-policy">AI use</Link>
-          <Link href="mailto:support@texttoposter.com">Support</Link>
-        </nav>
+        <div className="site-footer-groups">
+          <div className="site-footer-group">
+            <span className="site-footer-label">Site</span>
+            <nav aria-label="Site links">
+              <Link href="/about">About</Link>
+              <Link href="/privacy">Privacy</Link>
+              <Link href="/terms">Terms</Link>
+              <Link href="/refunds">Refunds</Link>
+              <Link href="/ai-policy">AI use</Link>
+              <Link href="mailto:support@texttoposter.com">Support</Link>
+            </nav>
+          </div>
+          <div className="site-footer-group">
+            <span className="site-footer-label">Friendly links</span>
+            <nav aria-label="Friendly links">
+              <a href="https://www.ai138.com" target="_blank" rel="noreferrer">
+                Ai138
+              </a>
+            </nav>
+          </div>
+        </div>
       </footer>
     </main>
   );

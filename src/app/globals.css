@@ -1396,6 +1396,7 @@ textarea:focus-visible {
 }
 .site-footer {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   max-width: 82rem;
@@ -1404,6 +1405,23 @@ textarea:focus-visible {
   border-top: 1px solid var(--line);
   color: var(--ink-muted);
   font-size: 0.72rem;
+}
+.site-footer-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2.5rem;
+}
+.site-footer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.site-footer-label {
+  color: var(--ink);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 .site-footer nav {
   display: flex;
@@ -1543,6 +1561,10 @@ textarea:focus-visible {
   }
   .site-footer {
     flex-direction: column;
+  }
+  .site-footer-groups {
+    width: 100%;
+    gap: 1.5rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {
