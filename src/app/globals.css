@@ -67,6 +67,7 @@ textarea:focus-visible {
   gap: 1rem;
   max-width: 82rem;
   margin: 0 auto;
+  min-height: 4rem;
   padding: 0.625rem 1.5rem;
   position: sticky;
   top: 0;
@@ -111,10 +112,14 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.7rem 0.95rem;
+  min-height: 2.75rem;
+  padding: 0 0.95rem;
   border-radius: 999px;
   background: var(--ink);
   color: var(--paper) !important;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  white-space: nowrap;
 }
 .user-menu {
   position: relative;
@@ -1509,7 +1514,7 @@ textarea:focus-visible {
   }
   .header-nav .header-cta {
     justify-content: center;
-    padding: 0.7rem 0.95rem;
+    padding: 0 0.95rem;
   }
 }
 @media (max-width: 520px) {
