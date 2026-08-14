@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 const faqs = [
   [
     "Is this really free?",
-    "Yes. Guests can generate up to four posters every 24 hours (up to two per run), with a small watermark and a 1K preview. No account is needed to try it.",
+    "Yes. Guests can make up to four generations per UTC day, with one watermarked 1K poster per run. Failed generations do not count, and no account is needed to try it.",
   ],
   [
     "What is an AI poster maker from text?",
@@ -171,7 +171,7 @@ export default async function Home({
         </div>
       </section>
 
-      <PosterStudio isPro={auth.isPro} />
+      <PosterStudio isPro={auth.isPro} isGuest={!auth.userId} />
 
       <section
         className="content-section what-is-section"

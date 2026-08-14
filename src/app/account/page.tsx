@@ -55,6 +55,7 @@ export default async function AccountPage({ searchParams }: PageProps) {
           .from("generated_assets")
           .select("*")
           .in("generation_id", ids)
+          .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
           .order("created_at")
       : { data: [] };
   const assetsByGeneration = new Map<string, typeof assets>();

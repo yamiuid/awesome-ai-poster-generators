@@ -1,5 +1,8 @@
+import { z } from "zod";
 import { AppError } from "./errors";
 import { createSupabaseAdminClient } from "./supabase/admin";
+
+const failureResultSchema = z.object({ updated: z.boolean() });
 
 export async function settleGenerationCredits(
   generationId: string,
@@ -32,4 +35,35 @@ export async function releaseGuestGeneration(guestKey: string): Promise<void> {
       503,
     );
   }
+}
+
+export async function failLimitedGeneration(
+  generationId: string,
+  status: "failed" | "timed_out",
+  message: string,
+): Promise<boolean> {
+  const { data, error } = await createSupabaseAdminClient().rpc(
+    "fail_limited_generation",
+    {
+      p_generation_id: generationId,
+      p_status: status,
+      p_message: message,
+    },
+  );
+  if (error) {
+    throw new AppError(
+      "GENERATION_STATE_FAILED",
+      "We could not save the generation failure.",
+      503,
+    );
+  }
+  const parsed = failureResultSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new AppError(
+      "GENERATION_STATE_FAILED",
+      "The generation failure response was invalid.",
+      503,
+    );
+  }
+  return parsed.data.updated;
 }

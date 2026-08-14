@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import {
+  type JSX,
   type KeyboardEvent,
   useEffect,
   useMemo,
@@ -20,12 +21,21 @@ import {
 } from "react";
 import { batchCreditCost } from "@/lib/domain/credits";
 import {
+  flattenRecentPosterImages,
+  isVisibleGuestHistory,
+} from "@/lib/domain/generation-history";
+import {
+  generationAction,
+  generationPollDelay,
+  mergeGenerationResponse,
+} from "@/lib/domain/generation-progress";
+import {
   ASPECT_RATIOS,
   type AspectRatio,
   aspectLabels,
-  type GenerationImage,
   type GenerationResponse,
   generationAcceptedSchema,
+  generationCreatedSchema,
   generationResponseSchema,
   IMAGE_COUNTS,
   type ImageCount,
@@ -33,6 +43,7 @@ import {
   type PosterStyle,
   type Quality,
   type Resolution,
+  recentGenerationsSchema,
   styleLabels,
 } from "@/lib/domain/poster";
 import {
@@ -40,8 +51,9 @@ import {
   type PosterExample,
 } from "@/lib/domain/poster-examples";
 import { ArtDirectionPicker } from "./art-direction-picker";
+import { GenerationProgressCard } from "./generation-progress-card";
 
-type Props = Readonly<{ isPro: boolean }>;
+type Props = Readonly<{ isPro: boolean; isGuest: boolean }>;
 
 const FEATURED_EXAMPLE_STYLES: PosterStyle[] = [
   "movie",
@@ -50,37 +62,12 @@ const FEATURED_EXAMPLE_STYLES: PosterStyle[] = [
   "neon",
 ];
 
-const STATUS_LABELS: Readonly<Record<GenerationResponse["status"], string>> = {
-  submitted: "Sending to the studio",
-  processing: "Painting your directions",
-  succeeded: "Your posters are ready",
-  partially_succeeded: "Most posters ready",
-  failed: "Generation stopped",
-  timed_out: "Generation timed out",
-};
-
-// 生成块的积分消耗文案：
-// - 进行中 → Reserving N；完成 → Used N（部分成功追加 K saved）；失败 → Released N
-function creditLineText(generation: GenerationResponse): string {
-  const { creditsReserved: reserved, creditsConsumed, status } = generation;
-  if (status === "submitted" || status === "processing") {
-    return `Reserving ${reserved} credits`;
-  }
-  if (status === "failed" || status === "timed_out") {
-    return `Released ${reserved} credits`;
-  }
-  const consumed = creditsConsumed ?? reserved;
-  const saved = reserved - consumed;
-  return saved > 0
-    ? `Used ${consumed} credits · ${saved} saved`
-    : `Used ${consumed} credits`;
-}
-
 // 免费档位：1K / low / 最多 2 张；免费用户选了更高档位才显示锁，
 // 点击 Generate 时提示升级，不发起请求
 const FREE_RESOLUTION: Resolution = "1k";
 const FREE_QUALITY: Quality = "low";
 const FREE_MAX_IMAGES = 2;
+const GUEST_MAX_IMAGES = 1;
 
 type TierOption = Readonly<{ value: string; label: string; locked: boolean }>;
 
@@ -126,7 +113,7 @@ function TierSelect({
 
   function selectAt(index: number): void {
     const option = options[index];
-    if (!option) {
+    if (!option || option.locked) {
       return;
     }
     onChange(option.value);
@@ -242,6 +229,8 @@ function TierSelect({
               id={`option-${label}-${index}`}
               role="option"
               aria-selected={option.value === value}
+              aria-disabled={option.locked}
+              disabled={option.locked}
               className={`option-item ${index === activeIndex ? "is-active" : ""}`}
               onClick={() => selectAt(index)}
               onMouseEnter={() => setActiveIndex(index)}
@@ -267,8 +256,6 @@ function TierSelect({
   );
 }
 
-const POLL_DELAY_MS = 4_000;
-const POLL_MAX_BACKOFF_MS = 30_000;
 const PENDING_GENERATIONS_KEY = "ttp_pending_generations";
 
 const TERMINAL_STATUSES: ReadonlySet<GenerationResponse["status"]> = new Set([
@@ -318,6 +305,38 @@ function track(name: string): void {
   window.umami?.track(name);
 }
 
+function isGuestLimitReached(error: unknown): boolean {
+  if (!(error instanceof HTTPError)) {
+    return false;
+  }
+  const body: unknown = error.data;
+  return (
+    typeof body === "object" &&
+    body !== null &&
+    "code" in body &&
+    body.code === "GUEST_LIMIT_REACHED"
+  );
+}
+
+function revealGeneration(id: string): void {
+  window.requestAnimationFrame(() => {
+    const card = document.getElementById(`generation-${id}`);
+    if (!card) {
+      return;
+    }
+    const bounds = card.getBoundingClientRect();
+    if (bounds.bottom > 0 && bounds.top < window.innerHeight) {
+      return;
+    }
+    card.scrollIntoView({
+      block: "start",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  });
+}
+
 // 图片是 Supabase 的跨域签名 URL，浏览器的 download 属性会被忽略（直接打开图片），
 // 所以改为抓取 blob 后触发本地下载；CORS/网络异常时退回新标签打开。
 async function downloadImage(url: string, filename: string): Promise<void> {
@@ -340,72 +359,131 @@ async function downloadImage(url: string, filename: string): Promise<void> {
   }
 }
 
-/**
- * 单张结果卡：媒体槽内骨架层常驻底层，图片加载完成后淡入覆盖，
- * 卡片 DOM 从占位到成品全程不变，避免替换抖动。
- */
-function PosterCard({
+function downloadTrackedImage(url: string, filename: string): void {
+  track("download_completed");
+  void downloadImage(url, filename);
+}
+
+function RecentPosterTile({
+  poster,
   index,
-  image,
   onZoom,
+  onDownload,
+  onRetry,
 }: Readonly<{
+  poster: ReturnType<typeof flattenRecentPosterImages>[number];
   index: number;
-  image: GenerationImage | undefined;
   onZoom: (url: string) => void;
-}>) {
-  const [loaded, setLoaded] = useState(false);
+  onDownload: (url: string, filename: string) => void;
+  onRetry: () => void;
+}>): JSX.Element {
+  const [loadError, setLoadError] = useState(false);
+  const filename = `text-to-poster-history-${index + 1}.png`;
+  const expiry = poster.expiresAt
+    ? ` Available until ${new Date(poster.expiresAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}.`
+    : "";
+  const accessibleDescription = `${poster.prompt}.${expiry}`;
   return (
-    <article className="result-card">
-      <div className="result-number">0{index + 1}</div>
-      <div className="result-media">
-        <div className="result-media-skeleton" aria-hidden="true" />
-        {image && (
+    <li className="recent-poster-tile">
+      <div className="recent-poster-frame" title={accessibleDescription}>
+        {loadError ? (
           <button
             type="button"
-            className="result-zoom"
-            onClick={() => onZoom(image.url)}
-            aria-label={`View ${image.alt} full size`}
+            className="recent-poster-retry"
+            onClick={() => {
+              setLoadError(false);
+              onRetry();
+            }}
+            aria-label="Couldn’t load recent poster. Retry"
+          >
+            Couldn’t load poster. Retry
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="recent-poster-image"
+            onClick={() => onZoom(poster.image.url)}
+            aria-label={`View recent poster ${index + 1}. ${accessibleDescription}`}
           >
             <Image
-              src={image.url}
-              alt={image.alt}
-              width={1024}
-              height={1280}
+              src={poster.image.url}
+              alt={poster.image.alt}
+              width={320}
+              height={400}
+              sizes="8.5rem"
               unoptimized
-              className={
-                loaded ? "result-media-image is-loaded" : "result-media-image"
-              }
-              onLoad={() => setLoaded(true)}
+              onError={() => setLoadError(true)}
             />
           </button>
         )}
-      </div>
-      <div className="result-actions">
-        {image ? (
-          <a
-            className="download-link"
-            href={image.url}
-            download={`text-to-poster-${index + 1}.png`}
-            onClick={(event) => {
-              event.preventDefault();
-              track("download_completed");
-              void downloadImage(image.url, `text-to-poster-${index + 1}.png`);
-            }}
+        {!loadError && (
+          <button
+            type="button"
+            className="result-download-overlay"
+            onClick={() => onDownload(poster.image.url, filename)}
+            aria-label={`Download recent poster ${index + 1}`}
           >
-            <ArrowDownToLine size={15} /> Download
-          </a>
-        ) : (
-          <p className="pending-caption">Rendering…</p>
-        )}
-        {image?.watermarked && (
-          <span className="watermark-note">Free preview</span>
+            <ArrowDownToLine size={18} aria-hidden="true" />
+          </button>
         )}
       </div>
-    </article>
+    </li>
   );
 }
 
-export function PosterStudio({ isPro }: Props) {
+function RecentPosterStrip({
+  generations,
+  isGuest,
+  onZoom,
+  onDownload,
+  onRetry,
+}: Readonly<{
+  generations: readonly GenerationResponse[];
+  isGuest: boolean;
+  onZoom: (url: string) => void;
+  onDownload: (url: string, filename: string) => void;
+  onRetry: (generationId: string) => void;
+}>): JSX.Element | null {
+  const posters = flattenRecentPosterImages(generations);
+  if (posters.length === 0) {
+    return null;
+  }
+  return (
+    <section
+      className="recent-posters"
+      aria-labelledby="recent-posters-heading"
+    >
+      <div className="recent-posters-head">
+        <div className="recent-posters-title">
+          <p className="eyebrow" id="recent-posters-heading">
+            Recent posters
+          </p>
+          <span className="recent-posters-count">{posters.length}</span>
+        </div>
+        <div className="recent-posters-meta">
+          {isGuest && <span>Only this browser · saved for 24 hours</span>}
+          {isGuest && (
+            <a href="/login?next=/%23studio">Sign in to keep 7 days</a>
+          )}
+        </div>
+      </div>
+      <ul className="recent-posters-track" aria-label="Recent poster images">
+        {posters.map((poster, index) => (
+          <RecentPosterTile
+            key={`${poster.generationId}-${poster.image.id}`}
+            poster={poster}
+            index={index}
+            onZoom={onZoom}
+            onDownload={onDownload}
+            onRetry={() => onRetry(poster.generationId)}
+          />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export function PosterStudio({ isPro, isGuest }: Props) {
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState<PosterStyle>("auto");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("4:5");
@@ -414,38 +492,94 @@ export function PosterStudio({ isPro }: Props) {
   // 默认 1 张；免费用户最大 2 张，Pro 可选 1-4 张
   const [imageCount, setImageCount] = useState<ImageCount>(1);
   const [generations, setGenerations] = useState<GenerationResponse[]>([]);
+  const [recentGenerations, setRecentGenerations] = useState<
+    GenerationResponse[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
   // 免费用户选了 Pro 档位后点击 Generate 的升级提示
   const [upgradePrompt, setUpgradePrompt] = useState(false);
+  const [guestLimitPrompt, setGuestLimitPrompt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // 乐观占位：点击 Generate 瞬间在结果区显示渲染骨架，POST 返回前不让用户盯着空白
-  const [pendingPlaceholder, setPendingPlaceholder] = useState(false);
+  const [pendingSubmission, setPendingSubmission] =
+    useState<GenerationResponse | null>(null);
+  const [connectionFailures, setConnectionFailures] = useState<
+    Record<string, number>
+  >({});
   const [lightbox, setLightbox] = useState<string | null>(null);
-  // 多任务各自轮询，用 Set 统一管理计时器以便卸载时清理
-  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const guestLimitDialogRef = useRef<HTMLDialogElement>(null);
+  const guestLimitCloseRef = useRef<HTMLButtonElement>(null);
+  const lightboxDialogRef = useRef<HTMLDialogElement>(null);
+  const lightboxCloseRef = useRef<HTMLButtonElement>(null);
+  const generateButtonRef = useRef<HTMLButtonElement>(null);
+  const guestLimitPreviousFocus = useRef<HTMLElement | null>(null);
+  const lightboxPreviousFocus = useRef<HTMLElement | null>(null);
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const pollAttempts = useRef(new Map<string, number>());
+  const pollingIds = useRef(new Set<string>());
   const advanceFailures = useRef(new Map<string, number>());
+  const advancingIds = useRef(new Set<string>());
   const workingIds = useRef(new Set<string>());
+  const activeIds = useRef(new Set<string>());
   const trackedIds = useRef(new Set<string>());
   const dismissedIds = useRef(new Set<string>());
+  const generationById = useRef(new Map<string, GenerationResponse>());
+  const generationKeys = useRef(new Map<string, string>());
+  const submissionSequence = useRef(0);
+
+  function openLightbox(url: string): void {
+    lightboxPreviousFocus.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setLightbox(url);
+  }
 
   function schedulePoll(id: string, delayMs: number): void {
+    const existing = timers.current.get(id);
+    if (existing) {
+      clearTimeout(existing);
+    }
     const timer = setTimeout(() => {
-      timers.current.delete(timer);
+      timers.current.delete(id);
       void poll(id);
     }, delayMs);
-    timers.current.add(timer);
+    timers.current.set(id, timer);
+  }
+
+  function startPolling(id: string): void {
+    const scheduled = timers.current.get(id);
+    if (scheduled) {
+      clearTimeout(scheduled);
+      timers.current.delete(id);
+    }
+    if (pollingIds.current.has(id)) {
+      return;
+    }
+    void poll(id);
   }
 
   function pollDelay(id: string): number {
     const attempts = pollAttempts.current.get(id) ?? 0;
-    return Math.min(POLL_DELAY_MS * 2 ** attempts, POLL_MAX_BACKOFF_MS);
+    return generationPollDelay(
+      attempts,
+      typeof document !== "undefined" && document.hidden,
+    );
   }
 
   function recordPollFailure(id: string): number {
     const attempts = (pollAttempts.current.get(id) ?? 0) + 1;
     pollAttempts.current.set(id, attempts);
     return pollDelay(id);
+  }
+
+  function syncConnectionFailures(id: string): void {
+    const failures = Math.max(
+      pollAttempts.current.get(id) ?? 0,
+      advanceFailures.current.get(id) ?? 0,
+    );
+    setConnectionFailures((prev) =>
+      prev[id] === failures ? prev : { ...prev, [id]: failures },
+    );
   }
 
   function trackGenerationOutcome(
@@ -468,23 +602,117 @@ export function PosterStudio({ isPro }: Props) {
     if (dismissedIds.current.has(response.id)) {
       return;
     }
-    if (!isTerminalStatus(response.status)) {
-      workingIds.current.add(response.id);
+    const next = mergeGenerationResponse(
+      generationById.current.get(response.id),
+      response,
+    );
+    generationById.current.set(next.id, next);
+    if (!isTerminalStatus(next.status)) {
+      workingIds.current.add(next.id);
+      activeIds.current.add(next.id);
+    } else {
+      activeIds.current.delete(next.id);
+      const scheduled = timers.current.get(next.id);
+      if (scheduled) {
+        clearTimeout(scheduled);
+        timers.current.delete(next.id);
+      }
     }
     setGenerations((prev) =>
-      prev.some((g) => g.id === response.id)
-        ? prev.map((g) => (g.id === response.id ? response : g))
-        : [response, ...prev],
+      prev.some((g) => g.id === next.id)
+        ? prev.map((g) => (g.id === next.id ? next : g))
+        : [next, ...prev],
+    );
+    setRecentGenerations((prev) =>
+      prev.filter((generation) => generation.id !== next.id),
     );
     // 失败的不用恢复；成功的保留在 sessionStorage，刷新后仍能看到图片
-    if (response.status === "failed" || response.status === "timed_out") {
+    if (next.status === "failed" || next.status === "timed_out") {
       writePendingGenerationIds(
-        readPendingGenerationIds().filter((id) => id !== response.id),
+        readPendingGenerationIds().filter((id) => id !== next.id),
       );
     }
   }
 
+  async function retryGenerationImage(id: string): Promise<void> {
+    try {
+      const raw: unknown = await ky
+        .get(`/api/generations/${id}`, { timeout: 20_000 })
+        .json();
+      const parsed = generationResponseSchema.safeParse(raw);
+      if (!parsed.success) {
+        throw new Error("Poster refresh returned an invalid response.");
+      }
+      const next = mergeGenerationResponse(
+        generationById.current.get(parsed.data.id),
+        parsed.data,
+      );
+      generationById.current.set(next.id, next);
+      setGenerations((prev) =>
+        prev.map((generation) => (generation.id === id ? next : generation)),
+      );
+      setRecentGenerations((prev) =>
+        prev.map((generation) => (generation.id === id ? next : generation)),
+      );
+    } catch {
+      setError("Couldn’t refresh that poster. Try again shortly.");
+    }
+  }
+
+  function applyRecentGenerations(
+    responses: readonly GenerationResponse[],
+  ): void {
+    setRecentGenerations((prev) => {
+      const currentIds = new Set(
+        generations.map((generation) => generation.id),
+      );
+      const next = responses.filter(
+        (generation) => !currentIds.has(generation.id),
+      );
+      const byId = new Map(
+        prev.map((generation) => [generation.id, generation]),
+      );
+      for (const generation of next) {
+        byId.set(generation.id, generation);
+        generationById.current.set(generation.id, generation);
+      }
+      return [...byId.values()].sort(
+        (left, right) =>
+          new Date(right.createdAt).getTime() -
+          new Date(left.createdAt).getTime(),
+      );
+    });
+  }
+
+  function moveCompletedGenerationsToRecent(): void {
+    const completed = generations.filter(isVisibleGuestHistory);
+    if (completed.length === 0) {
+      return;
+    }
+    const completedIds = new Set(completed.map((generation) => generation.id));
+    setGenerations((prev) =>
+      prev.filter((generation) => !completedIds.has(generation.id)),
+    );
+    setRecentGenerations((prev) => {
+      const byId = new Map(
+        prev.map((generation) => [generation.id, generation]),
+      );
+      for (const generation of completed) {
+        byId.set(generation.id, generation);
+      }
+      return [...byId.values()].sort(
+        (left, right) =>
+          new Date(right.createdAt).getTime() -
+          new Date(left.createdAt).getTime(),
+      );
+    });
+  }
+
   async function advance(id: string): Promise<void> {
+    if (advancingIds.current.has(id)) {
+      return;
+    }
+    advancingIds.current.add(id);
     try {
       const raw: unknown = await ky
         .post(`/api/generations/${id}/advance`, { timeout: 120_000 })
@@ -495,6 +723,7 @@ export function PosterStudio({ isPro }: Props) {
       }
       pollAttempts.current.set(id, 0);
       advanceFailures.current.set(id, 0);
+      syncConnectionFailures(id);
       applyGeneration(parsed.data);
       if (isTerminalStatus(parsed.data.status)) {
         trackGenerationOutcome(id, parsed.data.status);
@@ -503,11 +732,9 @@ export function PosterStudio({ isPro }: Props) {
       // 主轮询继续重试，服务端恢复后会自动完成；连续失败给出提示
       const failures = (advanceFailures.current.get(id) ?? 0) + 1;
       advanceFailures.current.set(id, failures);
-      if (failures >= 3) {
-        setError(
-          "The studio is taking longer than usual. We will keep trying automatically.",
-        );
-      }
+      syncConnectionFailures(id);
+    } finally {
+      advancingIds.current.delete(id);
     }
   }
 
@@ -525,30 +752,84 @@ export function PosterStudio({ isPro }: Props) {
     setStyle(example.style);
   }
 
-  // lightbox：Esc 关闭 + 锁定页面滚动
+  function resetStudio(): void {
+    dismissedIds.current.clear();
+    generationById.current.clear();
+    generationKeys.current.clear();
+    setGenerations([]);
+    setPrompt("");
+    setStyle("auto");
+    setAspectRatio("4:5");
+    setResolution("1k");
+    setQuality("low");
+    setImageCount(1);
+    setError(null);
+    setUpgradePrompt(false);
+    setGuestLimitPrompt(false);
+    setLightbox(null);
+    writePendingGenerationIds([]);
+  }
+
   useEffect(() => {
-    if (!lightbox) {
+    const dialog = lightboxDialogRef.current;
+    if (!dialog) {
       return;
     }
-    function onKeyDown(event: globalThis.KeyboardEvent): void {
-      if (event.key === "Escape") {
-        setLightbox(null);
+    if (lightbox) {
+      if (!lightboxPreviousFocus.current) {
+        lightboxPreviousFocus.current =
+          document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null;
       }
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+      requestAnimationFrame(() => lightboxCloseRef.current?.focus());
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
     }
-    document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
-    };
+    if (dialog.open) {
+      dialog.close();
+    }
+    lightboxPreviousFocus.current?.focus();
+    lightboxPreviousFocus.current = null;
   }, [lightbox]);
+
+  useEffect(() => {
+    const dialog = guestLimitDialogRef.current;
+    if (!dialog) {
+      return;
+    }
+    if (guestLimitPrompt) {
+      if (!guestLimitPreviousFocus.current) {
+        guestLimitPreviousFocus.current =
+          document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null;
+      }
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+      requestAnimationFrame(() => guestLimitCloseRef.current?.focus());
+      return;
+    }
+    if (dialog.open) {
+      dialog.close();
+    }
+    guestLimitPreviousFocus.current?.focus();
+    guestLimitPreviousFocus.current = null;
+  }, [guestLimitPrompt]);
 
   useEffect(
     () => () => {
-      for (const timer of timers.current) {
+      for (const timer of timers.current.values()) {
         clearTimeout(timer);
       }
       timers.current.clear();
+      pollingIds.current.clear();
     },
     [],
   );
@@ -557,11 +838,64 @@ export function PosterStudio({ isPro }: Props) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: 只在挂载时恢复一次
   useEffect(() => {
     for (const id of readPendingGenerationIds()) {
-      void poll(id);
+      startPolling(id);
     }
+    void recoverRecent();
   }, []);
 
+  useEffect(() => {
+    function resumeActivePolling(): void {
+      if (document.hidden || !navigator.onLine) {
+        return;
+      }
+      for (const id of activeIds.current) {
+        startPolling(id);
+      }
+    }
+    document.addEventListener("visibilitychange", resumeActivePolling);
+    window.addEventListener("focus", resumeActivePolling);
+    window.addEventListener("online", resumeActivePolling);
+    return () => {
+      document.removeEventListener("visibilitychange", resumeActivePolling);
+      window.removeEventListener("focus", resumeActivePolling);
+      window.removeEventListener("online", resumeActivePolling);
+    };
+  });
+
+  async function recoverRecent(): Promise<void> {
+    try {
+      const raw: unknown = await ky
+        .get("/api/generations/recent", { timeout: 20_000 })
+        .json();
+      const parsed = recentGenerationsSchema.safeParse(raw);
+      if (!parsed.success) {
+        throw new Error("Recent generation history was invalid.");
+      }
+      applyRecentGenerations(parsed.data.recent);
+      const activeIds = parsed.data.active.map((generation) => generation.id);
+      if (activeIds.length > 0) {
+        writePendingGenerationIds([
+          ...readPendingGenerationIds(),
+          ...activeIds,
+        ]);
+      }
+      for (const generation of parsed.data.active) {
+        applyGeneration(generation);
+        startPolling(generation.id);
+      }
+    } catch (error) {
+      if (error instanceof HTTPError || error instanceof TimeoutError) {
+        return;
+      }
+      setError("We could not restore recent generations.");
+    }
+  }
+
   async function poll(id: string): Promise<void> {
+    if (pollingIds.current.has(id)) {
+      return;
+    }
+    pollingIds.current.add(id);
     try {
       const raw: unknown = await ky
         .get(`/api/generations/${id}`, { timeout: 20_000 })
@@ -571,9 +905,7 @@ export function PosterStudio({ isPro }: Props) {
         throw new Error("The generation response was invalid.");
       }
       pollAttempts.current.set(id, 0);
-      setError((prev) =>
-        (advanceFailures.current.get(id) ?? 0) >= 3 ? prev : null,
-      );
+      syncConnectionFailures(id);
       applyGeneration(parsed.data);
       if (isTerminalStatus(parsed.data.status)) {
         trackGenerationOutcome(id, parsed.data.status);
@@ -587,28 +919,25 @@ export function PosterStudio({ isPro }: Props) {
       if (Date.now() >= next) {
         void advance(id);
       }
-      schedulePoll(id, POLL_DELAY_MS);
+      schedulePoll(id, pollDelay(id));
     } catch (pollError) {
       // 无论什么错误都继续轮询（带退避），避免页面永久停在“生成中”
       const delay = recordPollFailure(id);
+      syncConnectionFailures(id);
       if (pollError instanceof TimeoutError) {
         schedulePoll(id, delay);
         return;
       }
-      if (pollError instanceof HTTPError) {
-        setError("We could not check the studio status. We will keep trying.");
-      } else if (pollError instanceof Error) {
-        setError(pollError.message);
-      } else {
-        setError("We could not check the studio status. We will keep trying.");
-      }
       schedulePoll(id, delay);
+    } finally {
+      pollingIds.current.delete(id);
     }
   }
 
   async function generate(): Promise<void> {
     setError(null);
     setUpgradePrompt(false);
+    setGuestLimitPrompt(false);
     // 按钮默认启用（对爬虫友好：HTML 中不显示 disabled），无输入时在提交前校验提示
     if (prompt.trim().length < 3) {
       setError(
@@ -629,7 +958,19 @@ export function PosterStudio({ isPro }: Props) {
       return;
     }
     setIsSubmitting(true);
-    setPendingPlaceholder(true);
+    const submissionKey = `pending-submission-${++submissionSequence.current}`;
+    const submission: GenerationResponse = {
+      id: submissionKey,
+      status: "submitted",
+      progress: 0,
+      aspectRatio,
+      prompt: prompt.trim(),
+      createdAt: new Date().toISOString(),
+      images: [],
+      imageCount,
+      creditsReserved: 0,
+    };
+    setPendingSubmission(submission);
     track("generation_started");
     try {
       const raw: unknown = await ky
@@ -638,8 +979,8 @@ export function PosterStudio({ isPro }: Props) {
           timeout: 30_000,
         })
         .json();
-      const parsed = generationAcceptedSchema.safeParse(raw);
-      if (!parsed.success) {
+      const created = generationCreatedSchema.safeParse(raw);
+      if (!created.success) {
         const message =
           typeof raw === "object" &&
           raw !== null &&
@@ -649,19 +990,41 @@ export function PosterStudio({ isPro }: Props) {
             : "We could not start this generation.";
         throw new Error(message);
       }
-      setPendingPlaceholder(false);
-      setGenerations((prev) => [
-        { ...parsed.data, images: [], imageCount },
-        ...prev,
-      ]);
-      writePendingGenerationIds([
-        ...readPendingGenerationIds(),
-        parsed.data.id,
-      ]);
-      void poll(parsed.data.id);
+      const id = created.data.id;
+      moveCompletedGenerationsToRecent();
+      generationKeys.current.set(id, submissionKey);
+      writePendingGenerationIds([...readPendingGenerationIds(), id]);
+      const accepted = generationAcceptedSchema.safeParse(raw);
+      applyGeneration(
+        accepted.success
+          ? {
+              ...accepted.data,
+              prompt: submission.prompt,
+              createdAt: submission.createdAt,
+              images: [],
+              imageCount: submission.imageCount,
+            }
+          : {
+              id,
+              status: "submitted",
+              progress: 0,
+              aspectRatio: submission.aspectRatio,
+              prompt: submission.prompt,
+              createdAt: submission.createdAt,
+              images: [],
+              imageCount: submission.imageCount,
+              creditsReserved: 0,
+            },
+      );
+      setPendingSubmission(null);
+      startPolling(id);
+      revealGeneration(id);
     } catch (submitError) {
-      setPendingPlaceholder(false);
-      if (submitError instanceof HTTPError) {
+      setPendingSubmission(null);
+      if (isGuestLimitReached(submitError)) {
+        guestLimitPreviousFocus.current = generateButtonRef.current;
+        setGuestLimitPrompt(true);
+      } else if (submitError instanceof HTTPError) {
         const body: unknown = submitError.data;
         const message =
           typeof body === "object" &&
@@ -683,18 +1046,27 @@ export function PosterStudio({ isPro }: Props) {
   }
 
   // 免费用户同时只能一个生成任务；Pro 可并发多个
-  const anyWorking = generations.some(
-    (g) => g.status === "submitted" || g.status === "processing",
-  );
-  const isWorking = anyWorking;
+  const anyWorking =
+    generations.some(
+      (g) => g.status === "submitted" || g.status === "processing",
+    ) || pendingSubmission !== null;
+  const maxFreeImages = isGuest ? GUEST_MAX_IMAGES : FREE_MAX_IMAGES;
   // 免费用户选了 Pro 档位（非 1K / 非 low / 超过 2 张）时，点击 Generate 提示升级
   const needsPro =
     !isPro &&
     (resolution !== FREE_RESOLUTION ||
       quality !== FREE_QUALITY ||
-      imageCount > FREE_MAX_IMAGES);
-  // 爬虫默认看到可点击的按钮（HTML 不写 disabled）；仅提交中禁用防重复
-  const buttonDisabled = isSubmitting;
+      imageCount > maxFreeImages);
+  const action = generationAction(isPro, isSubmitting, anyWorking);
+  const currentGenerationIds = new Set(
+    generations.map((generation) => generation.id),
+  );
+  const visibleRecentGenerations = recentGenerations.filter(
+    (generation) => !currentGenerationIds.has(generation.id),
+  );
+  const visibleGenerations = pendingSubmission
+    ? [pendingSubmission, ...generations]
+    : generations;
 
   return (
     <section
@@ -723,7 +1095,7 @@ export function PosterStudio({ isPro }: Props) {
             placeholder="A summer music festival with neon lights..."
             maxLength={1500}
             rows={5}
-            disabled={isWorking}
+            disabled={isSubmitting}
           />
           <div className="field-hint">
             <span>Be specific about mood, subject, and words.</span>
@@ -738,7 +1110,7 @@ export function PosterStudio({ isPro }: Props) {
             <ArtDirectionPicker
               value={style}
               onChange={setStyle}
-              disabled={isWorking}
+              disabled={isSubmitting}
             />
           </fieldset>
 
@@ -756,7 +1128,7 @@ export function PosterStudio({ isPro }: Props) {
                       setUpgradePrompt(false);
                     }
                   }}
-                  disabled={isWorking}
+                  disabled={isSubmitting}
                   options={ASPECT_RATIOS.map((option) => ({
                     value: option,
                     label: `${aspectLabels[option]} (${option})`,
@@ -775,7 +1147,7 @@ export function PosterStudio({ isPro }: Props) {
                       setUpgradePrompt(false);
                     }
                   }}
-                  disabled={isWorking}
+                  disabled={isSubmitting}
                   options={[
                     { value: "1k", label: "1K", locked: false },
                     { value: "2k", label: "2K / crisp", locked: !isPro },
@@ -798,7 +1170,7 @@ export function PosterStudio({ isPro }: Props) {
                       setUpgradePrompt(false);
                     }
                   }}
-                  disabled={isWorking}
+                  disabled={isSubmitting}
                   options={[
                     { value: "low", label: "Low / fast", locked: false },
                     { value: "medium", label: "Medium", locked: !isPro },
@@ -818,11 +1190,13 @@ export function PosterStudio({ isPro }: Props) {
                       setUpgradePrompt(false);
                     }
                   }}
-                  disabled={isWorking}
+                  disabled={isSubmitting}
                   options={IMAGE_COUNTS.map((count) => ({
                     value: String(count),
                     label: `${count} ${count === 1 ? "poster" : "posters"}`,
-                    locked: !isPro && count > FREE_MAX_IMAGES,
+                    locked: isGuest
+                      ? count !== GUEST_MAX_IMAGES
+                      : !isPro && count > FREE_MAX_IMAGES,
                   }))}
                 />
               </div>
@@ -839,18 +1213,21 @@ export function PosterStudio({ isPro }: Props) {
           )}
           {!isPro && (
             <p className="pro-note">
-              <LockKeyhole size={14} /> Free runs are 1K, watermarked, up to 2
-              posters. Pro unlocks full quality and 4 posters.
+              <LockKeyhole size={14} />
+              {isGuest
+                ? " Guests can make up to 4 generations per UTC day. Each run creates 1 watermarked 1K poster."
+                : " Free runs are 1K, watermarked, and include up to 2 posters. Pro unlocks full quality and 4 posters."}
             </p>
           )}
 
           <button
+            ref={generateButtonRef}
             className="generate-button"
             type="button"
             onClick={() => void generate()}
-            disabled={buttonDisabled}
+            disabled={action.disabled}
           >
-            <Sparkles size={18} /> {isSubmitting ? "Generating..." : "Generate"}
+            <Sparkles size={18} /> {action.label}
           </button>
           <p className="ai-disclosure">
             AI-generated with GPT Image 2.{" "}
@@ -876,8 +1253,8 @@ export function PosterStudio({ isPro }: Props) {
           )}
         </div>
 
-        <div className="studio-results" aria-live="polite">
-          {generations.length === 0 && !pendingPlaceholder && (
+        <div className="studio-results">
+          {generations.length === 0 && !pendingSubmission && (
             <div className="empty-studio">
               <fieldset
                 className="empty-preview-grid"
@@ -926,67 +1303,36 @@ export function PosterStudio({ isPro }: Props) {
               </div>
             </div>
           )}
-          {pendingPlaceholder && (
-            <div className="generation-block">
-              <div className="result-status">
-                <div>
-                  <p className="eyebrow">Sending to the studio</p>
-                  <p>The studio is working through your brief.</p>
-                </div>
-              </div>
-              <div className="result-grid">
-                {Array.from({ length: imageCount }).map((_, index) => (
-                  <PosterCard
-                    // biome-ignore lint/suspicious/noArrayIndexKey: 静态占位格子，无稳定 id
-                    key={`placeholder-${index}`}
-                    index={index}
-                    image={undefined}
-                    onZoom={(url) => setLightbox(url)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          {generations.map((generation) => {
+          {visibleGenerations.map((generation) => {
+            const submitting = generation.id === pendingSubmission?.id;
             const working =
               generation.status === "submitted" ||
               generation.status === "processing";
+            const hasResult =
+              generation.status === "succeeded" ||
+              generation.status === "partially_succeeded";
             return (
-              <div className="generation-block" key={generation.id}>
-                <div className="result-status">
-                  <div>
-                    <p className="eyebrow">
-                      {STATUS_LABELS[generation.status]}
-                    </p>
-                    <p>
-                      {working
-                        ? "The studio is working through your brief."
-                        : (generation.error ??
-                          "Choose a direction to download.")}
-                    </p>
-                    {generation.creditsReserved > 0 && (
-                      <p className="credit-line">
-                        {creditLineText(generation)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                {(working || generation.images.length > 0) && (
-                  <div className="result-grid">
-                    {Array.from({
-                      length: generation.imageCount || imageCount,
-                    }).map((_, index) => (
-                      <PosterCard
-                        // biome-ignore lint/suspicious/noArrayIndexKey: 静态槽位，图片按 index 对齐
-                        key={`slot-${index}`}
-                        index={index}
-                        image={generation.images[index]}
-                        onZoom={(url) => setLightbox(url)}
-                      />
-                    ))}
-                  </div>
+              <div
+                className="generation-block"
+                id={
+                  submitting
+                    ? "generation-pending-submission"
+                    : `generation-${generation.id}`
+                }
+                key={generationKeys.current.get(generation.id) ?? generation.id}
+              >
+                {(submitting || working || hasResult) && (
+                  <GenerationProgressCard
+                    generation={generation}
+                    isGuest={isGuest}
+                    isSubmitting={submitting}
+                    connectionFailures={connectionFailures[generation.id] ?? 0}
+                    onZoom={openLightbox}
+                    onDownload={downloadTrackedImage}
+                    onRetry={(id) => void retryGenerationImage(id)}
+                  />
                 )}
-                {!working && generation.images.length === 0 && (
+                {!working && !hasResult && (
                   <div className="failure-card">
                     <CircleAlert size={22} />
                     <p>
@@ -1014,53 +1360,119 @@ export function PosterStudio({ isPro }: Props) {
               </div>
             );
           })}
-          {generations.length > 0 && (
+          {visibleRecentGenerations.length > 0 && (
+            <RecentPosterStrip
+              generations={visibleRecentGenerations}
+              isGuest={isGuest}
+              onZoom={openLightbox}
+              onDownload={downloadTrackedImage}
+              onRetry={(id) => void retryGenerationImage(id)}
+            />
+          )}
+          {generations.length > 0 && !anyWorking && (
             <button
               className="reset-button"
               type="button"
-              onClick={() => {
-                dismissedIds.current.clear();
-                setGenerations([]);
-                setLightbox(null);
-                writePendingGenerationIds([]);
-              }}
+              onClick={resetStudio}
             >
               Start a new brief
             </button>
           )}
         </div>
       </div>
-      {lightbox && (
-        <div
-          className="lightbox"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Full size preview"
-          onClick={() => setLightbox(null)}
-          onKeyUp={(event) => {
-            if (event.key === "Escape") {
-              setLightbox(null);
-            }
-          }}
-        >
+      <dialog
+        ref={guestLimitDialogRef}
+        className="modal-backdrop"
+        aria-labelledby="guest-limit-title"
+        aria-describedby="guest-limit-note"
+        onCancel={(event) => {
+          event.preventDefault();
+          setGuestLimitPrompt(false);
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            setGuestLimitPrompt(false);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setGuestLimitPrompt(false);
+          }
+        }}
+      >
+        <div className="modal-card">
           <button
+            ref={guestLimitCloseRef}
             type="button"
-            className="lightbox-close"
-            aria-label="Close preview"
-            onClick={() => setLightbox(null)}
+            className="modal-close"
+            aria-label="Close upgrade prompt"
+            onClick={() => setGuestLimitPrompt(false)}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
-          <Image
-            src={lightbox}
-            alt="Poster preview"
-            width={1024}
-            height={1280}
-            unoptimized
-            className="lightbox-image"
-          />
+          <p className="eyebrow">Guest limit</p>
+          <h3 id="guest-limit-title">
+            Today&apos;s guest generations are used up.
+          </h3>
+          <p className="modal-note" id="guest-limit-note">
+            Failed generations do not count. Upgrade to Pro to keep creating
+            today, or come back tomorrow. Your quota resets at 00:00 UTC.
+          </p>
+          <div className="modal-actions">
+            <button
+              className="outline-button"
+              type="button"
+              onClick={() => setGuestLimitPrompt(false)}
+            >
+              Maybe later
+            </button>
+            <a className="solid-button" href="/pricing">
+              Upgrade to Pro
+            </a>
+          </div>
         </div>
-      )}
+      </dialog>
+      <dialog
+        ref={lightboxDialogRef}
+        className="lightbox"
+        aria-label="Full size preview"
+        onCancel={(event) => {
+          event.preventDefault();
+          setLightbox(null);
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            setLightbox(null);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setLightbox(null);
+          }
+        }}
+      >
+        {lightbox && (
+          <>
+            <button
+              ref={lightboxCloseRef}
+              type="button"
+              className="lightbox-close"
+              aria-label="Close preview"
+              onClick={() => setLightbox(null)}
+            >
+              <X size={20} />
+            </button>
+            <Image
+              src={lightbox}
+              alt="Poster preview"
+              width={1024}
+              height={1280}
+              unoptimized
+              className="lightbox-image"
+            />
+          </>
+        )}
+      </dialog>
     </section>
   );
 }

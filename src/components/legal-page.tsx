@@ -24,7 +24,7 @@ const content: Readonly<
       ],
       [
         "Anonymous limits",
-        "Before sign-in, a random cookie is combined with a salted HMAC of that cookie, your IP, and User-Agent. We store only the derived guest key for the 24-hour limit, never the raw IP or User-Agent.",
+        "Before sign-in, a random HttpOnly cookie is hashed with a server-only salt to keep your browser's private generation history available for 24 hours. A separate salted hash of that cookie, your IP, and User-Agent enforces the four-generation-per-UTC-day limit. We store only derived keys, never the raw IP or User-Agent.",
       ],
       [
         "Service providers",

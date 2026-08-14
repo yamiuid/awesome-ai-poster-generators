@@ -2,8 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { generationRequestSchema } from "@/lib/domain/poster";
 import { getAuthContext } from "@/lib/server/auth";
 import { responseForError } from "@/lib/server/errors";
-import { createGeneration } from "@/lib/server/generation-create";
-import type { GenerationActor } from "@/lib/server/generation-types";
+import {
+  createGeneration,
+  getActorForRequest,
+} from "@/lib/server/generation-create";
+import { toGenerationAcceptedResponse } from "@/lib/server/generation-types";
 import { GUEST_COOKIE, getGuestIdentity } from "@/lib/server/guest";
 
 export async function POST(request: NextRequest): Promise<Response> {
@@ -19,21 +22,13 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     const auth = await getAuthContext();
     const identity = getGuestIdentity(request);
-    const actor: GenerationActor = {
-      userId: auth.userId,
-      guestKey: identity.key,
-      mode: auth.userId ? (auth.isPro ? "pro" : "free") : "guest",
-    };
+    const actor = getActorForRequest(auth.userId, identity, auth.isPro);
     const generation = await createGeneration(actor, parsed.data);
     const response = NextResponse.json(
+      toGenerationAcceptedResponse(generation),
       {
-        id: generation.id,
-        status: generation.status,
-        progress: generation.progress,
-        creditsReserved: generation.reserved_credits,
-        nextPollAt: generation.next_poll_at,
+        status: 201,
       },
-      { status: 201 },
     );
     if (!request.cookies.has(GUEST_COOKIE)) {
       response.cookies.set(GUEST_COOKIE, identity.cookieValue, {

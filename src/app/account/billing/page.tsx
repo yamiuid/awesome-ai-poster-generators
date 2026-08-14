@@ -109,7 +109,7 @@ export default async function BillingPage() {
         ) : (
           <>
             <p className="eyebrow">Free studio</p>
-            <h2>Try four directions every day.</h2>
+            <h2>Start with two directions at a time.</h2>
             <p>
               Upgrade to Creator or Studio for more weighted credits, clean
               exports, and private history.

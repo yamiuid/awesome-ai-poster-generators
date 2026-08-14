@@ -51,6 +51,8 @@ export type Database = {
         id: string;
         user_id: string | null;
         guest_key: string | null;
+        guest_limit_key: string | null;
+        guest_claimed_at: string | null;
         provider_task_id: string | null;
         prompt: string;
         style: string;
@@ -112,6 +114,8 @@ export type Database = {
       guest_usage: TableDefinition<{
         guest_key: string;
         last_generation_at: string | null;
+        generation_count: number;
+        window_started_at: string | null;
         created_at: string;
         updated_at: string;
       }>;
@@ -137,6 +141,35 @@ export type Database = {
       release_guest_generation: {
         Args: { p_guest_key: string };
         Returns: null;
+      };
+      create_limited_generation: {
+        Args: {
+          p_user_id: string | null;
+          p_guest_key: string | null;
+          p_legacy_guest_key: string | null;
+          p_guest_limit_key: string | null;
+          p_prompt: string;
+          p_style: string;
+          p_aspect_ratio: string;
+          p_resolution: string;
+          p_quality: string;
+          p_image_count: number;
+          p_mode: string;
+          p_reserved_credits: number;
+        };
+        Returns: Json;
+      };
+      fail_limited_generation: {
+        Args: {
+          p_generation_id: string;
+          p_status: string;
+          p_message: string;
+        };
+        Returns: Json;
+      };
+      migrate_legacy_guest_generations: {
+        Args: { p_legacy_key: string; p_stable_key: string };
+        Returns: Json;
       };
     };
     Enums: Record<string, never>;

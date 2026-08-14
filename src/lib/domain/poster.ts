@@ -134,6 +134,10 @@ export type GenerationResponse = Readonly<{
   id: string;
   status: GenerationStatus;
   progress: number;
+  aspectRatio: AspectRatio;
+  prompt: string;
+  createdAt: string;
+  expiresAt?: string | undefined;
   images: readonly GenerationImage[];
   imageCount: number;
   error?: string | undefined;
@@ -153,6 +157,10 @@ export const generationResponseSchema = z.object({
     "timed_out",
   ]),
   progress: z.number().int().min(0).max(100),
+  aspectRatio: z.enum(ASPECT_RATIOS),
+  prompt: z.string(),
+  createdAt: z.string(),
+  expiresAt: z.string().optional(),
   images: z.array(
     z.object({
       id: z.string(),
@@ -172,8 +180,18 @@ export const generationAcceptedSchema = generationResponseSchema.pick({
   id: true,
   status: true,
   progress: true,
+  aspectRatio: true,
   creditsReserved: true,
   nextPollAt: true,
+});
+export type GenerationAcceptedResponse = z.infer<
+  typeof generationAcceptedSchema
+>;
+
+export const generationCreatedSchema = z.object({ id: z.string() });
+export const recentGenerationsSchema = z.object({
+  active: z.array(generationResponseSchema),
+  recent: z.array(generationResponseSchema),
 });
 
 export function isProGeneration(

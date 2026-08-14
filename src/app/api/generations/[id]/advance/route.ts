@@ -1,8 +1,8 @@
 import type { NextRequest } from "next/server";
 import { getAuthContext } from "@/lib/server/auth";
 import { responseForError } from "@/lib/server/errors";
+import { getActorForRequest } from "@/lib/server/generation-create";
 import { advanceGenerationById } from "@/lib/server/generation-poll";
-import type { GenerationActor } from "@/lib/server/generation-types";
 import { getGuestIdentity } from "@/lib/server/guest";
 
 // 下载/水印/上传是重活，给足超时（Hobby 上限 60s，Pro 可更长）
@@ -20,11 +20,7 @@ export async function POST(
     const { id } = await context.params;
     const auth = await getAuthContext();
     const identity = getGuestIdentity(request);
-    const actor: GenerationActor = {
-      userId: auth.userId,
-      guestKey: identity.key,
-      mode: auth.userId ? (auth.isPro ? "pro" : "free") : "guest",
-    };
+    const actor = getActorForRequest(auth.userId, identity, auth.isPro);
     return Response.json(await advanceGenerationById(id, actor));
   } catch (error) {
     return responseForError(error);

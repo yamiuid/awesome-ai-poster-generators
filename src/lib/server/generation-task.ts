@@ -4,10 +4,15 @@ import {
   isQuality,
   isResolution,
 } from "@/lib/domain/credits";
+import {
+  FINALIZING_PROGRESS,
+  monotonicWorkingProgress,
+  PROVIDER_PROGRESS_CEILING,
+} from "@/lib/domain/generation-progress";
 import type { ProviderTask } from "./apimart";
 import { AppError } from "./errors";
 import {
-  releaseGuestGeneration,
+  failLimitedGeneration,
   settleGenerationCredits,
 } from "./generation-settlement";
 import type { GenerationRow } from "./generation-types";
@@ -25,29 +30,14 @@ export async function failGeneration(
   message: string,
   status: "failed" | "timed_out",
 ): Promise<GenerationRow> {
-  const admin = createSupabaseAdminClient();
-  if (generation.mode === "pro") {
+  const updated = await failLimitedGeneration(generation.id, status, message);
+  if (generation.mode === "pro" && updated) {
     await settleGenerationCredits(generation.id, 0, 0);
-  } else if (generation.guest_key) {
-    await releaseGuestGeneration(generation.guest_key);
-  } else {
-    throw new AppError(
-      "GENERATION_STATE_FAILED",
-      "This generation has no guest identity to release.",
-      503,
-    );
   }
-  const { data, error } = await admin
+  const { data, error } = await createSupabaseAdminClient()
     .from("generations")
-    .update({
-      status,
-      error_message: message,
-      progress: 100,
-      completed_at: new Date().toISOString(),
-      reserved_credits: 0,
-    })
-    .eq("id", generation.id)
     .select()
+    .eq("id", generation.id)
     .single();
   if (error || !data) {
     throw new AppError(
@@ -137,7 +127,25 @@ async function finalizeCompleted(
   generation: GenerationRow,
   task: ProviderTask,
 ): Promise<GenerationRow> {
-  const stored = await storeTaskImages(generation, task);
+  const admin = createSupabaseAdminClient();
+  const { data: finalizing, error: finalizingError } = await admin
+    .from("generations")
+    .update({
+      status: "processing",
+      progress: Math.max(generation.progress, FINALIZING_PROGRESS),
+    })
+    .eq("id", generation.id)
+    .select()
+    .single();
+  if (finalizingError || !finalizing) {
+    throw new AppError(
+      "GENERATION_STATE_FAILED",
+      "We could not begin preparing the generated files.",
+      503,
+    );
+  }
+
+  const stored = await storeTaskImages(finalizing, task);
   const status =
     stored >= generation.image_count ? "succeeded" : "partially_succeeded";
   if (
@@ -156,7 +164,7 @@ async function finalizeCompleted(
       ),
     );
   }
-  const { data, error } = await createSupabaseAdminClient()
+  const { data, error } = await admin
     .from("generations")
     .update({
       status,
@@ -188,7 +196,11 @@ export async function applyProviderTask(
         .from("generations")
         .update({
           status: "processing",
-          progress: task.progress ?? generation.progress,
+          progress: monotonicWorkingProgress(
+            generation.progress,
+            task.progress,
+            PROVIDER_PROGRESS_CEILING,
+          ),
           next_poll_at: nextPollAt(),
         })
         .eq("id", generation.id)

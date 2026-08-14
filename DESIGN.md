@@ -44,6 +44,7 @@ Text to Poster is an editorial poster studio for people who need a striking visu
 - `SiteHeader`: wordmark, primary action, pricing link, accessible mobile navigation.
 - `PosterStudio`: prompt field, style chips, ratio controls, resolution controls, generate action.
 - `ResultCard`: fixed aspect ratio, image, status, watermark/download treatment.
+- `GenerationProgressCard`: result grid with centered one-line generation state, in-place result reveal, and hover/focus download affordance.
 - `SectionKicker`: small uppercase label with an accent rule.
 - `LegalPage`: consistent narrow reading column and last-updated metadata.
 

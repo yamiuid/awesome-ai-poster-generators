@@ -1,24 +1,32 @@
+import { z } from "zod";
 import { batchCreditCost } from "@/lib/domain/credits";
 import type { GenerationRequest, ProviderQuality } from "@/lib/domain/poster";
 import { buildPosterPrompt } from "@/lib/domain/prompts";
 import { type ProviderGenerationRequest, submitGeneration } from "./apimart";
 import { AppError } from "./errors";
 import {
-  releaseGuestGeneration,
+  failLimitedGeneration,
   settleGenerationCredits,
 } from "./generation-settlement";
 import type { GenerationActor, GenerationRow } from "./generation-types";
-import { getGuestIdentity } from "./guest";
+import type { GuestIdentity } from "./guest";
 import { createSupabaseAdminClient } from "./supabase/admin";
+
+const limitedGenerationResultSchema = z.object({
+  outcome: z.enum(["created", "busy", "quota_exhausted"]),
+  generationId: z.string().uuid().optional(),
+});
 
 export function getActorForRequest(
   userId: string | null,
-  request: Parameters<typeof getGuestIdentity>[0],
+  identity: GuestIdentity,
   isPro: boolean,
 ): GenerationActor {
   return {
     userId,
-    guestKey: getGuestIdentity(request).key,
+    guestKey: identity.key,
+    guestLimitKey: identity.limitKey,
+    legacyGuestKey: identity.legacyKey,
     mode: userId ? (isPro ? "pro" : "free") : "guest",
   };
 }
@@ -33,13 +41,14 @@ function providerRequest(
     ...request,
     resolution: actor.mode === "pro" ? request.resolution : "1k",
     quality,
-    // 免费用户（guest/free）最多 2 张，Pro 可用 1-4 张
     imageCount:
       actor.mode === "pro"
         ? request.imageCount
-        : request.imageCount > 2
-          ? 2
-          : request.imageCount,
+        : actor.mode === "guest"
+          ? 1
+          : request.imageCount > 2
+            ? 2
+            : request.imageCount,
   };
 }
 
@@ -48,6 +57,13 @@ export async function createGeneration(
   request: GenerationRequest,
 ): Promise<GenerationRow> {
   const admin = createSupabaseAdminClient();
+  if (actor.mode === "guest" && request.imageCount !== 1) {
+    throw new AppError(
+      "GUEST_IMAGE_COUNT_LIMIT",
+      "Guest generations create one poster at a time.",
+      400,
+    );
+  }
   const providerInput = providerRequest(request, actor);
   const credits =
     actor.mode === "pro"
@@ -60,82 +76,106 @@ export async function createGeneration(
       : 0;
   const guestClaim = actor.mode !== "pro";
 
-  // 免费用户同时只能一个生成任务（Pro 可并发）
+  let inserted: GenerationRow;
   if (guestClaim) {
-    const { data: active, error: activeError } = await admin
-      .from("generations")
-      .select("id")
-      .eq(
-        actor.userId ? "user_id" : "guest_key",
-        actor.userId ?? actor.guestKey,
-      )
-      .in("status", ["submitted", "processing"])
-      .limit(1);
-    if (activeError) {
+    const { data, error } = await admin.rpc("create_limited_generation", {
+      p_user_id: actor.userId,
+      p_guest_key: actor.userId ? null : actor.guestKey,
+      p_legacy_guest_key: actor.userId ? null : actor.legacyGuestKey,
+      p_guest_limit_key: actor.userId ? null : actor.guestLimitKey,
+      p_prompt: request.prompt,
+      p_style: request.style,
+      p_aspect_ratio: request.aspectRatio,
+      p_resolution: providerInput.resolution,
+      p_quality: providerInput.quality,
+      p_image_count: providerInput.imageCount,
+      p_mode: actor.mode,
+      p_reserved_credits: credits,
+    });
+    if (error) {
       throw new AppError(
-        "GENERATION_BUSY_UNAVAILABLE",
-        "We could not check your active generations.",
+        "GENERATION_CREATE_UNAVAILABLE",
+        "We could not start this generation right now.",
         503,
       );
     }
-    if (active && active.length > 0) {
+    const parsed = limitedGenerationResultSchema.safeParse(data);
+    if (!parsed.success) {
+      throw new AppError(
+        "GENERATION_CREATE_UNAVAILABLE",
+        "The generation service returned an invalid response.",
+        503,
+      );
+    }
+    if (parsed.data.outcome === "busy") {
       throw new AppError(
         "GENERATION_IN_PROGRESS",
         "Finish your current generation before starting another one.",
         429,
       );
     }
-  }
-
-  if (guestClaim) {
-    const { data, error } = await admin.rpc("claim_guest_generation", {
-      p_guest_key: actor.guestKey,
-    });
-    if (error) {
-      throw new AppError(
-        "RATE_LIMIT_UNAVAILABLE",
-        "We could not check your free generation limit.",
-        503,
-      );
-    }
-    if (!data) {
+    if (parsed.data.outcome === "quota_exhausted") {
       throw new AppError(
         "GUEST_LIMIT_REACHED",
-        "Your free generation is ready again tomorrow.",
+        "You have used all 4 generations for today. Failed generations do not count.",
         429,
       );
     }
-  }
-
-  const { data: inserted, error: insertError } = await admin
-    .from("generations")
-    .insert({
-      user_id: actor.userId,
-      guest_key: actor.guestKey,
-      prompt: request.prompt,
-      style: request.style,
-      aspect_ratio: request.aspectRatio,
-      resolution: providerInput.resolution,
-      quality: providerInput.quality,
-      image_count: providerInput.imageCount,
-      mode: actor.mode,
-      status: "submitted",
-      progress: 0,
-      reserved_credits: credits,
-      next_poll_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
-
-  if (insertError || !inserted) {
-    if (guestClaim) {
-      await releaseGuestGeneration(actor.guestKey);
+    if (!parsed.data.generationId) {
+      throw new AppError(
+        "GENERATION_CREATE_UNAVAILABLE",
+        "The generation service did not return a task ID.",
+        503,
+      );
     }
-    throw new AppError(
-      "GENERATION_CREATE_FAILED",
-      "We could not start this generation.",
-      500,
-    );
+    const { data: row, error: readError } = await admin
+      .from("generations")
+      .select()
+      .eq("id", parsed.data.generationId)
+      .single();
+    if (readError || !row) {
+      await failLimitedGeneration(
+        parsed.data.generationId,
+        "failed",
+        "The new generation could not be read.",
+      );
+      throw new AppError(
+        "GENERATION_CREATE_FAILED",
+        "We could not read the new generation.",
+        500,
+      );
+    }
+    inserted = row;
+  } else {
+    const { data: row, error: insertError } = await admin
+      .from("generations")
+      .insert({
+        user_id: actor.userId,
+        guest_key: null,
+        guest_limit_key: null,
+        guest_claimed_at: null,
+        prompt: request.prompt,
+        style: request.style,
+        aspect_ratio: request.aspectRatio,
+        resolution: providerInput.resolution,
+        quality: providerInput.quality,
+        image_count: providerInput.imageCount,
+        mode: actor.mode,
+        status: "submitted",
+        progress: 0,
+        reserved_credits: credits,
+        next_poll_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    if (insertError || !row) {
+      throw new AppError(
+        "GENERATION_CREATE_FAILED",
+        "We could not start this generation.",
+        500,
+      );
+    }
+    inserted = row;
   }
 
   if (credits > 0 && actor.userId) {
@@ -148,15 +188,7 @@ export async function createGeneration(
       },
     );
     if (reserveError || !reserved) {
-      await admin
-        .from("generations")
-        .update({
-          status: "failed",
-          reserved_credits: 0,
-          completed_at: new Date().toISOString(),
-          error_message: "Not enough credits.",
-        })
-        .eq("id", inserted.id);
+      await failLimitedGeneration(inserted.id, "failed", "Not enough credits.");
       throw new AppError(
         "INSUFFICIENT_CREDITS",
         "You do not have enough credits for this generation.",
@@ -189,28 +221,10 @@ export async function createGeneration(
     }
     return updated;
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Provider error";
+    await failLimitedGeneration(inserted.id, "failed", message);
     if (credits > 0) {
       await settleGenerationCredits(inserted.id, 0, 0);
-    }
-    if (guestClaim) {
-      await releaseGuestGeneration(actor.guestKey);
-    }
-    const { error: failureWriteError } = await admin
-      .from("generations")
-      .update({
-        status: "failed",
-        reserved_credits: 0,
-        completed_at: new Date().toISOString(),
-        error_message:
-          error instanceof Error ? error.message : "Provider error",
-      })
-      .eq("id", inserted.id);
-    if (failureWriteError) {
-      throw new AppError(
-        "GENERATION_STATE_FAILED",
-        "We could not save the generation failure.",
-        503,
-      );
     }
     if (error instanceof AppError) {
       throw error;

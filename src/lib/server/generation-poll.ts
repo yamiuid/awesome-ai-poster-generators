@@ -1,3 +1,5 @@
+import { z } from "zod";
+import { isVisibleGuestHistory } from "@/lib/domain/generation-history";
 import { getTask } from "./apimart";
 import { AppError } from "./errors";
 import { applyProviderTask, failGeneration } from "./generation-task";
@@ -12,6 +14,24 @@ import { createSupabaseAdminClient } from "./supabase/admin";
 
 const POLL_DELAY_MS = 4_000;
 const MAX_GENERATION_MS = 15 * 60 * 1_000;
+const GUEST_HISTORY_MS = 24 * 60 * 60 * 1_000;
+const SIGNED_RECENT_MS = 30 * 60 * 1_000;
+const RECENT_LIMIT = 20;
+const TERMINAL_STATUSES = [
+  "succeeded",
+  "partially_succeeded",
+  "failed",
+  "timed_out",
+] as const;
+type GenerationPayload = ReturnType<typeof toGenerationResponse>;
+type RecentGenerationList = Readonly<{
+  active: readonly GenerationPayload[];
+  recent: readonly GenerationPayload[];
+}>;
+
+const migrationResultSchema = z.object({
+  migrated: z.number().int().nonnegative(),
+});
 
 function nextPollAt(): string {
   return new Date(Date.now() + POLL_DELAY_MS).toISOString();
@@ -40,10 +60,33 @@ async function readGeneration(generationId: string): Promise<GenerationRow> {
   return data;
 }
 
+async function migrateLegacyGuestIdentity(
+  actor: GenerationActor,
+): Promise<void> {
+  if (actor.mode !== "guest" || actor.guestKey === actor.legacyGuestKey) {
+    return;
+  }
+  const { data, error } = await createSupabaseAdminClient().rpc(
+    "migrate_legacy_guest_generations",
+    {
+      p_legacy_key: actor.legacyGuestKey,
+      p_stable_key: actor.guestKey,
+    },
+  );
+  if (error || !migrationResultSchema.safeParse(data).success) {
+    throw new AppError(
+      "GENERATION_STATE_FAILED",
+      "We could not restore your previous generations.",
+      503,
+    );
+  }
+}
+
 async function loadGeneration(
   generationId: string,
   actor: GenerationActor,
 ): Promise<GenerationRow> {
+  await migrateLegacyGuestIdentity(actor);
   const generation = await readGeneration(generationId);
   if (!ownsGeneration(generation, actor)) {
     throw new AppError(
@@ -59,10 +102,12 @@ async function responseFor(
   generation: GenerationRow,
 ): Promise<Readonly<ReturnType<typeof toGenerationResponse>>> {
   const admin = createSupabaseAdminClient();
+  const now = new Date().toISOString();
   const { data: assets, error } = await admin
     .from("generated_assets")
     .select("*")
     .eq("generation_id", generation.id)
+    .or(`expires_at.is.null,expires_at.gt.${now}`)
     .order("created_at");
   if (error) {
     throw new AppError(
@@ -80,6 +125,60 @@ async function responseFor(
     urls,
     consumed,
   );
+}
+
+export async function listRecentGenerations(
+  actor: GenerationActor,
+): Promise<RecentGenerationList> {
+  await migrateLegacyGuestIdentity(actor);
+  const admin = createSupabaseAdminClient();
+  const guestKeys = [actor.guestKey];
+  const activeQuery = admin
+    .from("generations")
+    .select("*")
+    .in("status", ["submitted", "processing"])
+    .order("created_at", { ascending: false });
+  const recentWindow = new Date(
+    Date.now() - (actor.mode === "guest" ? GUEST_HISTORY_MS : SIGNED_RECENT_MS),
+  ).toISOString();
+  const recentStatuses =
+    actor.mode === "guest"
+      ? (["succeeded", "partially_succeeded"] as const)
+      : TERMINAL_STATUSES;
+  const recentQuery = admin
+    .from("generations")
+    .select("*")
+    .in("status", [...recentStatuses])
+    .gte("created_at", recentWindow)
+    .order("created_at", { ascending: false })
+    .limit(actor.userId ? 1 : RECENT_LIMIT);
+  const [activeResult, recentResult] = actor.userId
+    ? await Promise.all([
+        activeQuery.eq("user_id", actor.userId),
+        recentQuery.eq("user_id", actor.userId),
+      ])
+    : await Promise.all([
+        activeQuery.in("guest_key", guestKeys).is("user_id", null),
+        recentQuery.in("guest_key", guestKeys).is("user_id", null),
+      ]);
+  if (activeResult.error || recentResult.error) {
+    throw new AppError(
+      "GENERATION_READ_FAILED",
+      "We could not read recent generations.",
+      503,
+    );
+  }
+  const activeRows = activeResult.data ?? [];
+  const recentRows = recentResult.data ?? [];
+  const [active, recentRowsWithAssets] = await Promise.all([
+    Promise.all(activeRows.map((row) => responseFor(row))),
+    Promise.all(recentRows.map((row) => responseFor(row))),
+  ]);
+  const recent =
+    actor.mode === "guest"
+      ? recentRowsWithAssets.filter(isVisibleGuestHistory)
+      : recentRowsWithAssets;
+  return { active, recent };
 }
 
 async function advanceGeneration(
