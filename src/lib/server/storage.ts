@@ -5,7 +5,6 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import sharp from "sharp";
 import { getServerEnv } from "./env";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
@@ -138,6 +137,8 @@ export async function downloadProviderImage(url: string): Promise<Buffer> {
       throw new Error("Provider returned a non-image response.");
     }
     const image = await readLimitedBody(response);
+    // 按需加载 sharp：storage 模块被 generation 查询路由引用时不应触发原生库加载
+    const { default: sharp } = await import("sharp");
     const metadata = await sharp(image).metadata();
     if (
       (metadata.width ?? 0) * (metadata.height ?? 0) >
@@ -151,6 +152,7 @@ export async function downloadProviderImage(url: string): Promise<Buffer> {
 }
 
 export async function bakeWatermark(image: Buffer): Promise<Buffer> {
+  const { default: sharp } = await import("sharp");
   const metadata = await sharp(image).metadata();
   const width = metadata.width ?? 1024;
   const height = metadata.height ?? 1024;
