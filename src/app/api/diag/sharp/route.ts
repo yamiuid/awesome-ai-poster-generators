@@ -77,5 +77,30 @@ export async function GET(request: Request): Promise<Response> {
     info["sharpLoad"] = `ERROR: ${(error as Error).message}`;
   }
 
+  // 与 storage.ts 相同的动态 import 方式
+  try {
+    const mod = await import("sharp");
+    const sharp = mod.default ?? mod;
+    info["dynamicImportLoad"] = `OK ${sharp.versions?.vips ?? ""}`;
+  } catch (error) {
+    info["dynamicImportLoad"] = `ERROR: ${(error as Error).message}`;
+  }
+
+  try {
+    const resolved = import.meta.resolve?.("sharp");
+    info["importMetaResolve"] = resolved ?? "unsupported";
+  } catch (error) {
+    info["importMetaResolve"] = `ERROR: ${(error as Error).message}`;
+  }
+
+  for (const dir of [
+    path.join(root, ".next", "server"),
+    path.join(root, ".next", "server", "node_modules"),
+    path.join(root, ".next", "server", "node_modules", "sharp"),
+    path.join(root, ".next", "server", "node_modules", "@img"),
+  ]) {
+    info[`exists:${dir}`] = existsSync(dir);
+  }
+
   return NextResponse.json(info);
 }
