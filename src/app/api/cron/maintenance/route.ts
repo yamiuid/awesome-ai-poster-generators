@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerEnv } from "@/lib/server/env";
 import { recoverGeneration } from "@/lib/server/generation-poll";
+import { deletePoster } from "@/lib/server/storage";
 import { createSupabaseAdminClient } from "@/lib/server/supabase/admin";
 
 export async function GET(request: Request): Promise<Response> {
@@ -18,9 +19,7 @@ export async function GET(request: Request): Promise<Response> {
     .lt("expires_at", expiredBefore)
     .limit(500);
   if (expiredAssets && expiredAssets.length > 0) {
-    await admin.storage
-      .from("posters")
-      .remove(expiredAssets.map((asset) => asset.storage_path));
+    await deletePoster(expiredAssets.map((asset) => asset.storage_path));
     await admin
       .from("generated_assets")
       .delete()
@@ -45,9 +44,7 @@ export async function GET(request: Request): Promise<Response> {
       .select("id, storage_path")
       .eq("user_id", subscription.user_id);
     if (assets && assets.length > 0) {
-      await admin.storage
-        .from("posters")
-        .remove(assets.map((asset) => asset.storage_path));
+      await deletePoster(assets.map((asset) => asset.storage_path));
       await admin
         .from("generated_assets")
         .delete()

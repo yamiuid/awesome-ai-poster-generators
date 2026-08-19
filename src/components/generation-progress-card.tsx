@@ -85,7 +85,6 @@ function PosterCard({
               alt={image.alt}
               width={1024}
               height={1280}
-              unoptimized
               style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
               className={
                 loaded ? "result-media-image is-loaded" : "result-media-image"

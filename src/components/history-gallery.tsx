@@ -126,7 +126,6 @@ export function HistoryGallery({
                     alt={image.alt}
                     width={1024}
                     height={1280}
-                    unoptimized
                   />
                 </button>
                 <figcaption>
@@ -173,7 +172,6 @@ export function HistoryGallery({
             alt="Poster preview"
             width={1024}
             height={1280}
-            unoptimized
             className="lightbox-image"
           />
         </div>

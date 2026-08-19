@@ -18,9 +18,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "biome check . && tsc --noEmit",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "migrate:r2": "node scripts/migrate-posters-to-r2.mjs",
+    "migrate:r2:dry-run": "node scripts/migrate-posters-to-r2.mjs --dry-run"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1112.0",
     "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "2.111.0",
     "@waffo/pancake-ts": "0.16.1",

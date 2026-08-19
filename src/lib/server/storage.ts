@@ -1,6 +1,12 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
+import {
+  DeleteObjectsCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import sharp from "sharp";
+import { getServerEnv } from "./env";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
 const MAX_PROVIDER_IMAGE_BYTES = 25 * 1024 * 1024;
@@ -155,6 +161,10 @@ export async function bakeWatermark(image: Buffer): Promise<Buffer> {
 }
 
 export async function uploadPoster(path: string, image: Buffer): Promise<void> {
+  if (getServerEnv().STORAGE_PROVIDER === "r2") {
+    await uploadPosterR2(path, image);
+    return;
+  }
   const { error } = await createSupabaseAdminClient()
     .storage.from("posters")
     .upload(path, image, {
@@ -168,13 +178,111 @@ export async function uploadPoster(path: string, image: Buffer): Promise<void> {
 }
 
 export async function createPosterUrl(path: string): Promise<string> {
-  const { data, error } = await createSupabaseAdminClient()
-    .storage.from("posters")
-    .createSignedUrl(path, 600);
+  if (getServerEnv().STORAGE_PROVIDER === "r2") {
+    return createPosterUrlR2(path);
+  }
+  const storage = createSupabaseAdminClient().storage.from("posters");
+  // public 模式：posters bucket 需在 Supabase Dashboard 设为 public。
+  // 用于绕过平台 signed URL 下载故障（"requested path is invalid"）。
+  if (getServerEnv().POSTER_URL_MODE === "public") {
+    const { data } = storage.getPublicUrl(path);
+    if (!data?.publicUrl) {
+      throw new Error("Could not build public poster URL.");
+    }
+    return data.publicUrl;
+  }
+  const { data, error } = await storage.createSignedUrl(path, 600);
   if (error || !data?.signedUrl) {
     throw new Error(
       `Could not sign generated poster: ${error?.message ?? "missing URL"}`,
     );
   }
   return data.signedUrl;
+}
+
+export async function deletePoster(paths: readonly string[]): Promise<void> {
+  if (getServerEnv().STORAGE_PROVIDER === "r2") {
+    await deletePosterR2(paths);
+    return;
+  }
+  const { error } = await createSupabaseAdminClient()
+    .storage.from("posters")
+    .remove([...paths]);
+  if (error) {
+    throw new Error(`Could not delete generated posters: ${error.message}`);
+  }
+}
+
+// —— R2 实现（S3 兼容 API，public URL 无过期）——
+
+let s3Client: S3Client | undefined;
+
+function getS3Client(): S3Client {
+  if (!s3Client) {
+    const env = getServerEnv();
+    if (
+      !env.R2_ACCOUNT_ID ||
+      !env.R2_ACCESS_KEY_ID ||
+      !env.R2_SECRET_ACCESS_KEY
+    ) {
+      throw new Error(
+        "R2_* credentials are required when STORAGE_PROVIDER=r2.",
+      );
+    }
+    s3Client = new S3Client({
+      region: "auto",
+      endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: env.R2_ACCESS_KEY_ID,
+        secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+      },
+    });
+  }
+  return s3Client;
+}
+
+async function uploadPosterR2(path: string, image: Buffer): Promise<void> {
+  const env = getServerEnv();
+  await getS3Client().send(
+    new PutObjectCommand({
+      Bucket: env.R2_BUCKET,
+      Key: path,
+      Body: image,
+      ContentType: "image/png",
+      // key 含随机 UUID，内容不可变，可安全 long-cache
+      CacheControl: "public, max-age=31536000, immutable",
+    }),
+  );
+}
+
+// 逐段 encodeURIComponent，避免 key 中特殊字符破坏 URL（当前 key 均为 [a-zA-Z0-9/-_.]）
+export function keyToPublicUrl(path: string): string {
+  const base = getServerEnv().R2_PUBLIC_BASE_URL?.replace(/\/+$/, "");
+  if (!base) {
+    throw new Error("R2_PUBLIC_BASE_URL is required when STORAGE_PROVIDER=r2.");
+  }
+  return `${base}/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+function createPosterUrlR2(path: string): Promise<string> {
+  return Promise.resolve(keyToPublicUrl(path));
+}
+
+async function deletePosterR2(paths: readonly string[]): Promise<void> {
+  const env = getServerEnv();
+  const client = getS3Client();
+  // DeleteObjects 单请求最多 1000 个 key，超出分块
+  for (let index = 0; index < paths.length; index += 1000) {
+    const chunk = paths.slice(index, index + 1000);
+    const output = await client.send(
+      new DeleteObjectsCommand({
+        Bucket: env.R2_BUCKET,
+        Delete: { Objects: chunk.map((Key) => ({ Key })) },
+      }),
+    );
+    if (output.Errors?.length) {
+      // 部分删除失败：记日志不抛（cron 场景降级处理）
+      console.error("R2 delete partial failure:", output.Errors);
+    }
+  }
 }

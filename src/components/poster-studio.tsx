@@ -411,7 +411,6 @@ function RecentPosterTile({
               width={320}
               height={400}
               sizes="8.5rem"
-              unoptimized
               onError={() => setLoadError(true)}
             />
           </button>
@@ -1467,7 +1466,6 @@ export function PosterStudio({ isPro, isGuest }: Props) {
               alt="Poster preview"
               width={1024}
               height={1280}
-              unoptimized
               className="lightbox-image"
             />
           </>
