@@ -4,11 +4,17 @@
   "private": true,
   "packageManager": "pnpm@10.32.1",
   "pnpm": {
+    "overrides": {
+      "sharp": "0.35.3"
+    },
     "onlyBuiltDependencies": [
       "sharp",
       "@img/sharp-linux-x64",
       "@img/sharp-win32-x64"
     ]
+  },
+  "overrides": {
+    "sharp": "0.35.3"
   },
   "scripts": {
     "dev": "next dev",
