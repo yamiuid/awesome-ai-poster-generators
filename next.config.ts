@@ -19,6 +19,20 @@ const nextConfig: NextConfig = {
     ],
     formats: ["image/avif", "image/webp"],
   },
+  // Vercel 打包 serverless 函数时会裁剪 node_modules，sharp 的原生二进制
+  // （@img/sharp-linux-x64 / @img/sharp-libvips-linux-x64）属于平台 optional 依赖，
+  // 可能被裁掉导致运行时 dlopen 失败。这里显式把二进制打进使用 sharp 的路由
+  // （生成推进 + cron 恢复），避免 ERR_DLOPEN_FAILED。
+  outputFileTracingIncludes: {
+    "/api/generations/[id]/advance": [
+      "./node_modules/@img/sharp-linux-x64/**",
+      "./node_modules/@img/sharp-libvips-linux-x64/**",
+    ],
+    "/api/cron/maintenance": [
+      "./node_modules/@img/sharp-linux-x64/**",
+      "./node_modules/@img/sharp-libvips-linux-x64/**",
+    ],
+  },
 };
 
 export default nextConfig;
