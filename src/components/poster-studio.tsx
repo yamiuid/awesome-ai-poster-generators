@@ -920,6 +920,28 @@ export function PosterStudio({ isPro, isGuest }: Props) {
       }
       schedulePoll(id, pollDelay(id));
     } catch (pollError) {
+      // 记录已被删除（404）：停止轮询并清理本地状态，避免无限请求已删除的 generation
+      if (pollError instanceof HTTPError && pollError.response.status === 404) {
+        activeIds.current.delete(id);
+        workingIds.current.delete(id);
+        generationById.current.delete(id);
+        pollAttempts.current.delete(id);
+        const scheduled = timers.current.get(id);
+        if (scheduled) {
+          clearTimeout(scheduled);
+          timers.current.delete(id);
+        }
+        writePendingGenerationIds(
+          readPendingGenerationIds().filter((pending) => pending !== id),
+        );
+        setGenerations((prev) =>
+          prev.filter((generation) => generation.id !== id),
+        );
+        setRecentGenerations((prev) =>
+          prev.filter((generation) => generation.id !== id),
+        );
+        return;
+      }
       // 无论什么错误都继续轮询（带退避），避免页面永久停在“生成中”
       const delay = recordPollFailure(id);
       syncConnectionFailures(id);
