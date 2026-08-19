@@ -64,6 +64,8 @@ export type Database = {
         status: string;
         progress: number;
         reserved_credits: number;
+        poll_failures: number;
+        input_type: string;
         error_code: string | null;
         error_message: string | null;
         next_poll_at: string | null;

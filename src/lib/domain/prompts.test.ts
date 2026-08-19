@@ -56,4 +56,22 @@ describe("buildPosterPrompt", () => {
 
     expect(prompt).toContain("full-height vertical mobile poster composition");
   });
+
+  it("instructs the model to use a reference image when provided", () => {
+    const prompt = buildPosterPrompt(
+      {
+        prompt: "A launch announcement for a new creative app",
+        style: "business",
+        aspectRatio: "4:5",
+        resolution: "1k",
+        quality: "low",
+        imageCount: 1,
+      },
+      { hasReferenceImage: true },
+    );
+
+    expect(prompt).toContain(
+      "Use the provided reference image as the primary visual material",
+    );
+  });
 });

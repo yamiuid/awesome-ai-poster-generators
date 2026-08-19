@@ -146,16 +146,13 @@ export default async function Home({
       <section className="hero" aria-labelledby="hero-heading">
         <div className="hero-grid">
           <div>
-            <p className="eyebrow">AI poster maker / from text</p>
-            <h1 id="hero-heading">
-              AI Poster Maker — Generate Posters from Text in Seconds
-            </h1>
+            <p className="eyebrow">AI poster maker / from anything</p>
+            <h1 id="hero-heading">Turn anything into a poster.</h1>
           </div>
           <div className="hero-copy">
             <p>
-              Turn a thought, a launch, or a feeling into{" "}
-              <strong>multiple finished poster directions</strong> in seconds.
-              Made for people who need the image before they need the software.
+              Describe an idea, paste your content, or drop a link. AI turns it
+              into a <strong>poster worth sharing</strong>.
             </p>
             <div className="hero-note">
               <span>01</span>

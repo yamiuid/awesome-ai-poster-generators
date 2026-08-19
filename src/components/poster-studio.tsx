@@ -7,18 +7,28 @@ import {
   ChevronDown,
   CircleAlert,
   LockKeyhole,
+  Pencil,
   Sparkles,
   X,
 } from "lucide-react";
 import Image from "next/image";
 import {
+  type ClipboardEvent,
   type JSX,
   type KeyboardEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import {
+  BRIEF_CHAR_LIMITS,
+  type BriefFields,
+  buildBriefPrompt,
+  buildFallbackPrompt,
+  normalizeBriefFields,
+} from "@/lib/domain/brief";
 import { batchCreditCost } from "@/lib/domain/credits";
 import {
   flattenRecentPosterImages,
@@ -29,6 +39,7 @@ import {
   generationPollDelay,
   mergeGenerationResponse,
 } from "@/lib/domain/generation-progress";
+import { detectInputType, type InputType } from "@/lib/domain/input-intent";
 import {
   ASPECT_RATIOS,
   type AspectRatio,
@@ -44,22 +55,46 @@ import {
   type Quality,
   type Resolution,
   recentGenerationsSchema,
+  STYLES,
   styleLabels,
 } from "@/lib/domain/poster";
-import {
-  POSTER_EXAMPLES,
-  type PosterExample,
-} from "@/lib/domain/poster-examples";
-import { ArtDirectionPicker } from "./art-direction-picker";
 import { GenerationProgressCard } from "./generation-progress-card";
+import { UrlPipelineModal } from "./url-pipeline-modal";
 
 type Props = Readonly<{ isPro: boolean; isGuest: boolean }>;
 
-const FEATURED_EXAMPLE_STYLES: PosterStyle[] = [
-  "movie",
-  "minimal",
-  "vintage",
-  "neon",
+type StudioJobExample = Readonly<{
+  id: "event" | "article" | "announcement";
+  label: string;
+  prompt: string;
+  image: string;
+  alt: string;
+}>;
+
+const STUDIO_JOB_EXAMPLES: readonly StudioJobExample[] = [
+  {
+    id: "event",
+    label: "Event poster",
+    prompt:
+      "Summer jazz festival in Los Angeles, August 28 — one night, three stages, get tickets before they sell out.",
+    image: "/examples/neon-after-dark.webp",
+    alt: "An example event poster with neon nightlife art.",
+  },
+  {
+    id: "article",
+    label: "Article → Poster",
+    prompt: "https://en.wikipedia.org/wiki/Artificial_intelligence",
+    image: "/examples/minimal-form-field.webp",
+    alt: "An example article poster with editorial minimal art.",
+  },
+  {
+    id: "announcement",
+    label: "Announcement → Poster",
+    prompt:
+      "We are excited to announce TextToPoster 2.0 — smarter layouts, faster generation, and full quality controls for every creator.",
+    image: "/examples/business-next-shift.webp",
+    alt: "An example announcement poster with a confident business look.",
+  },
 ];
 
 // 免费档位：1K / low / 最多 2 张；免费用户选了更高档位才显示锁，
@@ -68,6 +103,81 @@ const FREE_RESOLUTION: Resolution = "1k";
 const FREE_QUALITY: Quality = "low";
 const FREE_MAX_IMAGES = 2;
 const GUEST_MAX_IMAGES = 1;
+
+const EXAMPLE_JOB_PLACEHOLDERS: Readonly<
+  Record<"event" | "article" | "announcement", string>
+> = {
+  event: "Describe your event — name, date, place, vibe…",
+  article: "Paste an article URL…",
+  announcement: "Paste your announcement, notes, or copy…",
+};
+
+const EMPTY_BRIEF_FIELDS: BriefFields = {
+  headline: "",
+  subtitle: "",
+  points: ["", "", ""],
+  cta: "",
+};
+
+type GenerationParams = Readonly<{
+  style: PosterStyle;
+  aspectRatio: AspectRatio;
+  resolution: Resolution;
+  quality: Quality;
+  imageCount: ImageCount;
+  inputType: InputType;
+  referenceImageUrl?: string;
+}>;
+
+type GenerateOverrides = Readonly<{
+  prompt?: string;
+  inputType?: InputType;
+  referenceImageUrl?: string;
+  style?: PosterStyle;
+  aspectRatio?: AspectRatio;
+  resolution?: Resolution;
+  quality?: Quality;
+  imageCount?: ImageCount;
+}>;
+
+function contentSnippet(value: string): string {
+  const normalized = value.trim().replace(/\s+/g, " ");
+  return normalized.length > 120 ? `${normalized.slice(0, 120)}…` : normalized;
+}
+
+function deriveFieldsFromPrompt(promptText: string): BriefFields {
+  const lines = promptText
+    .trim()
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const headline = lines[0]?.slice(0, BRIEF_CHAR_LIMITS.headline) ?? "";
+  const subtitle = lines[1]?.slice(0, BRIEF_CHAR_LIMITS.subtitle) ?? "";
+  const points = lines
+    .slice(2, 2 + 3)
+    .map((line) => line.slice(0, BRIEF_CHAR_LIMITS.point));
+  while (points.length < 3) {
+    points.push("");
+  }
+  return { headline, subtitle, points, cta: "" };
+}
+
+function BriefPointInput({
+  value,
+  onChange,
+}: Readonly<{
+  value: string;
+  onChange: (value: string) => void;
+}>): JSX.Element {
+  return (
+    <input
+      type="text"
+      value={value}
+      maxLength={BRIEF_CHAR_LIMITS.point}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  );
+}
 
 type TierOption = Readonly<{ value: string; label: string; locked: boolean }>;
 
@@ -257,6 +367,7 @@ function TierSelect({
 }
 
 const PENDING_GENERATIONS_KEY = "ttp_pending_generations";
+const GIVE_UP_AFTER_FAILURES = 5;
 
 const TERMINAL_STATUSES: ReadonlySet<GenerationResponse["status"]> = new Set([
   "succeeded",
@@ -422,7 +533,7 @@ function RecentPosterTile({
             onClick={() => onDownload(poster.image.url, filename)}
             aria-label={`Download recent poster ${index + 1}`}
           >
-            <ArrowDownToLine size={18} aria-hidden="true" />
+            <ArrowDownToLine size={14} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -484,6 +595,9 @@ function RecentPosterStrip({
 
 export function PosterStudio({ isPro, isGuest }: Props) {
   const [prompt, setPrompt] = useState("");
+  const [placeholder, setPlaceholder] = useState(
+    "Describe an idea, paste text, or drop a URL…",
+  );
   const [style, setStyle] = useState<PosterStyle>("auto");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("4:5");
   const [resolution, setResolution] = useState<Resolution>("1k");
@@ -505,11 +619,23 @@ export function PosterStudio({ isPro, isGuest }: Props) {
     Record<string, number>
   >({});
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [detectedType, setDetectedType] = useState<InputType>("idea");
+  const [briefStatus, setBriefStatus] = useState<"idle" | "loading" | "ready">(
+    "idle",
+  );
+  const [briefFields, setBriefFields] = useState<BriefFields | null>(null);
+  const [editingBrief, setEditingBrief] = useState(false);
+  const [editContentId, setEditContentId] = useState<string | null>(null);
+  const [editContentFields, setEditContentFields] =
+    useState<BriefFields>(EMPTY_BRIEF_FIELDS);
+  const [urlPipelineOpen, setUrlPipelineOpen] = useState(false);
   const guestLimitDialogRef = useRef<HTMLDialogElement>(null);
   const guestLimitCloseRef = useRef<HTMLButtonElement>(null);
   const lightboxDialogRef = useRef<HTMLDialogElement>(null);
   const lightboxCloseRef = useRef<HTMLButtonElement>(null);
+  const editContentDialogRef = useRef<HTMLDialogElement>(null);
   const generateButtonRef = useRef<HTMLButtonElement>(null);
+  const promptFieldRef = useRef<HTMLTextAreaElement>(null);
   const guestLimitPreviousFocus = useRef<HTMLElement | null>(null);
   const lightboxPreviousFocus = useRef<HTMLElement | null>(null);
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
@@ -521,9 +647,135 @@ export function PosterStudio({ isPro, isGuest }: Props) {
   const activeIds = useRef(new Set<string>());
   const trackedIds = useRef(new Set<string>());
   const dismissedIds = useRef(new Set<string>());
+  const givenUpIds = useRef(new Set<string>());
   const generationById = useRef(new Map<string, GenerationResponse>());
   const generationKeys = useRef(new Map<string, string>());
   const submissionSequence = useRef(0);
+  const lastPromptRef = useRef("");
+  const paramsByGeneration = useRef(new Map<string, GenerationParams>());
+  const briefByGeneration = useRef(new Map<string, BriefFields>());
+  const inputTypeByGeneration = useRef(new Map<string, InputType>());
+
+  const resetInputWorkflow = useCallback((): void => {
+    setBriefStatus("idle");
+    setBriefFields(null);
+    setEditingBrief(false);
+  }, []);
+
+  async function prepareBrief(): Promise<void> {
+    if (detectedType !== "text" || briefStatus === "loading") {
+      return;
+    }
+    track("text_prepare_click");
+    setBriefStatus("loading");
+    try {
+      const content = prompt.trim().slice(0, 6000);
+      const raw: unknown = await ky
+        .post("/api/brief", {
+          json: {
+            inputType: "text",
+            content,
+          },
+          timeout: 20_000,
+        })
+        .json();
+      const fields = normalizeBriefFields(raw);
+      if (!fields) {
+        throw new Error("Invalid brief response.");
+      }
+      setBriefFields(fields);
+      setEditingBrief(false);
+      setBriefStatus("ready");
+      track("brief_generated");
+    } catch {
+      setBriefStatus("idle");
+      track("brief_fallback");
+      await generate({
+        prompt: buildFallbackPrompt({
+          inputType: "text",
+          prompt,
+        }),
+        inputType: "text",
+      });
+    }
+  }
+
+  function openEditContent(generation: GenerationResponse): void {
+    const storedBrief = briefByGeneration.current.get(generation.id);
+    setEditContentFields(
+      storedBrief ?? deriveFieldsFromPrompt(generation.prompt),
+    );
+    setEditContentId(generation.id);
+    track("edit_content_click");
+  }
+
+  function updateEditedContent(): void {
+    if (!editContentId) {
+      return;
+    }
+    const params = paramsByGeneration.current.get(editContentId);
+    track("edit_content_update");
+    setEditContentId(null);
+    void generate({
+      prompt: buildBriefPrompt(editContentFields),
+      inputType: params?.inputType ?? detectInputType(prompt),
+      ...(params
+        ? {
+            style: params.style,
+            aspectRatio: params.aspectRatio,
+            resolution: params.resolution,
+            quality: params.quality,
+            imageCount: params.imageCount,
+            ...(params.referenceImageUrl
+              ? { referenceImageUrl: params.referenceImageUrl }
+              : {}),
+          }
+        : {}),
+    });
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = prompt.trim();
+      const type = detectInputType(prompt);
+      setDetectedType(type);
+      if (trimmed !== lastPromptRef.current) {
+        lastPromptRef.current = trimmed;
+        resetInputWorkflow();
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [prompt, resetInputWorkflow]);
+
+  function chooseExampleJob(job: "event" | "article" | "announcement"): void {
+    setPlaceholder(EXAMPLE_JOB_PLACEHOLDERS[job]);
+    promptFieldRef.current?.focus();
+    track(
+      job === "event"
+        ? "example_click_event"
+        : job === "article"
+          ? "example_click_article"
+          : "example_click_announcement",
+    );
+  }
+
+  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>): void {
+    const pasted = event.clipboardData.getData("text");
+    if (!pasted) {
+      return;
+    }
+    const target = event.currentTarget;
+    const nextValue =
+      prompt.slice(0, target.selectionStart) +
+      pasted +
+      prompt.slice(target.selectionEnd);
+    const inputType = detectInputType(nextValue);
+    if (inputType === "url") {
+      track("url_pasted");
+    } else if (inputType === "text") {
+      track("long_text_pasted");
+    }
+  }
 
   function openLightbox(url: string): void {
     lightboxPreviousFocus.current =
@@ -728,27 +980,43 @@ export function PosterStudio({ isPro, isGuest }: Props) {
         trackGenerationOutcome(id, parsed.data.status);
       }
     } catch {
-      // 主轮询继续重试，服务端恢复后会自动完成；连续失败给出提示
+      // 主轮询继续重试，服务端恢复后会自动完成；连续失败给出提示，
+      // 超过阈值后主动放弃，避免前端一直停留在“生成中/重连”
       const failures = (advanceFailures.current.get(id) ?? 0) + 1;
       advanceFailures.current.set(id, failures);
       syncConnectionFailures(id);
+      if (failures >= GIVE_UP_AFTER_FAILURES) {
+        void giveUpGeneration(id);
+      }
     } finally {
       advancingIds.current.delete(id);
     }
   }
 
-  const selectedStyle = useMemo(() => styleLabels[style], [style]);
-  const featuredExamples = useMemo(
-    () =>
-      FEATURED_EXAMPLE_STYLES.map((featuredStyle) =>
-        POSTER_EXAMPLES.find((example) => example.style === featuredStyle),
-      ).filter((example): example is PosterExample => example !== undefined),
-    [],
-  );
+  async function giveUpGeneration(id: string): Promise<void> {
+    if (givenUpIds.current.has(id)) {
+      return;
+    }
+    givenUpIds.current.add(id);
+    try {
+      const raw: unknown = await ky
+        .post(`/api/generations/${id}/give-up`, { timeout: 15_000 })
+        .json();
+      const parsed = generationResponseSchema.safeParse(raw);
+      if (!parsed.success) {
+        return;
+      }
+      applyGeneration(parsed.data);
+      if (isTerminalStatus(parsed.data.status)) {
+        trackGenerationOutcome(id, parsed.data.status);
+      }
+    } catch {
+      // 放弃接口失败则继续轮询，由服务端 15 分钟超时/cron 兜底
+    }
+  }
 
-  function chooseExample(example: PosterExample): void {
+  function chooseExample(example: StudioJobExample): void {
     setPrompt(example.prompt);
-    setStyle(example.style);
   }
 
   function resetStudio(): void {
@@ -821,6 +1089,22 @@ export function PosterStudio({ isPro, isGuest }: Props) {
     guestLimitPreviousFocus.current?.focus();
     guestLimitPreviousFocus.current = null;
   }, [guestLimitPrompt]);
+
+  useEffect(() => {
+    const dialog = editContentDialogRef.current;
+    if (!dialog) {
+      return;
+    }
+    if (editContentId) {
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+      return;
+    }
+    if (dialog.open) {
+      dialog.close();
+    }
+  }, [editContentId]);
 
   useEffect(
     () => () => {
@@ -955,12 +1239,20 @@ export function PosterStudio({ isPro, isGuest }: Props) {
     }
   }
 
-  async function generate(): Promise<void> {
+  async function generate(overrides?: GenerateOverrides): Promise<void> {
     setError(null);
     setUpgradePrompt(false);
     setGuestLimitPrompt(false);
+    const generationPrompt = (overrides?.prompt ?? prompt).trim();
+    const generationType = overrides?.inputType ?? detectInputType(prompt);
+    const generationReferenceImage = overrides?.referenceImageUrl;
+    const generationStyle = overrides?.style ?? style;
+    const generationAspectRatio = overrides?.aspectRatio ?? aspectRatio;
+    const generationResolution = overrides?.resolution ?? resolution;
+    const generationQuality = overrides?.quality ?? quality;
+    const generationImageCount = overrides?.imageCount ?? imageCount;
     // 按钮默认启用（对爬虫友好：HTML 中不显示 disabled），无输入时在提交前校验提示
-    if (prompt.trim().length < 3) {
+    if (generationPrompt.length < 3) {
       setError(
         "Describe the poster you want — a subject, mood, or line of copy.",
       );
@@ -984,19 +1276,53 @@ export function PosterStudio({ isPro, isGuest }: Props) {
       id: submissionKey,
       status: "submitted",
       progress: 0,
-      aspectRatio,
-      prompt: prompt.trim(),
+      aspectRatio: generationAspectRatio,
+      prompt: generationPrompt,
       createdAt: new Date().toISOString(),
       images: [],
-      imageCount,
+      imageCount: generationImageCount,
       creditsReserved: 0,
     };
+    const generationParams: GenerationParams = {
+      style: generationStyle,
+      aspectRatio: generationAspectRatio,
+      resolution: generationResolution,
+      quality: generationQuality,
+      imageCount: generationImageCount,
+      inputType: generationType,
+      ...(generationReferenceImage
+        ? { referenceImageUrl: generationReferenceImage }
+        : {}),
+    };
+    paramsByGeneration.current.set(submissionKey, generationParams);
+    inputTypeByGeneration.current.set(submissionKey, generationType);
+    if (briefFields) {
+      briefByGeneration.current.set(submissionKey, briefFields);
+    }
     setPendingSubmission(submission);
     track("generation_started");
+    track(
+      generationType === "url"
+        ? "url_input"
+        : generationType === "text"
+          ? "text_input"
+          : "idea_input",
+    );
     try {
       const raw: unknown = await ky
         .post("/api/generations", {
-          json: { prompt, style, aspectRatio, resolution, quality, imageCount },
+          json: {
+            prompt: generationPrompt,
+            inputType: generationType,
+            style: generationStyle,
+            aspectRatio: generationAspectRatio,
+            resolution: generationResolution,
+            quality: generationQuality,
+            imageCount: generationImageCount,
+            ...(generationReferenceImage
+              ? { referenceImageUrl: generationReferenceImage }
+              : {}),
+          },
           timeout: 30_000,
         })
         .json();
@@ -1012,6 +1338,11 @@ export function PosterStudio({ isPro, isGuest }: Props) {
         throw new Error(message);
       }
       const id = created.data.id;
+      paramsByGeneration.current.set(id, generationParams);
+      inputTypeByGeneration.current.set(id, generationType);
+      if (briefFields) {
+        briefByGeneration.current.set(id, briefFields);
+      }
       moveCompletedGenerationsToRecent();
       generationKeys.current.set(id, submissionKey);
       writePendingGenerationIds([...readPendingGenerationIds(), id]);
@@ -1109,35 +1440,262 @@ export function PosterStudio({ isPro, isGuest }: Props) {
             Describe your poster idea
           </label>
           <textarea
+            ref={promptFieldRef}
             id="poster-prompt"
             className="prompt-field"
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
-            placeholder="A summer music festival with neon lights..."
+            onPaste={handlePaste}
+            placeholder={placeholder}
             maxLength={1500}
             rows={5}
             disabled={isSubmitting}
           />
           <div className="field-hint">
-            <span>Be specific about mood, subject, and words.</span>
+            <span>Works with Idea · Text · URL</span>
             <span>{prompt.length}/1500</span>
           </div>
-
-          <fieldset className="control-block">
-            <div className="control-heading">
-              <legend className="field-label">Art direction</legend>
-              <span>{selectedStyle}</span>
-            </div>
-            <ArtDirectionPicker
-              value={style}
-              onChange={setStyle}
-              disabled={isSubmitting}
-            />
+          <fieldset
+            className="example-job-chips"
+            aria-label="Example ways to start"
+          >
+            <button
+              type="button"
+              className="choice-chip"
+              onClick={() => chooseExampleJob("event")}
+            >
+              Event poster
+            </button>
+            <button
+              type="button"
+              className="choice-chip"
+              onClick={() => chooseExampleJob("article")}
+            >
+              Article → Poster
+            </button>
+            <button
+              type="button"
+              className="choice-chip"
+              onClick={() => chooseExampleJob("announcement")}
+            >
+              Announcement → Poster
+            </button>
           </fieldset>
+
+          {detectedType === "text" &&
+            (briefStatus === "ready" && briefFields ? (
+              <div className="brief-panel">
+                <p className="eyebrow">We found the story</p>
+                {!editingBrief ? (
+                  <div className="brief-preview">
+                    <div className="brief-preview-copy">
+                      <h3>{briefFields.headline || "Untitled poster"}</h3>
+                      {briefFields.subtitle && (
+                        <p className="brief-subtitle">{briefFields.subtitle}</p>
+                      )}
+                      {briefFields.points.some(Boolean) && (
+                        <ul className="brief-points">
+                          {briefFields.points.filter(Boolean).map((point) => (
+                            <li key={point}>{point}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {briefFields.cta && (
+                        <p className="brief-cta">{briefFields.cta}</p>
+                      )}
+                      <p className="brief-source">Source: Your text</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="brief-edit-button"
+                      onClick={() => setEditingBrief(true)}
+                    >
+                      Edit
+                    </button>
+                  </div>
+                ) : (
+                  <div className="brief-form">
+                    <label>
+                      <span>Headline</span>
+                      <input
+                        type="text"
+                        value={briefFields.headline}
+                        maxLength={BRIEF_CHAR_LIMITS.headline}
+                        onChange={(event) =>
+                          setBriefFields({
+                            ...briefFields,
+                            headline: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      <span>Subtitle</span>
+                      <input
+                        type="text"
+                        value={briefFields.subtitle}
+                        maxLength={BRIEF_CHAR_LIMITS.subtitle}
+                        onChange={(event) =>
+                          setBriefFields({
+                            ...briefFields,
+                            subtitle: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <fieldset className="brief-points-field">
+                      <legend>Key points</legend>
+                      <BriefPointInput
+                        value={briefFields.points[0] ?? ""}
+                        onChange={(value) =>
+                          setBriefFields({
+                            ...briefFields,
+                            points: [
+                              value,
+                              briefFields.points[1] ?? "",
+                              briefFields.points[2] ?? "",
+                            ],
+                          })
+                        }
+                      />
+                      <BriefPointInput
+                        value={briefFields.points[1] ?? ""}
+                        onChange={(value) =>
+                          setBriefFields({
+                            ...briefFields,
+                            points: [
+                              briefFields.points[0] ?? "",
+                              value,
+                              briefFields.points[2] ?? "",
+                            ],
+                          })
+                        }
+                      />
+                      <BriefPointInput
+                        value={briefFields.points[2] ?? ""}
+                        onChange={(value) =>
+                          setBriefFields({
+                            ...briefFields,
+                            points: [
+                              briefFields.points[0] ?? "",
+                              briefFields.points[1] ?? "",
+                              value,
+                            ],
+                          })
+                        }
+                      />
+                    </fieldset>
+                    <label>
+                      <span>CTA (optional)</span>
+                      <input
+                        type="text"
+                        value={briefFields.cta}
+                        maxLength={BRIEF_CHAR_LIMITS.cta}
+                        onChange={(event) =>
+                          setBriefFields({
+                            ...briefFields,
+                            cta: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="brief-edit-button"
+                      onClick={() => setEditingBrief(false)}
+                    >
+                      Done editing
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="generate-button"
+                  onClick={() =>
+                    void generate({
+                      prompt: buildBriefPrompt(briefFields),
+                      inputType: "text",
+                    })
+                  }
+                >
+                  <Sparkles size={18} /> Generate poster
+                </button>
+                <button
+                  type="button"
+                  className="brief-start-over"
+                  onClick={resetInputWorkflow}
+                >
+                  Start over
+                </button>
+              </div>
+            ) : (
+              <div className="input-source-card">
+                <p className="input-source-label">
+                  📄 Pasted text · {prompt.trim().length} characters
+                </p>
+                <p className="input-source-note">“{contentSnippet(prompt)}”</p>
+                <p className="input-source-action">
+                  Turn this content into a poster
+                </p>
+                <div className="input-source-actions">
+                  <button
+                    type="button"
+                    className="generate-button"
+                    disabled={briefStatus === "loading"}
+                    onClick={() => void prepareBrief()}
+                  >
+                    {briefStatus === "loading"
+                      ? "Finding the story…"
+                      : "Prepare poster"}
+                  </button>
+                  <button
+                    type="button"
+                    className="outline-button"
+                    onClick={() =>
+                      void generate({
+                        prompt: buildFallbackPrompt({
+                          inputType: "text",
+                          prompt,
+                        }),
+                        inputType: "text",
+                      })
+                    }
+                  >
+                    Create now
+                  </button>
+                  <button
+                    type="button"
+                    className="brief-edit-button"
+                    onClick={() => promptFieldRef.current?.focus()}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+            ))}
 
           <fieldset className="control-block">
             <legend className="field-label">Output settings</legend>
             <div className="studio-options">
+              <div className="option-select">
+                <span>Art direction</span>
+                <TierSelect
+                  label="Art direction"
+                  value={style}
+                  onChange={(next) => {
+                    if (STYLES.some((option) => option === next)) {
+                      setStyle(next as PosterStyle);
+                      setUpgradePrompt(false);
+                    }
+                  }}
+                  disabled={isSubmitting}
+                  options={STYLES.map((option) => ({
+                    value: option,
+                    label: styleLabels[option],
+                    locked: false,
+                  }))}
+                />
+              </div>
               <div className="option-select">
                 <span>Aspect Ratio</span>
                 <TierSelect
@@ -1245,7 +1803,15 @@ export function PosterStudio({ isPro, isGuest }: Props) {
             ref={generateButtonRef}
             className="generate-button"
             type="button"
-            onClick={() => void generate()}
+            onClick={() => {
+              // 粘贴后立刻点击的场景下，300ms debounce 可能还没更新 detectedType，
+              // 这里同步判断，保证 URL 一定会走管线弹窗而不是直接生成。
+              if (detectInputType(prompt) === "url" && prompt.trim()) {
+                setUrlPipelineOpen(true);
+              } else {
+                void generate();
+              }
+            }}
             disabled={action.disabled}
           >
             <Sparkles size={18} /> {action.label}
@@ -1281,10 +1847,10 @@ export function PosterStudio({ isPro, isGuest }: Props) {
                 className="empty-preview-grid"
                 aria-label="Example poster outputs"
               >
-                {featuredExamples.map((example, index) => (
+                {STUDIO_JOB_EXAMPLES.map((example, index) => (
                   <button
                     className="empty-preview"
-                    key={example.style}
+                    key={example.id}
                     type="button"
                     onClick={() => chooseExample(example)}
                     aria-label={`Use the ${example.label} example brief`}
@@ -1306,13 +1872,13 @@ export function PosterStudio({ isPro, isGuest }: Props) {
                 <span className="empty-mark">01</span>
                 <div>
                   <p>
-                    Multiple readings of the same idea. Start with a feeling, a
-                    place, or a line of copy.
+                    Turn anything into a poster. Start with an event, an
+                    article, or an announcement.
                   </p>
                   <div className="example-list">
-                    {featuredExamples.map((example) => (
+                    {STUDIO_JOB_EXAMPLES.map((example) => (
                       <button
-                        key={`${example.style}-prompt`}
+                        key={`${example.id}-prompt`}
                         type="button"
                         onClick={() => chooseExample(example)}
                       >
@@ -1332,6 +1898,7 @@ export function PosterStudio({ isPro, isGuest }: Props) {
             const hasResult =
               generation.status === "succeeded" ||
               generation.status === "partially_succeeded";
+            const resultImageUrl = generation.images[0]?.url;
             return (
               <div
                 className="generation-block"
@@ -1349,9 +1916,34 @@ export function PosterStudio({ isPro, isGuest }: Props) {
                     isSubmitting={submitting}
                     connectionFailures={connectionFailures[generation.id] ?? 0}
                     onZoom={openLightbox}
-                    onDownload={downloadTrackedImage}
                     onRetry={(id) => void retryGenerationImage(id)}
                   />
+                )}
+                {hasResult && (
+                  <div className="result-actions-row">
+                    <button
+                      type="button"
+                      className="result-action-button"
+                      onClick={() => openEditContent(generation)}
+                    >
+                      <Pencil size={13} aria-hidden="true" /> Edit content
+                    </button>
+                    {resultImageUrl && (
+                      <button
+                        type="button"
+                        className="result-action-button"
+                        onClick={() =>
+                          downloadTrackedImage(
+                            resultImageUrl,
+                            `text-to-poster-${generation.id.slice(0, 8)}.png`,
+                          )
+                        }
+                      >
+                        <ArrowDownToLine size={13} aria-hidden="true" />{" "}
+                        Download
+                      </button>
+                    )}
+                  </div>
                 )}
                 {!working && !hasResult && (
                   <div className="failure-card">
@@ -1493,6 +2085,152 @@ export function PosterStudio({ isPro, isGuest }: Props) {
           </>
         )}
       </dialog>
+      <dialog
+        ref={editContentDialogRef}
+        className="modal-backdrop"
+        aria-labelledby="edit-content-title"
+        onCancel={(event) => {
+          event.preventDefault();
+          setEditContentId(null);
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            setEditContentId(null);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setEditContentId(null);
+          }
+        }}
+      >
+        <div className="modal-card edit-content-card">
+          <button
+            type="button"
+            className="modal-close"
+            aria-label="Close edit content"
+            onClick={() => setEditContentId(null)}
+          >
+            <X size={18} />
+          </button>
+          <p className="eyebrow">Edit content</p>
+          <h3 id="edit-content-title">Update the poster copy</h3>
+          <div className="brief-form">
+            <label>
+              <span>Headline</span>
+              <input
+                type="text"
+                value={editContentFields.headline}
+                maxLength={BRIEF_CHAR_LIMITS.headline}
+                onChange={(event) =>
+                  setEditContentFields({
+                    ...editContentFields,
+                    headline: event.target.value,
+                  })
+                }
+              />
+            </label>
+            <label>
+              <span>Subtitle</span>
+              <input
+                type="text"
+                value={editContentFields.subtitle}
+                maxLength={BRIEF_CHAR_LIMITS.subtitle}
+                onChange={(event) =>
+                  setEditContentFields({
+                    ...editContentFields,
+                    subtitle: event.target.value,
+                  })
+                }
+              />
+            </label>
+            <fieldset className="brief-points-field">
+              <legend>Key points</legend>
+              <BriefPointInput
+                value={editContentFields.points[0] ?? ""}
+                onChange={(value) =>
+                  setEditContentFields({
+                    ...editContentFields,
+                    points: [
+                      value,
+                      editContentFields.points[1] ?? "",
+                      editContentFields.points[2] ?? "",
+                    ],
+                  })
+                }
+              />
+              <BriefPointInput
+                value={editContentFields.points[1] ?? ""}
+                onChange={(value) =>
+                  setEditContentFields({
+                    ...editContentFields,
+                    points: [
+                      editContentFields.points[0] ?? "",
+                      value,
+                      editContentFields.points[2] ?? "",
+                    ],
+                  })
+                }
+              />
+              <BriefPointInput
+                value={editContentFields.points[2] ?? ""}
+                onChange={(value) =>
+                  setEditContentFields({
+                    ...editContentFields,
+                    points: [
+                      editContentFields.points[0] ?? "",
+                      editContentFields.points[1] ?? "",
+                      value,
+                    ],
+                  })
+                }
+              />
+            </fieldset>
+            <label>
+              <span>CTA (optional)</span>
+              <input
+                type="text"
+                value={editContentFields.cta}
+                maxLength={BRIEF_CHAR_LIMITS.cta}
+                onChange={(event) =>
+                  setEditContentFields({
+                    ...editContentFields,
+                    cta: event.target.value,
+                  })
+                }
+              />
+            </label>
+          </div>
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="outline-button"
+              onClick={() => setEditContentId(null)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="solid-button"
+              onClick={updateEditedContent}
+            >
+              Update poster
+            </button>
+          </div>
+        </div>
+      </dialog>
+      <UrlPipelineModal
+        open={urlPipelineOpen}
+        url={prompt.trim()}
+        onClose={() => setUrlPipelineOpen(false)}
+        onGenerate={(promptText, referenceImageUrl) =>
+          void generate({
+            prompt: promptText,
+            inputType: "url",
+            ...(referenceImageUrl ? { referenceImageUrl } : {}),
+          })
+        }
+      />
     </section>
   );
 }

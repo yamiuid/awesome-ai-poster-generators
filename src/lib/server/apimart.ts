@@ -29,9 +29,19 @@ const taskSchema = z.object({
 
 const taskResponseSchema = z.object({ code: z.number(), data: taskSchema });
 
+const chatCompletionSchema = z.object({
+  choices: z
+    .array(z.object({ message: z.object({ content: z.string() }) }))
+    .min(1),
+});
+
 export type ProviderTask = z.infer<typeof taskSchema>;
 export type ProviderGenerationRequest = Omit<GenerationRequest, "quality"> &
   Readonly<{ quality: ProviderQuality }>;
+export type ChatMessage = Readonly<{
+  role: "system" | "user" | "assistant";
+  content: string;
+}>;
 
 export class ApimartError extends AppError {
   constructor(message: string, status = 502) {
@@ -118,6 +128,10 @@ export async function submitGeneration(
           quality: request.quality,
           output_format: "png",
           n: request.imageCount,
+          // 参考图模式：带 image_urls 时 APIMart 走图生图，保持网页原图作为视觉素材
+          ...(request.referenceImageUrl
+            ? { image_urls: [request.referenceImageUrl] }
+            : {}),
         },
         retry: { limit: 0 },
       })
@@ -164,4 +178,63 @@ export async function getTask(taskId: string): Promise<ProviderTask> {
     throw new ApimartError("APIMart returned an unexpected task response.");
   }
   return parsed.data.data;
+}
+
+export async function submitChatCompletion(input: {
+  model: string;
+  messages: readonly ChatMessage[];
+  temperature?: number;
+  timeoutMs?: number;
+  responseFormatJson?: boolean;
+}): Promise<string> {
+  try {
+    const response = await client()
+      .post("chat/completions", {
+        json: {
+          model: input.model,
+          messages: input.messages,
+          temperature: input.temperature ?? 0.3,
+          // APIMart 的 /v1/chat/completions 默认流式返回 SSE；显式关闭以按
+          // 非流式 JSON 解析 choices[0].message.content
+          stream: false,
+          ...(input.responseFormatJson
+            ? { response_format: { type: "json_object" } }
+            : {}),
+        },
+        timeout: input.timeoutMs ?? 30_000,
+        retry: {
+          limit: 1,
+          methods: ["post"],
+          statusCodes: [408, 429, 500, 502, 503, 504],
+        },
+      })
+      .json<unknown>();
+    const parsed = chatCompletionSchema.safeParse(response);
+    if (!parsed.success) {
+      throw new ApimartError("APIMart returned an unexpected chat response.");
+    }
+    const content = parsed.data.choices[0]?.message.content ?? "";
+    if (!content) {
+      throw new ApimartError("APIMart returned an empty chat response.");
+    }
+    return content;
+  } catch (error) {
+    if (error instanceof ApimartError) {
+      throw error;
+    }
+    if (error instanceof HTTPError) {
+      const status = error.response.status;
+      if (status === 402) {
+        throw new ApimartError("The text provider is out of credits.", 503);
+      }
+      if (status === 429) {
+        throw new ApimartError(
+          "The text provider is busy. Please try again shortly.",
+          429,
+        );
+      }
+      throw new ApimartError("The text provider rejected this request.", 502);
+    }
+    throw error;
+  }
 }

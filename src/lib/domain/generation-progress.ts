@@ -145,10 +145,10 @@ export function generationAction(
     return { label: "Sending...", disabled: true };
   }
   if (!hasActiveGeneration) {
-    return { label: "Generate", disabled: false };
+    return { label: "Create poster", disabled: false };
   }
   return isPro
-    ? { label: "Generate another", disabled: false }
+    ? { label: "Create another", disabled: false }
     : { label: "Current poster is generating", disabled: true };
 }
 

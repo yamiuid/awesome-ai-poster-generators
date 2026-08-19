@@ -23,6 +23,8 @@ const generation: GenerationRow = {
   status: "succeeded",
   progress: 100,
   reserved_credits: 744,
+  poll_failures: 0,
+  input_type: "idea",
   error_code: null,
   error_message: null,
   next_poll_at: null,
@@ -124,6 +126,7 @@ describe("generation creation contract", () => {
       status: generation.status,
       progress: generation.progress,
       aspectRatio: "4:5",
+      inputType: "idea",
       creditsReserved: generation.reserved_credits,
     });
   });

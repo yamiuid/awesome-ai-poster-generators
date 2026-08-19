@@ -197,10 +197,22 @@ export async function createGeneration(
     }
   }
 
+  if (request.inputType) {
+    const { error: inputTypeError } = await admin
+      .from("generations")
+      .update({ input_type: request.inputType })
+      .eq("id", inserted.id);
+    if (inputTypeError) {
+      // 输入类型仅用于分析，写入失败不阻断生成
+    }
+  }
+
   try {
     const provider = await submitGeneration(
       providerInput,
-      buildPosterPrompt(request),
+      buildPosterPrompt(request, {
+        hasReferenceImage: Boolean(request.referenceImageUrl),
+      }),
     );
     const { data: updated, error: updateError } = await admin
       .from("generations")

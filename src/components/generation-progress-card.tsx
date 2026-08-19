@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowDownToLine } from "lucide-react";
 import Image from "next/image";
 import { type JSX, useEffect, useState } from "react";
 import {
@@ -38,7 +37,6 @@ function PosterCard({
   progressLabel,
   progress,
   onZoom,
-  onDownload,
   onRetry,
 }: Readonly<{
   index: number;
@@ -47,7 +45,6 @@ function PosterCard({
   progressLabel: string;
   progress: number | null;
   onZoom: (url: string) => void;
-  onDownload: (url: string, filename: string) => void;
   onRetry: () => void;
 }>): JSX.Element {
   const [loaded, setLoaded] = useState(false);
@@ -67,7 +64,6 @@ function PosterCard({
   const announcesProgress = isPending && index === 0;
   return (
     <article className={`result-card ${isPending ? "is-pending" : ""}`}>
-      <div className="result-number">0{index + 1}</div>
       <div
         className="result-media"
         style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
@@ -96,20 +92,6 @@ function PosterCard({
               }}
             />
           </button>
-        )}
-        {image && imageUrl && !isPending && loaded && (
-          <a
-            className="result-download-overlay"
-            href={imageUrl}
-            download={`text-to-poster-${index + 1}.png`}
-            onClick={(event) => {
-              event.preventDefault();
-              onDownload(imageUrl, `text-to-poster-${index + 1}.png`);
-            }}
-            aria-label={`Download ${image.alt}`}
-          >
-            <ArrowDownToLine size={18} aria-hidden="true" />
-          </a>
         )}
         {loadError ? (
           <button
@@ -153,7 +135,6 @@ export function GenerationProgressCard({
   isSubmitting = false,
   connectionFailures = 0,
   onZoom,
-  onDownload,
   onRetry,
 }: Readonly<{
   generation: GenerationResponse;
@@ -161,7 +142,6 @@ export function GenerationProgressCard({
   isSubmitting?: boolean;
   connectionFailures?: number;
   onZoom: (url: string) => void;
-  onDownload: (url: string, filename: string) => void;
   onRetry: (generationId: string) => void;
 }>): JSX.Element {
   const snapshot = {
@@ -193,7 +173,6 @@ export function GenerationProgressCard({
             progressLabel={progressLabel}
             progress={progress}
             onZoom={onZoom}
-            onDownload={onDownload}
             onRetry={() => onRetry(generation.id)}
           />
         ))}

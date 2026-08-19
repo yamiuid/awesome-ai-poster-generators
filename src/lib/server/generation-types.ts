@@ -87,6 +87,7 @@ export function toGenerationAcceptedResponse(
     | "status"
     | "progress"
     | "aspect_ratio"
+    | "input_type"
     | "reserved_credits"
     | "next_poll_at"
   >,
@@ -97,6 +98,9 @@ export function toGenerationAcceptedResponse(
     progress: generation.progress,
     aspectRatio: toAspectRatio(generation.aspect_ratio),
     creditsReserved: generation.reserved_credits,
+    ...(toInputType(generation.input_type)
+      ? { inputType: toInputType(generation.input_type) }
+      : {}),
     ...(generation.next_poll_at ? { nextPollAt: generation.next_poll_at } : {}),
   };
 }
@@ -113,6 +117,15 @@ export function toGenerationStatus(value: string): GenerationStatus {
     default:
       return "failed";
   }
+}
+
+function toInputType(
+  value: string | null | undefined,
+): "idea" | "url" | "text" | undefined {
+  if (value === "idea" || value === "url" || value === "text") {
+    return value;
+  }
+  return undefined;
 }
 
 export function toGenerationResponse(
@@ -132,6 +145,9 @@ export function toGenerationResponse(
     progress: value.generation.progress,
     aspectRatio: toAspectRatio(value.generation.aspect_ratio),
     prompt: value.generation.prompt,
+    ...(toInputType(value.generation.input_type)
+      ? { inputType: toInputType(value.generation.input_type) }
+      : {}),
     createdAt: value.generation.created_at,
     ...(expiresAt ? { expiresAt } : {}),
     images: value.assets.map((asset, index) => ({

@@ -14,15 +14,16 @@ const siteUrl =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "AI Poster Maker 2026 — Free Posters from Text, No Login",
+  title: "AI Poster Maker — Turn Anything into a Poster",
   description:
-    "Turn any text into beautiful AI posters instantly – no sign-up needed. 6 styles, 4 variants at once. Free AI poster maker powered by the latest model.",
+    "Describe an idea, paste your content, or drop a link. AI turns it into a poster worth sharing — free, no login.",
   other: {
     "waffo-verify": "54d548993b3914275941eb86ae3982ec",
   },
   openGraph: {
-    title: "AI Poster Maker — Generate Posters from Text in Seconds",
-    description: "Turn a thought into four poster directions in seconds.",
+    title: "AI Poster Maker — Turn Anything into a Poster",
+    description:
+      "Turn an idea, content, or link into a poster worth sharing in seconds.",
     url: siteUrl,
     siteName: "Text to Poster",
     type: "website",
@@ -35,7 +36,13 @@ export const metadata: Metadata = {
       },
     ],
   },
-  twitter: { card: "summary_large_image", images: ["/og.png"] },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI Poster Maker — Turn Anything into a Poster",
+    description:
+      "Turn an idea, content, or link into a poster worth sharing in seconds.",
+    images: ["/og.png"],
+  },
   robots: { index: true, follow: true },
 };
 

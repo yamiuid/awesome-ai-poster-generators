@@ -122,7 +122,7 @@ describe("generation progress", () => {
       disabled: true,
     });
     expect(generationAction(true, false, true)).toEqual({
-      label: "Generate another",
+      label: "Create another",
       disabled: false,
     });
     expect(generationAction(true, true, true)).toEqual({

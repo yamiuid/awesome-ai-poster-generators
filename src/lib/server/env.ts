@@ -7,6 +7,8 @@ const serverEnvSchema = z
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     APIMART_API_KEY: z.string().min(1),
+    // 内容提炼使用的文本模型；APIMart 同一 key 走 OpenAI 兼容 chat/completions
+    APIMART_TEXT_MODEL: z.string().min(1).default("gpt-4o-mini"),
     WAFFO_MERCHANT_ID: z.string().min(1),
     WAFFO_PRIVATE_KEY: z.string().min(1),
     WAFFO_ENVIRONMENT: z.enum(["test", "prod"]).default("prod"),

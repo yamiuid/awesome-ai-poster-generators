@@ -103,6 +103,18 @@ export const aspectLabels: Readonly<Record<AspectRatio, string>> = {
 
 export const generationRequestSchema = z.object({
   prompt: z.string().trim().min(3).max(1500),
+  inputType: z.enum(["idea", "url", "text"]).optional(),
+  // 页面/素材参考图（图生图）：仅接受 http(s) URL，交给图片模型做视觉参考
+  referenceImageUrl: z
+    .string()
+    .trim()
+    .url()
+    .max(2048)
+    .refine(
+      (value) => value.startsWith("http://") || value.startsWith("https://"),
+      "Only http(s) image URLs are supported.",
+    )
+    .optional(),
   style: z.enum(STYLES),
   aspectRatio: z.enum(ASPECT_RATIOS),
   resolution: z.enum(RESOLUTIONS),
@@ -136,6 +148,7 @@ export type GenerationResponse = Readonly<{
   progress: number;
   aspectRatio: AspectRatio;
   prompt: string;
+  inputType?: "idea" | "url" | "text" | null | undefined;
   createdAt: string;
   expiresAt?: string | undefined;
   images: readonly GenerationImage[];
@@ -159,6 +172,7 @@ export const generationResponseSchema = z.object({
   progress: z.number().int().min(0).max(100),
   aspectRatio: z.enum(ASPECT_RATIOS),
   prompt: z.string(),
+  inputType: z.enum(["idea", "url", "text"]).optional(),
   createdAt: z.string(),
   expiresAt: z.string().optional(),
   images: z.array(
@@ -181,6 +195,7 @@ export const generationAcceptedSchema = generationResponseSchema.pick({
   status: true,
   progress: true,
   aspectRatio: true,
+  inputType: true,
   creditsReserved: true,
   nextPollAt: true,
 });

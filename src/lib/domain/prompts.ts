@@ -45,9 +45,19 @@ const RATIO_INSTRUCTIONS: Readonly<Record<AspectRatio, string>> = {
   "3:2": "landscape poster composition with photographic framing",
 };
 
-export function buildPosterPrompt(request: GenerationRequest): string {
+export function buildPosterPrompt(
+  request: GenerationRequest,
+  options?: Readonly<{ hasReferenceImage?: boolean }>,
+): string {
   return [
-    "Create a finished English-language poster, not a mockup and not a blank template.",
+    "Create a finished poster, not a mockup and not a blank template.",
+    "Render any poster text in the same language as the core idea: " +
+      "if the idea is in Chinese, the poster text must be in Chinese; if English, in English.",
+    ...(options?.hasReferenceImage
+      ? [
+          "Use the provided reference image as the primary visual material: keep its subject and composition recognizable, and build a polished poster around it. Do not copy any text, logos, or watermarks from the reference image.",
+        ]
+      : []),
     `Core idea: ${request.prompt}`,
     `Art direction: ${STYLE_INSTRUCTIONS[request.style]}.`,
     `Layout: ${RATIO_INSTRUCTIONS[request.aspectRatio]}.`,

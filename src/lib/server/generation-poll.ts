@@ -14,6 +14,7 @@ import { createSupabaseAdminClient } from "./supabase/admin";
 
 const POLL_DELAY_MS = 4_000;
 const MAX_GENERATION_MS = 15 * 60 * 1_000;
+const MAX_POLL_FAILURES = 5;
 const GUEST_HISTORY_MS = 24 * 60 * 60 * 1_000;
 const SIGNED_RECENT_MS = 30 * 60 * 1_000;
 const RECENT_LIMIT = 20;
@@ -234,10 +235,31 @@ async function advanceGeneration(
       503,
     );
   }
-  return applyProviderTask(
-    generation,
-    await getTask(generation.provider_task_id),
-  );
+  try {
+    const updated = await applyProviderTask(
+      generation,
+      await getTask(generation.provider_task_id),
+    );
+    await createSupabaseAdminClient()
+      .from("generations")
+      .update({ poll_failures: 0 })
+      .eq("id", generation.id);
+    return updated;
+  } catch (error) {
+    const failures = (generation.poll_failures ?? 0) + 1;
+    if (failures >= MAX_POLL_FAILURES) {
+      return failGeneration(
+        generation,
+        "The image service stopped responding and your credits were returned.",
+        "timed_out",
+      );
+    }
+    await createSupabaseAdminClient()
+      .from("generations")
+      .update({ poll_failures: failures })
+      .eq("id", generation.id);
+    throw error;
+  }
 }
 
 // 轻量轮询：只读状态 + 图片 URL，不在请求内做 APIMart/下载/水印/上传等重活
@@ -256,6 +278,28 @@ export async function advanceGenerationById(
 ): Promise<ReturnType<typeof toGenerationResponse>> {
   const generation = await loadGeneration(generationId, actor);
   return responseFor(await advanceGeneration(generation));
+}
+
+// 客户端连续推进失败后主动放弃：把卡在 submitted/processing 的任务立即标记为
+// timed_out 并退还积分，避免前端长时间停留在“生成中/重连”。
+export async function giveUpGenerationById(
+  generationId: string,
+  actor: GenerationActor,
+): Promise<ReturnType<typeof toGenerationResponse>> {
+  const generation = await loadGeneration(generationId, actor);
+  if (
+    ["succeeded", "partially_succeeded", "failed", "timed_out"].includes(
+      generation.status,
+    )
+  ) {
+    return responseFor(generation);
+  }
+  const updated = await failGeneration(
+    generation,
+    "The image service did not respond; your credits were returned.",
+    "timed_out",
+  );
+  return responseFor(updated);
 }
 
 export async function recoverGeneration(
