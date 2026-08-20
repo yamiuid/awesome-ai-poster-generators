@@ -5,8 +5,8 @@ import { getActorForRequest } from "@/lib/server/generation-create";
 import { advanceGenerationById } from "@/lib/server/generation-poll";
 import { getGuestIdentity } from "@/lib/server/guest";
 
-// 下载/水印/上传是重活，给足超时（Hobby 上限 60s，Pro 可更长）
-export const maxDuration = 60;
+// 下载/水印/上传是重活，给足超时（Hobby 上限 60s，Pro 可到 300s）
+export const maxDuration = 300;
 
 type RouteContext = Readonly<{ params: Promise<{ id: string }> }>;
 

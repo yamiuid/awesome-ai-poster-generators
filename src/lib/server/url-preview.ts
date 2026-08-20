@@ -7,7 +7,7 @@ import { ProxyAgent, Socks5ProxyAgent, fetch as undiciFetch } from "undici";
 import { type UrlPreview, urlPreviewSchema } from "@/lib/domain/url-preview";
 import { AppError } from "./errors";
 
-const MAX_BYTES = 2 * 1024 * 1024;
+const MAX_BYTES = 4 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
 const FETCH_TIMEOUT_MS = 10_000;
 const MAX_CONTENT_CHARS = 6_000;
@@ -212,6 +212,63 @@ export function extractPage(
   };
 }
 
+/**
+ * 流式读取响应体，累计达到 maxBytes 即停止下载并截断。
+ * 大页面不再直接报错，而是只读取前面部分，保证内存占用有上限。
+ */
+async function readBodyCapped(
+  response: Response,
+  maxBytes: number,
+): Promise<{ html: string; truncated: boolean; byteLength: number }> {
+  const body = response.body;
+  if (!body) {
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const truncated = buffer.byteLength > maxBytes;
+    return {
+      html: truncated
+        ? buffer.subarray(0, maxBytes).toString("utf8")
+        : buffer.toString("utf8"),
+      truncated,
+      byteLength: truncated ? maxBytes : buffer.byteLength,
+    };
+  }
+  const reader = body.getReader();
+  const chunks: Buffer[] = [];
+  let byteLength = 0;
+  let truncated = false;
+  try {
+    while (byteLength < maxBytes) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      const remaining = maxBytes - byteLength;
+      if (value.byteLength > remaining) {
+        chunks.push(Buffer.from(value.buffer, value.byteOffset, remaining));
+        byteLength = maxBytes;
+        truncated = true;
+        break;
+      }
+      chunks.push(Buffer.from(value));
+      byteLength += value.byteLength;
+    }
+    if (truncated) {
+      try {
+        await reader.cancel();
+      } catch {
+        // 取消流失败不影响已读到的内容
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return {
+    html: Buffer.concat(chunks).toString("utf8"),
+    truncated,
+    byteLength,
+  };
+}
+
 export async function fetchPageHtml(
   url: URL,
   options?: { signal?: AbortSignal },
@@ -220,6 +277,7 @@ export async function fetchPageHtml(
   status: number;
   contentType: string;
   byteLength: number;
+  truncated: boolean;
   finalUrl: URL;
 }> {
   const proxiedFetch = getProxiedFetch();
@@ -267,19 +325,16 @@ export async function fetchPageHtml(
         422,
       );
     }
-    const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.byteLength > MAX_BYTES) {
-      throw new AppError(
-        "URL_PREVIEW_TOO_LARGE",
-        "This page is too large to read.",
-        422,
-      );
-    }
+    const { html, truncated, byteLength } = await readBodyCapped(
+      response,
+      MAX_BYTES,
+    );
     return {
-      html: buffer.toString("utf8"),
+      html,
       status: response.status,
       contentType,
-      byteLength: buffer.byteLength,
+      byteLength,
+      truncated,
       finalUrl: current,
     };
   }

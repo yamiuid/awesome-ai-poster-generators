@@ -45,14 +45,36 @@ const RATIO_INSTRUCTIONS: Readonly<Record<AspectRatio, string>> = {
   "3:2": "landscape poster composition with photographic framing",
 };
 
+/**
+ * 检测提示词正文的主导语言：有 CJK 字符且占比不低于拉丁字母一半时视为中文，
+ * 否则视为英文。用于让海报文字与提示词语言保持一致。
+ */
+export function detectTextLanguage(text: string): "zh" | "en" {
+  const cjk = (text.match(/[\u3400-\u9fff\uf900-\ufaff]/g) ?? []).length;
+  const latin = (text.match(/[A-Za-z]/g) ?? []).length;
+  return cjk > 0 && cjk >= latin * 0.5 ? "zh" : "en";
+}
+
+function languageInstruction(prompt: string): string {
+  if (detectTextLanguage(prompt) === "zh") {
+    return (
+      "All poster text must be written in Simplified Chinese. " +
+      "Do not use English or any other non-Chinese language for any text on the poster."
+    );
+  }
+  return (
+    "All poster text must be written in English. " +
+    "Do not use Chinese characters or any other non-English language for any text on the poster."
+  );
+}
+
 export function buildPosterPrompt(
   request: GenerationRequest,
   options?: Readonly<{ hasReferenceImage?: boolean }>,
 ): string {
   return [
     "Create a finished poster, not a mockup and not a blank template.",
-    "Render any poster text in the same language as the core idea: " +
-      "if the idea is in Chinese, the poster text must be in Chinese; if English, in English.",
+    languageInstruction(request.prompt),
     ...(options?.hasReferenceImage
       ? [
           "Use the provided reference image as the primary visual material: keep its subject and composition recognizable, and build a polished poster around it. Do not copy any text, logos, or watermarks from the reference image.",

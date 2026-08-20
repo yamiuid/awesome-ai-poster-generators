@@ -44,6 +44,21 @@ describe("normalizeBriefFields", () => {
   it("rejects missing headline", () => {
     expect(normalizeBriefFields({ points: [] })).toBeNull();
   });
+
+  it("truncates overlong model output instead of rejecting", () => {
+    const result = normalizeBriefFields({
+      headline: "H".repeat(100),
+      subtitle: "S".repeat(200),
+      points: ["P".repeat(300), "Q", ""],
+      cta: "C".repeat(150),
+    });
+    expect(result).toEqual({
+      headline: "H".repeat(80),
+      subtitle: "S".repeat(120),
+      points: ["P".repeat(120), "Q", ""],
+      cta: "C".repeat(120),
+    });
+  });
 });
 
 describe("buildBriefPrompt", () => {

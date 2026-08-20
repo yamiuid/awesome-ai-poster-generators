@@ -280,8 +280,8 @@ export async function advanceGenerationById(
   return responseFor(await advanceGeneration(generation));
 }
 
-// 客户端连续推进失败后主动放弃：把卡在 submitted/processing 的任务立即标记为
-// timed_out 并退还积分，避免前端长时间停留在“生成中/重连”。
+// 客户端连续推进失败后主动放弃：先核实 provider 真实状态，避免网络抖动时
+// 误杀仍在出图的任务。仅在 provider 已失败/取消，或超过硬超时后标记 timed_out。
 export async function giveUpGenerationById(
   generationId: string,
   actor: GenerationActor,
@@ -294,6 +294,31 @@ export async function giveUpGenerationById(
   ) {
     return responseFor(generation);
   }
+  const hardTimeoutPassed =
+    Date.now() - new Date(generation.submitted_at).getTime() >
+    MAX_GENERATION_MS;
+
+  // 有 provider 任务时先核实真实状态
+  if (generation.provider_task_id) {
+    try {
+      const task = await getTask(generation.provider_task_id);
+      if (
+        task.status === "completed" ||
+        task.status === "failed" ||
+        task.status === "cancelled"
+      ) {
+        // provider 已有结论：走正常推进落库/标记失败，而不是直接放弃
+        return responseFor(await applyProviderTask(generation, task));
+      }
+    } catch {
+      // 查不到 provider 状态时保守处理：未到硬超时就不放弃
+    }
+    if (!hardTimeoutPassed) {
+      // provider 仍在处理中：任务继续，返回当前状态让客户端保持轮询
+      return responseFor(generation);
+    }
+  }
+
   const updated = await failGeneration(
     generation,
     "The image service did not respond; your credits were returned.",

@@ -22,6 +22,13 @@ export const briefFieldsSchema = z.object({
 
 export type BriefFields = z.infer<typeof briefFieldsSchema>;
 
+const lenientBriefSchema = z.object({
+  headline: z.string(),
+  subtitle: z.string().optional(),
+  points: z.array(z.string()).optional(),
+  cta: z.string().optional(),
+});
+
 export function parseLooseJson(text: string): unknown {
   const trimmed = text.trim();
   try {
@@ -36,19 +43,27 @@ export function parseLooseJson(text: string): unknown {
 }
 
 export function normalizeBriefFields(value: unknown): BriefFields | null {
-  const parsed = briefFieldsSchema.safeParse(value);
+  // 模型偶尔会超长输出，这里宽松校验形状后按上限截断，而不是直接拒绝
+  const parsed = lenientBriefSchema.safeParse(value);
   if (!parsed.success) {
     return null;
   }
-  const fields = parsed.data;
+  const clamp = (text: string, max: number): string =>
+    text.trim().slice(0, max);
   const points = [
-    ...fields.points,
-    ...Array.from(
-      { length: Math.max(0, BRIEF_POINT_COUNT - fields.points.length) },
-      () => "",
+    ...(parsed.data.points ?? []).map((point) =>
+      clamp(point, BRIEF_CHAR_LIMITS.point),
     ),
+    ...Array.from({ length: BRIEF_POINT_COUNT }, () => ""),
   ].slice(0, BRIEF_POINT_COUNT);
-  return { ...fields, points };
+  return {
+    headline: clamp(parsed.data.headline, BRIEF_CHAR_LIMITS.headline),
+    subtitle: parsed.data.subtitle
+      ? clamp(parsed.data.subtitle, BRIEF_CHAR_LIMITS.subtitle)
+      : "",
+    points,
+    cta: parsed.data.cta ? clamp(parsed.data.cta, BRIEF_CHAR_LIMITS.cta) : "",
+  };
 }
 
 export function buildBriefPrompt(fields: BriefFields): string {

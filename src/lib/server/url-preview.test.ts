@@ -174,4 +174,22 @@ describe("fetchUrlPreview", () => {
       fetchUrlPreview("https://example.com/a.png"),
     ).rejects.toMatchObject({ code: "URL_PREVIEW_NOT_HTML" });
   });
+
+  it("truncates oversized pages instead of rejecting", async () => {
+    vi.mocked(lookup).mockResolvedValue([
+      { address: "93.184.216.34", family: 4 },
+    ] as unknown as LookupAddress);
+    const bigHtml = `<html><head><title>Big Page</title></head><body><p>${"x".repeat(
+      4 * 1024 * 1024 + 1024,
+    )}</p></body></html>`;
+    fetchMock.mockResolvedValue(
+      new Response(bigHtml, {
+        headers: { "content-type": "text/html" },
+      }),
+    );
+    const preview = await fetchUrlPreview("https://example.com/big");
+    expect(preview.title).toBe("Big Page");
+    expect(preview.content.length).toBeGreaterThan(0);
+    expect(preview.content.length).toBeLessThanOrEqual(6000);
+  });
 });

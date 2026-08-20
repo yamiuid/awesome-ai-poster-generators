@@ -197,7 +197,11 @@ export async function submitChatCompletion(input: {
           // APIMart 的 /v1/chat/completions 默认流式返回 SSE；显式关闭以按
           // 非流式 JSON 解析 choices[0].message.content
           stream: false,
-          ...(input.responseFormatJson
+          // gpt-5.4-nano 等 nano 型号不支持 response_format: json_object，
+          // 会直接拒绝请求；提示词已要求“只输出 JSON”，parseLooseJson 也能
+          // 容错提取，所以 nano 型号跳过该参数。
+          ...(input.responseFormatJson &&
+          !input.model.toLowerCase().includes("nano")
             ? { response_format: { type: "json_object" } }
             : {}),
         },

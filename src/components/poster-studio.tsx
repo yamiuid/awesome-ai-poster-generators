@@ -50,9 +50,10 @@ import {
   generationResponseSchema,
   IMAGE_COUNTS,
   type ImageCount,
-  isResolution,
   type PosterStyle,
+  QUALITIES,
   type Quality,
+  RESOLUTIONS,
   type Resolution,
   recentGenerationsSchema,
   STYLES,
@@ -183,7 +184,8 @@ type TierOption = Readonly<{ value: string; label: string; locked: boolean }>;
 
 /**
  * 原生 select 的替代：自定义 listbox，避免系统控件样式与站点风格脱节。
- * 付费选项（locked）在行尾渲染线性 LockKeyhole 图标。支持键盘导航与点击外部关闭。
+ * 付费选项（locked）可以正常选中，行尾渲染线性 LockKeyhole 图标提示升级；
+ * 免费用户点击 Generate 时再由业务层弹窗引导升级。支持键盘导航与点击外部关闭。
  */
 function TierSelect({
   value,
@@ -191,12 +193,16 @@ function TierSelect({
   onChange,
   disabled = false,
   label,
+  menuClassName,
+  gridColumns,
 }: Readonly<{
   value: string;
   options: readonly TierOption[];
   onChange: (value: string) => void;
   disabled?: boolean;
   label: string;
+  menuClassName?: string;
+  gridColumns?: number;
 }>) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -223,11 +229,296 @@ function TierSelect({
 
   function selectAt(index: number): void {
     const option = options[index];
-    if (!option || option.locked) {
+    if (!option) {
       return;
     }
     onChange(option.value);
     setOpen(false);
+  }
+
+  // 点击外部关闭
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    function onPointerDown(event: PointerEvent): void {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
+  // 关闭时把高亮重置回当前选中项
+  useEffect(() => {
+    if (!open) {
+      setActiveIndex(selectedIndex);
+    }
+  }, [open, selectedIndex]);
+
+  function onKeyDown(event: KeyboardEvent<HTMLButtonElement>): void {
+    if (disabled) {
+      return;
+    }
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        if (open) {
+          setActiveIndex((index) =>
+            Math.min(index + (gridColumns ?? 1), options.length - 1),
+          );
+        } else {
+          openMenu();
+        }
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        if (open) {
+          setActiveIndex((index) => Math.max(index - (gridColumns ?? 1), 0));
+        } else {
+          openMenu();
+        }
+        break;
+      case "ArrowLeft":
+        if (open && gridColumns) {
+          event.preventDefault();
+          setActiveIndex((index) => Math.max(index - 1, 0));
+        }
+        break;
+      case "ArrowRight":
+        if (open && gridColumns) {
+          event.preventDefault();
+          setActiveIndex((index) => Math.min(index + 1, options.length - 1));
+        }
+        break;
+      case "Enter":
+      case " ":
+        event.preventDefault();
+        if (open) {
+          selectAt(activeIndex);
+        } else {
+          openMenu();
+        }
+        break;
+      case "Escape":
+        setOpen(false);
+        break;
+      case "Home":
+        if (open) {
+          event.preventDefault();
+          setActiveIndex(0);
+        }
+        break;
+      case "End":
+        if (open) {
+          event.preventDefault();
+          setActiveIndex(options.length - 1);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  return (
+    <div className="option-control-wrap" ref={containerRef}>
+      <button
+        type="button"
+        className="option-control"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={`option-${label}-listbox`}
+        aria-activedescendant={
+          open ? `option-${label}-${activeIndex}` : undefined
+        }
+        aria-label={label}
+        onClick={() => (open ? setOpen(false) : openMenu())}
+        onKeyDown={onKeyDown}
+        disabled={disabled}
+      >
+        <span className="option-control-label">
+          <span className="option-control-text">{selectedLabel}</span>
+          {selectedOption?.locked && (
+            <LockKeyhole size={13} className="option-lock" aria-hidden="true" />
+          )}
+        </span>
+        <ChevronDown size={14} className="option-chevron" aria-hidden="true" />
+      </button>
+      {open && (
+        <div
+          id={`option-${label}-listbox`}
+          className={`option-menu ${menuClassName ?? ""}`.trim()}
+          role="listbox"
+          aria-label={label}
+        >
+          {options.map((option, index) => (
+            <button
+              key={option.value}
+              type="button"
+              id={`option-${label}-${index}`}
+              role="option"
+              aria-selected={option.value === value}
+              className={`option-item ${index === activeIndex ? "is-active" : ""}`}
+              onClick={() => selectAt(index)}
+              onMouseEnter={() => setActiveIndex(index)}
+            >
+              <span className="option-item-label">
+                {option.label}
+                {option.locked && (
+                  <LockKeyhole
+                    size={13}
+                    className="option-lock"
+                    aria-hidden="true"
+                  />
+                )}
+              </span>
+              {option.value === value && (
+                <Check size={13} className="option-check" aria-hidden="true" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type OutputGroup = "aspect" | "resolution" | "quality";
+
+type OutputOption = Readonly<{
+  group: OutputGroup;
+  value: string;
+  label: string;
+  locked: boolean;
+  selected: boolean;
+}>;
+
+const RESOLUTION_LABELS: Readonly<Record<Resolution, string>> = {
+  "1k": "1K",
+  "2k": "2K / crisp",
+  "4k": "4K / print",
+};
+
+const QUALITY_LABELS: Readonly<Record<Quality, string>> = {
+  low: "Low / fast",
+  medium: "Medium",
+  high: "High / precise",
+};
+
+const ASPECT_COUNT = ASPECT_RATIOS.length;
+const RESOLUTION_COUNT = RESOLUTIONS.length;
+
+/**
+ * Output settings 组合下拉：一个控件内分组选择 Aspect Ratio / Resolution / Quality。
+ * 选中后按钮文案形如 square(1:1) | 1k | low；菜单保持打开，方便一次调好三项。
+ */
+function OutputSettingsSelect({
+  aspectRatio,
+  resolution,
+  quality,
+  isPro,
+  disabled = false,
+  onChangeAspect,
+  onChangeResolution,
+  onChangeQuality,
+}: Readonly<{
+  aspectRatio: AspectRatio;
+  resolution: Resolution;
+  quality: Quality;
+  isPro: boolean;
+  disabled?: boolean;
+  onChangeAspect: (next: AspectRatio) => void;
+  onChangeResolution: (next: Resolution) => void;
+  onChangeQuality: (next: Quality) => void;
+}>) {
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const options = useMemo<readonly OutputOption[]>(
+    () => [
+      ...ASPECT_RATIOS.map((option) => ({
+        group: "aspect" as const,
+        value: option,
+        label: `${aspectLabels[option]} (${option})`,
+        locked: false,
+        selected: option === aspectRatio,
+      })),
+      ...RESOLUTIONS.map((option) => ({
+        group: "resolution" as const,
+        value: option,
+        label: RESOLUTION_LABELS[option],
+        locked: option !== "1k" && !isPro,
+        selected: option === resolution,
+      })),
+      ...QUALITIES.map((option) => ({
+        group: "quality" as const,
+        value: option,
+        label: QUALITY_LABELS[option],
+        locked: option !== "low" && !isPro,
+        selected: option === quality,
+      })),
+    ],
+    [aspectRatio, isPro, quality, resolution],
+  );
+
+  const sections = useMemo(
+    () => [
+      {
+        label: "Aspect Ratio",
+        startIndex: 0,
+        options: options.slice(0, ASPECT_COUNT),
+      },
+      {
+        label: "Resolution",
+        startIndex: ASPECT_COUNT,
+        options: options.slice(ASPECT_COUNT, ASPECT_COUNT + RESOLUTION_COUNT),
+      },
+      {
+        label: "Quality",
+        startIndex: ASPECT_COUNT + RESOLUTION_COUNT,
+        options: options.slice(ASPECT_COUNT + RESOLUTION_COUNT),
+      },
+    ],
+    [options],
+  );
+
+  const selectedIndex = useMemo(
+    () =>
+      Math.max(
+        0,
+        options.findIndex((option) => option.selected),
+      ),
+    [options],
+  );
+
+  const selectedSummaryLocked = options.some(
+    (option) => option.locked && option.selected,
+  );
+
+  function openMenu(): void {
+    setActiveIndex(selectedIndex);
+    setOpen(true);
+  }
+
+  function selectAt(index: number): void {
+    const option = options[index];
+    if (!option) {
+      return;
+    }
+    switch (option.group) {
+      case "aspect":
+        onChangeAspect(option.value as AspectRatio);
+        break;
+      case "resolution":
+        onChangeResolution(option.value as Resolution);
+        break;
+      case "quality":
+        onChangeQuality(option.value as Quality);
+        break;
+    }
+    setActiveIndex(index);
   }
 
   // 点击外部关闭
@@ -308,57 +599,87 @@ function TierSelect({
         className="option-control"
         role="combobox"
         aria-expanded={open}
-        aria-controls={`option-${label}-listbox`}
+        aria-controls="output-settings-listbox"
         aria-activedescendant={
-          open ? `option-${label}-${activeIndex}` : undefined
+          open ? `output-option-${activeIndex}` : undefined
         }
-        aria-label={label}
+        aria-label="Output settings"
         onClick={() => (open ? setOpen(false) : openMenu())}
         onKeyDown={onKeyDown}
         disabled={disabled}
       >
         <span className="option-control-label">
-          <span className="option-control-text">{selectedLabel}</span>
-          {selectedOption?.locked && (
+          <span className="option-control-text">
+            <span>
+              {aspectLabels[aspectRatio].toLowerCase()}({aspectRatio})
+            </span>
+            <span className="output-summary-sep" aria-hidden="true">
+              |
+            </span>
+            <span>{resolution}</span>
+            <span className="output-summary-sep" aria-hidden="true">
+              |
+            </span>
+            <span>{quality}</span>
+          </span>
+          {selectedSummaryLocked && (
             <LockKeyhole size={13} className="option-lock" aria-hidden="true" />
           )}
         </span>
-        <ChevronDown size={14} aria-hidden="true" />
+        <ChevronDown size={14} className="option-chevron" aria-hidden="true" />
       </button>
       {open && (
         <div
-          id={`option-${label}-listbox`}
-          className="option-menu"
+          id="output-settings-listbox"
+          className="option-menu output-settings-menu"
           role="listbox"
-          aria-label={label}
+          aria-label="Output settings"
         >
-          {options.map((option, index) => (
-            <button
-              key={option.value}
-              type="button"
-              id={`option-${label}-${index}`}
-              role="option"
-              aria-selected={option.value === value}
-              aria-disabled={option.locked}
-              disabled={option.locked}
-              className={`option-item ${index === activeIndex ? "is-active" : ""}`}
-              onClick={() => selectAt(index)}
-              onMouseEnter={() => setActiveIndex(index)}
+          {sections.map((section) => (
+            <fieldset
+              key={section.label}
+              className="output-section"
+              aria-label={section.label}
             >
-              <span className="option-item-label">
-                {option.label}
-                {option.locked && (
-                  <LockKeyhole
-                    size={13}
-                    className="option-lock"
-                    aria-hidden="true"
-                  />
-                )}
-              </span>
-              {option.value === value && (
-                <Check size={13} className="option-check" aria-hidden="true" />
-              )}
-            </button>
+              <span className="output-section-label">{section.label}</span>
+              <div className="output-section-options">
+                {section.options.map((option, index) => {
+                  const flatIndex = section.startIndex + index;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      id={`output-option-${flatIndex}`}
+                      role="option"
+                      aria-selected={option.selected}
+                      className={`option-item ${
+                        option.selected ? "is-selected" : ""
+                      } ${flatIndex === activeIndex ? "is-active" : ""}`}
+                      onClick={() => selectAt(flatIndex)}
+                      onMouseEnter={() => setActiveIndex(flatIndex)}
+                    >
+                      <span className="option-item-label">
+                        {option.label}
+                        {option.locked && (
+                          <LockKeyhole
+                            size={13}
+                            className="option-lock"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </span>
+                      {option.selected && (
+                        <Check
+                          size={13}
+                          className="option-check"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
           ))}
         </div>
       )}
@@ -368,6 +689,8 @@ function TierSelect({
 
 const PENDING_GENERATIONS_KEY = "ttp_pending_generations";
 const GIVE_UP_AFTER_FAILURES = 5;
+// 偶发 404（如身份/会话抖动）先按普通失败重试，连续多次才认为任务不可达
+const MAX_404_BEFORE_REMOVAL = 4;
 
 const TERMINAL_STATUSES: ReadonlySet<GenerationResponse["status"]> = new Set([
   "succeeded",
@@ -631,15 +954,19 @@ export function PosterStudio({ isPro, isGuest }: Props) {
   const [urlPipelineOpen, setUrlPipelineOpen] = useState(false);
   const guestLimitDialogRef = useRef<HTMLDialogElement>(null);
   const guestLimitCloseRef = useRef<HTMLButtonElement>(null);
+  const upgradeDialogRef = useRef<HTMLDialogElement>(null);
+  const upgradeCloseRef = useRef<HTMLButtonElement>(null);
   const lightboxDialogRef = useRef<HTMLDialogElement>(null);
   const lightboxCloseRef = useRef<HTMLButtonElement>(null);
   const editContentDialogRef = useRef<HTMLDialogElement>(null);
   const generateButtonRef = useRef<HTMLButtonElement>(null);
   const promptFieldRef = useRef<HTMLTextAreaElement>(null);
   const guestLimitPreviousFocus = useRef<HTMLElement | null>(null);
+  const upgradePreviousFocus = useRef<HTMLElement | null>(null);
   const lightboxPreviousFocus = useRef<HTMLElement | null>(null);
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const pollAttempts = useRef(new Map<string, number>());
+  const poll404Counts = useRef(new Map<string, number>());
   const pollingIds = useRef(new Set<string>());
   const advanceFailures = useRef(new Map<string, number>());
   const advancingIds = useRef(new Set<string>());
@@ -1091,6 +1418,31 @@ export function PosterStudio({ isPro, isGuest }: Props) {
   }, [guestLimitPrompt]);
 
   useEffect(() => {
+    const dialog = upgradeDialogRef.current;
+    if (!dialog) {
+      return;
+    }
+    if (upgradePrompt) {
+      if (!upgradePreviousFocus.current) {
+        upgradePreviousFocus.current =
+          document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null;
+      }
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+      requestAnimationFrame(() => upgradeCloseRef.current?.focus());
+      return;
+    }
+    if (dialog.open) {
+      dialog.close();
+    }
+    upgradePreviousFocus.current?.focus();
+    upgradePreviousFocus.current = null;
+  }, [upgradePrompt]);
+
+  useEffect(() => {
     const dialog = editContentDialogRef.current;
     if (!dialog) {
       return;
@@ -1188,6 +1540,7 @@ export function PosterStudio({ isPro, isGuest }: Props) {
         throw new Error("The generation response was invalid.");
       }
       pollAttempts.current.set(id, 0);
+      poll404Counts.current.delete(id);
       syncConnectionFailures(id);
       applyGeneration(parsed.data);
       if (isTerminalStatus(parsed.data.status)) {
@@ -1204,26 +1557,36 @@ export function PosterStudio({ isPro, isGuest }: Props) {
       }
       schedulePoll(id, pollDelay(id));
     } catch (pollError) {
-      // 记录已被删除（404）：停止轮询并清理本地状态，避免无限请求已删除的 generation
       if (pollError instanceof HTTPError && pollError.response.status === 404) {
-        activeIds.current.delete(id);
-        workingIds.current.delete(id);
-        generationById.current.delete(id);
-        pollAttempts.current.delete(id);
-        const scheduled = timers.current.get(id);
-        if (scheduled) {
-          clearTimeout(scheduled);
-          timers.current.delete(id);
+        // 偶发 404（如身份/会话抖动）不立即删卡片：先按普通失败重试，
+        // 连续多次仍 404 才认为记录已删除，停止轮询并清理本地状态
+        const misses = (poll404Counts.current.get(id) ?? 0) + 1;
+        poll404Counts.current.set(id, misses);
+        if (misses >= MAX_404_BEFORE_REMOVAL) {
+          activeIds.current.delete(id);
+          workingIds.current.delete(id);
+          generationById.current.delete(id);
+          pollAttempts.current.delete(id);
+          poll404Counts.current.delete(id);
+          const scheduled = timers.current.get(id);
+          if (scheduled) {
+            clearTimeout(scheduled);
+            timers.current.delete(id);
+          }
+          writePendingGenerationIds(
+            readPendingGenerationIds().filter((pending) => pending !== id),
+          );
+          setGenerations((prev) =>
+            prev.filter((generation) => generation.id !== id),
+          );
+          setRecentGenerations((prev) =>
+            prev.filter((generation) => generation.id !== id),
+          );
+          return;
         }
-        writePendingGenerationIds(
-          readPendingGenerationIds().filter((pending) => pending !== id),
-        );
-        setGenerations((prev) =>
-          prev.filter((generation) => generation.id !== id),
-        );
-        setRecentGenerations((prev) =>
-          prev.filter((generation) => generation.id !== id),
-        );
+        const delay = recordPollFailure(id);
+        syncConnectionFailures(id);
+        schedulePoll(id, delay);
         return;
       }
       // 无论什么错误都继续轮询（带退避），避免页面永久停在“生成中”
@@ -1260,6 +1623,7 @@ export function PosterStudio({ isPro, isGuest }: Props) {
     }
     // 免费用户选了 Pro 档位：不发起请求，引导开通会员
     if (!isPro && needsPro) {
+      upgradePreviousFocus.current = generateButtonRef.current;
       setUpgradePrompt(true);
       return;
     }
@@ -1677,11 +2041,35 @@ export function PosterStudio({ isPro, isGuest }: Props) {
           <fieldset className="control-block">
             <legend className="field-label">Output settings</legend>
             <div className="studio-options">
+              <div className="option-select option-select--wide">
+                <span>Output</span>
+                <OutputSettingsSelect
+                  aspectRatio={aspectRatio}
+                  resolution={resolution}
+                  quality={quality}
+                  isPro={isPro}
+                  disabled={isSubmitting}
+                  onChangeAspect={(next) => {
+                    setAspectRatio(next);
+                    setUpgradePrompt(false);
+                  }}
+                  onChangeResolution={(next) => {
+                    setResolution(next);
+                    setUpgradePrompt(false);
+                  }}
+                  onChangeQuality={(next) => {
+                    setQuality(next);
+                    setUpgradePrompt(false);
+                  }}
+                />
+              </div>
               <div className="option-select">
                 <span>Art direction</span>
                 <TierSelect
                   label="Art direction"
                   value={style}
+                  menuClassName="art-direction-menu"
+                  gridColumns={4}
                   onChange={(next) => {
                     if (STYLES.some((option) => option === next)) {
                       setStyle(next as PosterStyle);
@@ -1689,72 +2077,11 @@ export function PosterStudio({ isPro, isGuest }: Props) {
                     }
                   }}
                   disabled={isSubmitting}
-                  options={STYLES.map((option) => ({
+                  options={STYLES.slice(0, -1).map((option) => ({
                     value: option,
                     label: styleLabels[option],
                     locked: false,
                   }))}
-                />
-              </div>
-              <div className="option-select">
-                <span>Aspect Ratio</span>
-                <TierSelect
-                  label="Aspect Ratio"
-                  value={aspectRatio}
-                  onChange={(next) => {
-                    if (ASPECT_RATIOS.some((option) => option === next)) {
-                      setAspectRatio(next as AspectRatio);
-                      setUpgradePrompt(false);
-                    }
-                  }}
-                  disabled={isSubmitting}
-                  options={ASPECT_RATIOS.map((option) => ({
-                    value: option,
-                    label: `${aspectLabels[option]} (${option})`,
-                    locked: false,
-                  }))}
-                />
-              </div>
-              <div className="option-select">
-                <span>Resolution</span>
-                <TierSelect
-                  label="Resolution"
-                  value={resolution}
-                  onChange={(next) => {
-                    if (isResolution(next)) {
-                      setResolution(next);
-                      setUpgradePrompt(false);
-                    }
-                  }}
-                  disabled={isSubmitting}
-                  options={[
-                    { value: "1k", label: "1K", locked: false },
-                    { value: "2k", label: "2K / crisp", locked: !isPro },
-                    { value: "4k", label: "4K / print", locked: !isPro },
-                  ]}
-                />
-              </div>
-              <div className="option-select">
-                <span>Quality</span>
-                <TierSelect
-                  label="Quality"
-                  value={quality}
-                  onChange={(next) => {
-                    if (
-                      next === "low" ||
-                      next === "medium" ||
-                      next === "high"
-                    ) {
-                      setQuality(next);
-                      setUpgradePrompt(false);
-                    }
-                  }}
-                  disabled={isSubmitting}
-                  options={[
-                    { value: "low", label: "Low / fast", locked: false },
-                    { value: "medium", label: "Medium", locked: !isPro },
-                    { value: "high", label: "High / precise", locked: !isPro },
-                  ]}
                 />
               </div>
               <div className="option-select">
@@ -1804,9 +2131,16 @@ export function PosterStudio({ isPro, isGuest }: Props) {
             className="generate-button"
             type="button"
             onClick={() => {
-              // 粘贴后立刻点击的场景下，300ms debounce 可能还没更新 detectedType，
-              // 这里同步判断，保证 URL 一定会走管线弹窗而不是直接生成。
-              if (detectInputType(prompt) === "url" && prompt.trim()) {
+              // 免费用户选了 Pro 档位时，先弹升级提示，不做任何后续动作
+              if (needsPro) {
+                upgradePreviousFocus.current = generateButtonRef.current;
+                setUpgradePrompt(true);
+              } else if (
+                // 粘贴后立刻点击的场景下，300ms debounce 可能还没更新 detectedType，
+                // 这里同步判断，保证 URL 一定会走管线弹窗而不是直接生成。
+                detectInputType(prompt) === "url" &&
+                prompt.trim()
+              ) {
                 setUrlPipelineOpen(true);
               } else {
                 void generate();
@@ -1820,23 +2154,10 @@ export function PosterStudio({ isPro, isGuest }: Props) {
             AI-generated with GPT Image 2.{" "}
             <a href="/ai-policy">Read the AI use policy.</a>
           </p>
-          {upgradePrompt ? (
+          {error && (
             <p className="error-message" role="alert">
-              <CircleAlert size={16} />
-              <span>
-                These options are Pro only.{" "}
-                <a className="error-link" href="/pricing">
-                  Upgrade to Pro
-                </a>{" "}
-                to unlock 2K/4K, higher finish, and up to 4 posters.
-              </span>
+              <CircleAlert size={16} /> {error}
             </p>
-          ) : (
-            error && (
-              <p className="error-message" role="alert">
-                <CircleAlert size={16} /> {error}
-              </p>
-            )
           )}
         </div>
 
@@ -2036,6 +2357,56 @@ export function PosterStudio({ isPro, isGuest }: Props) {
               className="outline-button"
               type="button"
               onClick={() => setGuestLimitPrompt(false)}
+            >
+              Maybe later
+            </button>
+            <a className="solid-button" href="/pricing">
+              Upgrade to Pro
+            </a>
+          </div>
+        </div>
+      </dialog>
+      <dialog
+        ref={upgradeDialogRef}
+        className="modal-backdrop"
+        aria-labelledby="upgrade-title"
+        aria-describedby="upgrade-note"
+        onCancel={(event) => {
+          event.preventDefault();
+          setUpgradePrompt(false);
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            setUpgradePrompt(false);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setUpgradePrompt(false);
+          }
+        }}
+      >
+        <div className="modal-card">
+          <button
+            ref={upgradeCloseRef}
+            type="button"
+            className="modal-close"
+            aria-label="Close upgrade prompt"
+            onClick={() => setUpgradePrompt(false)}
+          >
+            <X size={18} />
+          </button>
+          <p className="eyebrow">Pro feature</p>
+          <h3 id="upgrade-title">These options are Pro only.</h3>
+          <p className="modal-note" id="upgrade-note">
+            You picked a higher resolution, finish, or more posters. Upgrade to
+            Pro to generate with these options.
+          </p>
+          <div className="modal-actions">
+            <button
+              className="outline-button"
+              type="button"
+              onClick={() => setUpgradePrompt(false)}
             >
               Maybe later
             </button>

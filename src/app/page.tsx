@@ -173,6 +173,60 @@ export default async function Home({
       <PosterStudio isPro={auth.isPro} isGuest={!auth.userId} />
 
       <section
+        className="content-section url-poster-section"
+        id="url-poster"
+        aria-labelledby="url-poster-heading"
+      >
+        <p className="eyebrow">Link to poster</p>
+        <div className="split-heading">
+          <h2 id="url-poster-heading">Turn a link into a poster.</h2>
+          <p>
+            Paste an article, event page, or announcement URL. Text to Poster
+            reads the page, pulls out the title, the key message, and the points
+            that matter, then turns them into a poster brief you can edit before
+            generating.
+          </p>
+        </div>
+        <ol className="content-grid url-poster-steps">
+          <li>
+            <article>
+              <span className="eyebrow">01 / PASTE</span>
+              <h3>Drop in a link.</h3>
+              <p>
+                Paste an article, event page, or announcement URL into the
+                studio.
+              </p>
+            </article>
+          </li>
+          <li>
+            <article>
+              <span className="eyebrow">02 / READ</span>
+              <h3>AI extracts the brief.</h3>
+              <p>
+                Text to Poster reads the page and pulls out the title, the key
+                message, and the points that matter.
+              </p>
+            </article>
+          </li>
+          <li>
+            <article>
+              <span className="eyebrow">03 / EDIT &amp; GENERATE</span>
+              <h3>Shape it, then generate.</h3>
+              <p>
+                Review and edit the brief before turning the link into poster
+                directions you can compare and download.
+              </p>
+            </article>
+          </li>
+        </ol>
+        <p className="url-poster-cta">
+          <a className="pricing-link" href="#studio">
+            Try it in the studio <ArrowUpRight size={15} />
+          </a>
+        </p>
+      </section>
+
+      <section
         className="content-section what-is-section"
         id="what-is"
         aria-labelledby="what-is-heading"

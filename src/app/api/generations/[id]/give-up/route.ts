@@ -7,6 +7,9 @@ import { getGuestIdentity } from "@/lib/server/guest";
 
 type RouteContext = Readonly<{ params: Promise<{ id: string }> }>;
 
+// give-up 可能触发 provider 已完成时的正常落库（下载/水印/上传），给足超时
+export const maxDuration = 300;
+
 // 客户端连续推进失败后的主动放弃：结束卡住的任务并退还积分。
 export async function POST(
   request: NextRequest,

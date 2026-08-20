@@ -4,7 +4,7 @@ import {
   parseLooseJson,
 } from "@/lib/domain/brief";
 import type { PageUnderstanding } from "@/lib/domain/url-analyze";
-import { pageUnderstandingSchema } from "@/lib/domain/url-analyze";
+import { normalizePageUnderstanding } from "@/lib/domain/url-analyze";
 import { submitChatCompletion } from "./apimart";
 import { createBrief } from "./brief";
 import { getServerEnv } from "./env";
@@ -107,15 +107,15 @@ async function understandPage(input: {
     responseFormatJson: true,
   });
   const parsed = parseLooseJson(raw);
-  const result = pageUnderstandingSchema.safeParse(parsed);
-  if (!result.success) {
+  const result = normalizePageUnderstanding(parsed);
+  if (!result) {
     throw new AppError(
       "ANALYZE_UNDERSTANDING_INVALID",
       "The content assistant returned an invalid understanding.",
       502,
     );
   }
-  return result.data;
+  return result;
 }
 
 export async function* analyzeUrlStream(
