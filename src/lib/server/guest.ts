@@ -26,7 +26,7 @@ export function getGuestIdentity(request: NextRequest): GuestIdentity {
   return {
     cookieValue,
     key: digest(cookieValue),
-    limitKey: legacyKey,
+    limitKey: digest(cookieValue),
     legacyKey,
   };
 }
