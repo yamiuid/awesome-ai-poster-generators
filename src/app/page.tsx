@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 const faqs = [
   [
     "Is this really free?",
-    "Yes. Guests can make up to four generations per UTC day, with one watermarked 1K poster per run. Failed generations do not count, and no account is needed to try it.",
+    "Yes. Guests can make one generation per UTC day, with one watermarked 1K poster per run. Sign in or create a free account for four generations each day. Failed generations do not count.",
   ],
   [
     "What is an AI poster maker from text?",

@@ -60,6 +60,7 @@ import {
   styleLabels,
 } from "@/lib/domain/poster";
 import { GenerationProgressCard } from "./generation-progress-card";
+import { LoginForm } from "./login-form";
 import { UrlPipelineModal } from "./url-pipeline-modal";
 
 type Props = Readonly<{ isPro: boolean; isGuest: boolean }>;
@@ -739,17 +740,27 @@ function track(name: string): void {
   window.umami?.track(name);
 }
 
-function isGuestLimitReached(error: unknown): boolean {
+function generationLimitKind(error: unknown): "guest" | "free" | null {
   if (!(error instanceof HTTPError)) {
-    return false;
+    return null;
   }
   const body: unknown = error.data;
-  return (
-    typeof body === "object" &&
-    body !== null &&
-    "code" in body &&
-    body.code === "GUEST_LIMIT_REACHED"
-  );
+  if (
+    typeof body !== "object" ||
+    body === null ||
+    !("code" in body) ||
+    typeof body.code !== "string"
+  ) {
+    return null;
+  }
+  switch (body.code) {
+    case "GUEST_LIMIT_REACHED":
+      return "guest";
+    case "FREE_DAILY_LIMIT_REACHED":
+      return "free";
+    default:
+      return null;
+  }
 }
 
 function revealGeneration(id: string): void {
@@ -934,6 +945,9 @@ export function PosterStudio({ isPro, isGuest }: Props) {
   const [error, setError] = useState<string | null>(null);
   // 免费用户选了 Pro 档位后点击 Generate 的升级提示
   const [upgradePrompt, setUpgradePrompt] = useState(false);
+  const [upgradePromptReason, setUpgradePromptReason] = useState<
+    "options" | "daily"
+  >("options");
   const [guestLimitPrompt, setGuestLimitPrompt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingSubmission, setPendingSubmission] =
@@ -1624,6 +1638,7 @@ export function PosterStudio({ isPro, isGuest }: Props) {
     // 免费用户选了 Pro 档位：不发起请求，引导开通会员
     if (!isPro && needsPro) {
       upgradePreviousFocus.current = generateButtonRef.current;
+      setUpgradePromptReason("options");
       setUpgradePrompt(true);
       return;
     }
@@ -1737,9 +1752,14 @@ export function PosterStudio({ isPro, isGuest }: Props) {
       revealGeneration(id);
     } catch (submitError) {
       setPendingSubmission(null);
-      if (isGuestLimitReached(submitError)) {
+      const limitKind = generationLimitKind(submitError);
+      if (limitKind === "guest") {
         guestLimitPreviousFocus.current = generateButtonRef.current;
         setGuestLimitPrompt(true);
+      } else if (limitKind === "free") {
+        upgradePreviousFocus.current = generateButtonRef.current;
+        setUpgradePromptReason("daily");
+        setUpgradePrompt(true);
       } else if (submitError instanceof HTTPError) {
         const body: unknown = submitError.data;
         const message =
@@ -2121,8 +2141,8 @@ export function PosterStudio({ isPro, isGuest }: Props) {
             <p className="pro-note">
               <LockKeyhole size={14} />
               {isGuest
-                ? " Guests can make up to 4 generations per UTC day. Each run creates 1 watermarked 1K poster."
-                : " Free runs are 1K, watermarked, and include up to 2 posters. Pro unlocks full quality and 4 posters."}
+                ? " Guests can make 1 generation per UTC day. Sign in for 4 free generations each day."
+                : " Free accounts can make up to 4 generations per UTC day. Runs are 1K, watermarked, and include up to 2 posters. Pro unlocks full quality and 4 posters."}
             </p>
           )}
 
@@ -2134,6 +2154,7 @@ export function PosterStudio({ isPro, isGuest }: Props) {
               // 免费用户选了 Pro 档位时，先弹升级提示，不做任何后续动作
               if (needsPro) {
                 upgradePreviousFocus.current = generateButtonRef.current;
+                setUpgradePromptReason("options");
                 setUpgradePrompt(true);
               } else if (
                 // 粘贴后立刻点击的场景下，300ms debounce 可能还没更新 detectedType，
@@ -2339,31 +2360,19 @@ export function PosterStudio({ isPro, isGuest }: Props) {
             ref={guestLimitCloseRef}
             type="button"
             className="modal-close"
-            aria-label="Close upgrade prompt"
+            aria-label="Close sign-in prompt"
             onClick={() => setGuestLimitPrompt(false)}
           >
             <X size={18} />
           </button>
-          <p className="eyebrow">Guest limit</p>
-          <h3 id="guest-limit-title">
-            Today&apos;s guest generations are used up.
-          </h3>
+          <p className="eyebrow">Free account</p>
+          <h3 id="guest-limit-title">Get 4 free generations every day.</h3>
           <p className="modal-note" id="guest-limit-note">
-            Failed generations do not count. Upgrade to Pro to keep creating
-            today, or come back tomorrow. Your quota resets at 00:00 UTC.
+            You&apos;ve used today&apos;s guest generation. Sign in or create a
+            free account to keep generating today. Failed generations do not
+            count.
           </p>
-          <div className="modal-actions">
-            <button
-              className="outline-button"
-              type="button"
-              onClick={() => setGuestLimitPrompt(false)}
-            >
-              Maybe later
-            </button>
-            <a className="solid-button" href="/pricing">
-              Upgrade to Pro
-            </a>
-          </div>
+          <LoginForm next="/#studio" />
         </div>
       </dialog>
       <dialog
@@ -2397,10 +2406,15 @@ export function PosterStudio({ isPro, isGuest }: Props) {
             <X size={18} />
           </button>
           <p className="eyebrow">Pro feature</p>
-          <h3 id="upgrade-title">These options are Pro only.</h3>
+          <h3 id="upgrade-title">
+            {upgradePromptReason === "daily"
+              ? "Today\u2019s free generations are used up."
+              : "These options are Pro only."}
+          </h3>
           <p className="modal-note" id="upgrade-note">
-            You picked a higher resolution, finish, or more posters. Upgrade to
-            Pro to generate with these options.
+            {upgradePromptReason === "daily"
+              ? "You\u2019ve used today\u2019s 4 free generations. Upgrade to Pro to keep creating today, or come back tomorrow after the quota resets at 00:00 UTC."
+              : "You picked a higher resolution, finish, or more posters. Upgrade to Pro to generate with these options."}
           </p>
           <div className="modal-actions">
             <button

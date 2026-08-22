@@ -25,9 +25,9 @@ export default async function LoginPage({
         <p className="eyebrow">Your studio, kept close</p>
         <h1>Sign in to save your directions.</h1>
         <p>
-          Use Google or a magic link. Your free account gets a seven-day
-          history; Pro removes the watermark and keeps high-definition exports
-          private.
+          Use Google or a magic link. Your free account gets a seven-day history
+          and four free generations per UTC day; Pro removes the watermark and
+          keeps high-definition exports private.
         </p>
         <LoginForm next={next} initialError={error} />
       </section>
