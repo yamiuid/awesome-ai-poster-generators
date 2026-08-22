@@ -2372,7 +2372,10 @@ export function PosterStudio({ isPro, isGuest }: Props) {
             free account to keep generating today. Failed generations do not
             count.
           </p>
-          <LoginForm next="/#studio" />
+          <LoginForm
+            next="/#studio"
+            onSuccess={() => setGuestLimitPrompt(false)}
+          />
         </div>
       </dialog>
       <dialog

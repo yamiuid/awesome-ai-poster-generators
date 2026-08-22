@@ -7,6 +7,7 @@ import { createSupabaseBrowserClient } from "@/lib/server/supabase/browser";
 type Props = Readonly<{
   next: string | undefined;
   initialError?: string | undefined;
+  onSuccess?: () => void;
 }>;
 
 type Step = "email" | "code";
@@ -41,7 +42,7 @@ function errorMessage(
   return fallback;
 }
 
-export function LoginForm({ next, initialError }: Props) {
+export function LoginForm({ next, initialError, onSuccess }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
@@ -182,6 +183,7 @@ export function LoginForm({ next, initialError }: Props) {
         );
         return;
       }
+      onSuccess?.();
       router.push(next ?? "/account");
       router.refresh();
     } catch {
