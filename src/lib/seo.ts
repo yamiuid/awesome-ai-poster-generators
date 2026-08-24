@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
-const siteUrl =
-  process.env["NEXT_PUBLIC_APP_URL"] ?? "https://texttoposter.com";
+export const siteUrl = "https://texttoposter.com";
 const siteName = "Text to Poster";
 
 export const ogImage = {

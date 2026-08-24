@@ -267,7 +267,7 @@ textarea:focus-visible {
 }
 .hero h1 {
   max-width: 14ch;
-  font-size: clamp(2.75rem, 7.5vw, 7rem);
+  font-size: clamp(2.5rem, 6.5vw, 6rem);
 }
 .hero-copy {
   max-width: 25rem;
@@ -293,6 +293,22 @@ textarea:focus-visible {
 .hero-note span {
   color: var(--accent);
   font-weight: 800;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1.35rem;
+}
+.hero-types {
+  margin: 1.25rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+  text-transform: uppercase;
 }
 .studio-shell {
   max-width: 82rem;
@@ -1626,7 +1642,7 @@ textarea:focus-visible {
 }
 .content-section h2,
 .pricing-section h2 {
-  max-width: 10ch;
+  max-width: 24ch;
   font-size: clamp(2.5rem, 5vw, 5.5rem);
 }
 .content-grid {
@@ -1653,7 +1669,7 @@ textarea:focus-visible {
   margin-top: 1.5rem;
 }
 .examples-heading h2 {
-  max-width: 10ch;
+  max-width: none;
 }
 .examples-heading p {
   max-width: 25rem;
@@ -1750,7 +1766,7 @@ textarea:focus-visible {
   margin-top: 1.5rem;
 }
 .split-heading h2 {
-  max-width: 11ch;
+  max-width: none;
 }
 .split-heading > p {
   margin: 0;
@@ -1768,9 +1784,28 @@ textarea:focus-visible {
   border: 1px solid var(--line);
   background: rgba(233, 225, 212, 0.55);
 }
-.comparison-grid article + article {
+.comparison-grid > :nth-child(even) article {
   border: 2px solid var(--ink);
   background: var(--paper-deep);
+}
+.use-case-card {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+.use-case-card article {
+  height: 100%;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+.use-case-card:hover article {
+  border-color: var(--accent-dark);
+  transform: translateY(-0.2rem);
+}
+.use-case-action {
+  margin-top: 1.5rem;
 }
 .comparison-grid h3 {
   margin: 0.8rem 0 0.45rem;
@@ -1860,6 +1895,12 @@ textarea:focus-visible {
   font-size: 0.8rem;
   font-weight: 800;
   text-decoration: none;
+}
+.hero-actions .pricing-link {
+  margin-top: 0;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
 }
 .site-footer {
   display: flex;
@@ -2967,4 +3008,51 @@ dialog.modal-backdrop:not([open]) {
 
 .style-links {
   margin-top: 0.75rem;
+}
+
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+.breadcrumbs a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+.movie-landing-copy {
+  max-width: 68rem;
+}
+.movie-landing-copy > section {
+  max-width: none;
+  margin-bottom: clamp(3.5rem, 8vw, 6rem);
+}
+.movie-landing-copy > section > p:not(.eyebrow) {
+  max-width: 48rem;
+}
+.movie-landing-copy h2 {
+  max-width: 20ch;
+}
+.movie-direction-grid {
+  margin-top: 2rem;
+}
+.movie-prompt-example {
+  max-width: 48rem;
+  margin: 1.5rem 0 0;
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  background: rgba(233, 225, 212, 0.62);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.movie-use-case-grid {
+  max-width: 58rem;
 }

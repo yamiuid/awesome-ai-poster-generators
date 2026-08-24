@@ -21,6 +21,16 @@ export function SiteFooter() {
       </div>
       <div className="site-footer-groups">
         <div className="site-footer-group">
+          <span className="site-footer-label">Generators</span>
+          <nav aria-label="Generator links">
+            <Link href="/">AI poster generator</Link>
+            <Link href="/movie-poster-maker">Movie poster generator</Link>
+            <Link href="/business-poster-generator">
+              Business poster generator
+            </Link>
+          </nav>
+        </div>
+        <div className="site-footer-group">
           <span className="site-footer-label">Site</span>
           <nav aria-label="Site links">
             <Link href="/about">About</Link>

@@ -63,7 +63,11 @@ import { GenerationProgressCard } from "./generation-progress-card";
 import { LoginForm } from "./login-form";
 import { UrlPipelineModal } from "./url-pipeline-modal";
 
-type Props = Readonly<{ isPro: boolean; isGuest: boolean }>;
+type Props = Readonly<{
+  isPro: boolean;
+  isGuest: boolean;
+  initialStyle?: PosterStyle;
+}>;
 
 type StudioJobExample = Readonly<{
   id: "event" | "article" | "announcement";
@@ -927,12 +931,12 @@ function RecentPosterStrip({
   );
 }
 
-export function PosterStudio({ isPro, isGuest }: Props) {
+export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
   const [prompt, setPrompt] = useState("");
   const [placeholder, setPlaceholder] = useState(
     "Describe an idea, paste text, or drop a URL…",
   );
-  const [style, setStyle] = useState<PosterStyle>("auto");
+  const [style, setStyle] = useState<PosterStyle>(initialStyle ?? "auto");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("4:5");
   const [resolution, setResolution] = useState<Resolution>("1k");
   const [quality, setQuality] = useState<Quality>("low");
@@ -1812,10 +1816,10 @@ export function PosterStudio({ isPro, isGuest }: Props) {
     >
       <div className="studio-header">
         <div>
-          <p className="eyebrow">The poster studio</p>
-          <h2 id="studio-heading">Give the idea a shape.</h2>
+          <p className="eyebrow">AI poster generator from text</p>
+          <h2 id="studio-heading">Describe your poster.</h2>
         </div>
-        <span className="studio-count">Multiple directions / one brief</span>
+        <span className="studio-count">One brief / multiple directions</span>
       </div>
 
       <div className="studio-grid">

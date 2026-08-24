@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
+import { siteUrl } from "@/lib/seo";
 import "./globals.css";
 
 const localTypeface = localFont({
@@ -8,9 +9,6 @@ const localTypeface = localFont({
   variable: "--font-local",
   display: "swap",
 });
-
-const siteUrl =
-  process.env["NEXT_PUBLIC_APP_URL"] ?? "https://texttoposter.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

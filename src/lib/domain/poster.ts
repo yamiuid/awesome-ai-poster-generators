@@ -39,6 +39,10 @@ export const STYLES = [
 ] as const;
 export type PosterStyle = (typeof STYLES)[number];
 
+export function isPosterStyle(value: string): value is PosterStyle {
+  return (STYLES as readonly string[]).includes(value);
+}
+
 export const styleLabels: Readonly<Record<PosterStyle, string>> = {
   auto: "Auto",
   movie: "Movie",

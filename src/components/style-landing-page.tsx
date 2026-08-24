@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { LogoMark } from "@/components/logo";
+import { SiteFooter } from "@/components/site-footer";
 import { POSTER_EXAMPLES } from "@/lib/domain/poster-examples";
 import { STYLE_LANDINGS, type StyleLanding } from "@/lib/domain/style-landing";
 
@@ -91,29 +92,7 @@ export function StyleLandingPage({
         </section>
       </article>
 
-      <footer className="site-footer">
-        <span>© 2026 Text to Poster</span>
-        <div className="site-footer-groups">
-          <div className="site-footer-group">
-            <span className="site-footer-label">Site</span>
-            <nav aria-label="Site links">
-              <Link href="/about">About</Link>
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/terms">Terms</Link>
-              <Link href="/refunds">Refunds</Link>
-              <Link href="/ai-policy">AI use</Link>
-            </nav>
-          </div>
-          <div className="site-footer-group">
-            <span className="site-footer-label">Friendly links</span>
-            <nav aria-label="Friendly links">
-              <a href="https://www.ai138.com" target="_blank" rel="noreferrer">
-                Ai138
-              </a>
-            </nav>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

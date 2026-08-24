@@ -1,5 +1,4 @@
 import { ArrowUpRight, MoveDown } from "lucide-react";
-import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -7,13 +6,18 @@ import { PosterStudio } from "@/components/poster-studio";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { UserMenu } from "@/components/user-menu";
+import { isPosterStyle } from "@/lib/domain/poster";
 import { POSTER_EXAMPLES } from "@/lib/domain/poster-examples";
 import { STYLE_LANDINGS } from "@/lib/domain/style-landing";
+import { pageMeta, siteUrl } from "@/lib/seo";
 import { getAuthContext } from "@/lib/server/auth";
 
-export const metadata: Metadata = {
-  alternates: { canonical: "/" },
-};
+export const metadata = pageMeta({
+  title: "Free AI Poster Generator from Text | Text to Poster",
+  description:
+    "Create posters from text with AI. Describe a brief, generate multiple artwork and layout directions, and download your favorite. Free to try, no login.",
+  path: "/",
+});
 
 const faqs = [
   [
@@ -21,8 +25,8 @@ const faqs = [
     "Yes. Guests can make one generation per UTC day, with one watermarked 1K poster per run. Sign in or create a free account for four generations each day. Failed generations do not count.",
   ],
   [
-    "What is an AI poster maker from text?",
-    "It turns a written idea into finished visual directions. Describe the subject, mood, audience, or words you want to see, and the studio turns that brief into multiple compositions.",
+    "What is an AI poster generator from text?",
+    "It turns a written brief into finished visual directions. Describe the subject, mood, audience, or words you want to see, and the studio turns that brief into multiple compositions.",
   ],
   [
     "Which poster styles are available?",
@@ -42,35 +46,35 @@ const faqs = [
   ],
   [
     "What should I include in an AI poster prompt?",
-    "A useful prompt usually names the subject, visual mood, audience, important copy, and practical format. For example, mention whether the poster is for a film night, product launch, class, or social post. Specific context helps the AI poster maker make stronger choices about hierarchy, color, and composition.",
+    "A useful prompt usually names the subject, visual mood, audience, important copy, and practical format. For example, mention whether the poster is for a film night, product launch, class, or social post. Specific context helps the AI poster generator make stronger choices about hierarchy, color, and composition.",
   ],
 ] as const;
 
 const howToSteps = [
   {
     label: "01 / BRIEF",
-    title: "Start with a clear poster brief.",
-    body: "Name the subject, audience, feeling, and any words that matter. A short brief gives the AI poster maker enough direction to build a useful first layout.",
+    title: "Describe a clear poster brief.",
+    body: "Name the subject, audience, feeling, and any words that matter. A short brief gives the AI poster generator enough direction to build a useful first layout.",
     image: "/how-to/write-brief.svg",
     alt: "A poster brief with fields for subject, audience, mood, and headline.",
   },
   {
     label: "02 / STYLE",
-    title: "Choose a poster style and format.",
+    title: "Choose a style and format.",
     body: "Choose the art direction and format that fit the message, from minimal to neon. Match the ratio to its final home: feed, screen, print, or story.",
     image: "/how-to/choose-style.svg",
     alt: "Poster style cards and format controls arranged beside a creative brief.",
   },
   {
     label: "03 / GENERATE",
-    title: "Generate multiple poster directions.",
+    title: "Generate multiple directions.",
     body: "Generate a range of compositions from the same brief. Compare the clearest subject, strongest hierarchy, and best balance of image and words.",
     image: "/how-to/generate-directions.svg",
     alt: "Multiple generated poster directions shown as a comparison grid.",
   },
   {
     label: "04 / KEEP",
-    title: "Download, refine, and put it to work.",
+    title: "Download your favorite direction.",
     body: "Keep the direction that lands, refine the brief, and download. Free previews are watermarked; Pro adds private history and clean high-definition exports.",
     image: "/how-to/download-poster.svg",
     alt: "A finished poster being downloaded from the poster studio.",
@@ -80,7 +84,11 @@ const howToSteps = [
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; error_description?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    error_description?: string;
+    style?: string;
+  }>;
 }) {
   // Supabase 的 site_url 错误兜底跳转到根路径（?error=...），转发到登录页显示原因
   const params = await searchParams;
@@ -88,9 +96,9 @@ export default async function Home({
   if (authError) {
     redirect(`/login?error=${encodeURIComponent(authError)}`);
   }
+  const initialStyle =
+    params.style && isPosterStyle(params.style) ? params.style : undefined;
   const auth = await getAuthContext();
-  const siteUrl =
-    process.env["NEXT_PUBLIC_APP_URL"] ?? "https://texttoposter.com";
   const applicationJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
@@ -128,6 +136,7 @@ export default async function Home({
       />
       <SiteHeader>
         <Link href="#examples">Examples</Link>
+        <Link href="#use-cases">Use cases</Link>
         <Link href="#how-it-works">How it works</Link>
         <Link href="#pricing">Pricing</Link>
         {auth.userId ? (
@@ -140,45 +149,122 @@ export default async function Home({
           <Link href="/login">Sign in</Link>
         )}
         <Link className="header-cta" href="#studio">
-          Try the studio <ArrowUpRight size={15} />
+          Generate a poster <ArrowUpRight size={15} />
         </Link>
       </SiteHeader>
 
       <section className="hero" aria-labelledby="hero-heading">
         <div className="hero-grid">
           <div>
-            <p className="eyebrow">From idea, text, or link to poster</p>
+            <p className="eyebrow">Free AI poster generator from text</p>
             <h1 id="hero-heading">
-              AI Poster Maker — Generate Posters from Any Idea, Text, or Link
+              AI Poster Generator — Create Posters from Text
             </h1>
           </div>
           <div className="hero-copy">
             <p>
-              Describe an idea, paste your content, or drop a link. AI turns it
-              into a <strong>poster worth sharing</strong>.
+              Describe your poster. AI creates the artwork, layout, and
+              typography in seconds, then gives you{" "}
+              <strong>multiple directions to compare</strong>.
             </p>
             <div className="hero-note">
               <span>01</span>
               <p>
-                Free to try. No sign-up. Start with a sentence and see where it
-                goes.
+                Free to try, no sign-up required. Start with a sentence and
+                refine the direction that lands.
               </p>
             </div>
-            <a className="pricing-link" href="#studio">
-              Start with a brief <MoveDown size={15} />
-            </a>
+            <div className="hero-actions">
+              <a
+                className="solid-button"
+                href="#studio"
+                data-umami-event="hero_generate_click"
+              >
+                Generate a poster <MoveDown size={15} />
+              </a>
+              <a className="pricing-link" href="#examples">
+                See examples <ArrowUpRight size={15} />
+              </a>
+            </div>
+            <p className="hero-types">
+              Movie / Event / Product / Business / Concert / Social
+            </p>
           </div>
         </div>
       </section>
 
-      <PosterStudio isPro={auth.isPro} isGuest={!auth.userId} />
+      <PosterStudio
+        isPro={auth.isPro}
+        isGuest={!auth.userId}
+        {...(initialStyle ? { initialStyle } : {})}
+      />
+
+      <section
+        className="content-section use-cases-section"
+        id="use-cases"
+        aria-labelledby="use-cases-heading"
+      >
+        <p className="eyebrow">Popular poster use cases</p>
+        <h2 id="use-cases-heading">
+          Create Posters for Movies, Events, Products, and More
+        </h2>
+        <p className="section-intro">
+          Start with the job the poster needs to do, then compare several visual
+          directions from the same brief. Use Text to Poster for movie
+          screenings, event announcements, product launches, business updates,
+          concert nights, and social content.
+        </p>
+        <div className="comparison-grid use-cases-grid">
+          <Link className="use-case-card" href="/movie-poster-maker">
+            <article>
+              <span className="eyebrow">Movie posters</span>
+              <h3>Turn a logline into a film poster.</h3>
+              <p>
+                Set the genre, scene, and mood before you commit to a final
+                composition.
+              </p>
+              <span className="solid-button use-case-action">
+                Create a movie poster <ArrowUpRight size={15} />
+              </span>
+            </article>
+          </Link>
+          <article>
+            <span className="eyebrow">Events and concerts</span>
+            <h3>Make the date and feeling impossible to miss.</h3>
+            <p>
+              Name the event, audience, venue, and one idea people should
+              remember.
+            </p>
+          </article>
+          <Link className="use-case-card" href="/business-poster-generator">
+            <article>
+              <span className="eyebrow">Products and business</span>
+              <h3>Give a launch or update a clear visual direction.</h3>
+              <p>
+                Describe the offer, audience, tone, and copy that must appear.
+              </p>
+              <span className="solid-button use-case-action">
+                Create a business poster <ArrowUpRight size={15} />
+              </span>
+            </article>
+          </Link>
+          <article>
+            <span className="eyebrow">Social content</span>
+            <h3>Give a post, video, or campaign a strong first frame.</h3>
+            <p>
+              Compare cover directions before the rest of the content takes
+              shape.
+            </p>
+          </article>
+        </div>
+      </section>
 
       <section
         className="content-section url-poster-section"
         id="url-poster"
         aria-labelledby="url-poster-heading"
       >
-        <p className="eyebrow">Link to poster</p>
+        <p className="eyebrow">A second input mode</p>
         <div className="split-heading">
           <h2 id="url-poster-heading">Turn a link into a poster.</h2>
           <p>
@@ -232,17 +318,18 @@ export default async function Home({
         id="what-is"
         aria-labelledby="what-is-heading"
       >
-        <p className="eyebrow">What is an AI poster maker?</p>
+        <p className="eyebrow">What is an AI poster generator from text?</p>
         <div className="split-heading">
-          <h2 id="what-is-heading">What Is an AI Poster Maker?</h2>
+          <h2 id="what-is-heading">
+            What Is an AI Poster Generator from Text?
+          </h2>
           <p>
-            An AI poster maker turns a written brief into a visual starting
-            point. Text to Poster is built for the moment before the design
-            file: describe the subject, feeling, audience, or words that matter,
-            and the studio turns one brief into multiple compositions you can
-            compare, keep, and download. It is useful when you know what you
-            want to say but do not want to spend an hour building the first
-            layout from scratch.
+            An AI poster generator from text turns a written brief into a
+            complete visual starting point. Describe the subject, feeling,
+            audience, or words that matter, and Text to Poster creates multiple
+            artwork, layout, and typography directions you can compare, keep,
+            and download. It is useful when you know what you want to say but do
+            not want to build the first layout from scratch.
           </p>
         </div>
       </section>
@@ -254,10 +341,11 @@ export default async function Home({
       >
         <p className="eyebrow">Example outputs</p>
         <div className="examples-heading">
-          <h2 id="examples-heading">Multiple styles, one sentence away.</h2>
+          <h2 id="examples-heading">One Brief, Multiple Poster Directions</h2>
           <p>
-            These are original sample directions made from short briefs. Pick a
-            visual language, then give your own idea a shape in the studio.
+            These are original sample directions made from short briefs. Compare
+            the mood, hierarchy, and image treatment before you choose the
+            direction to refine in the studio.
           </p>
         </div>
         <div className="examples-grid">
@@ -284,8 +372,8 @@ export default async function Home({
       </section>
 
       <section className="content-section" aria-labelledby="styles-heading">
-        <p className="eyebrow">Browse by style</p>
-        <h2 id="styles-heading">Poster styles</h2>
+        <p className="eyebrow">Product visual directions</p>
+        <h2 id="styles-heading">Choose a Visual Style</h2>
         <p className="section-intro">
           {STYLE_LANDINGS.map((landing, index) => (
             <span key={landing.slug}>
@@ -297,40 +385,12 @@ export default async function Home({
       </section>
 
       <section
-        className="content-section comparison-section"
-        id="compare"
-        aria-labelledby="compare-heading"
-      >
-        <p className="eyebrow">Choose your volume</p>
-        <h2 id="compare-heading">Why Choose Our Free AI Poster Maker?</h2>
-        <div className="comparison-grid">
-          <article>
-            <span className="eyebrow">Creator studio</span>
-            <h3>Enough room to keep going.</h3>
-            <p>
-              100 weighted credits each monthly window, 1K/2K/4K, Medium/High
-              finish, private history, and clean downloads. From $9.90/month.
-            </p>
-          </article>
-          <article>
-            <span className="eyebrow">Studio plan</span>
-            <h3>More room for client rounds.</h3>
-            <p>
-              300 weighted credits each monthly window, higher-volume 4K
-              exports, and the same private, watermark-free workflow. From
-              $19.90/month.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section
         className="content-section"
         id="how-it-works"
         aria-labelledby="how-heading"
       >
         <p className="eyebrow">A small studio, not a maze</p>
-        <h2 id="how-heading">How to Make a Poster from Text</h2>
+        <h2 id="how-heading">How to Generate a Poster from Text</h2>
         <ol className="content-grid how-to-grid">
           {howToSteps.map((step) => (
             <li key={step.label}>
@@ -353,79 +413,21 @@ export default async function Home({
       </section>
 
       <section
-        className="content-section use-cases-section"
-        aria-labelledby="use-cases-heading"
-      >
-        <p className="eyebrow">Made for the moment before design</p>
-        <h2 id="use-cases-heading">
-          Where a free AI poster maker earns its keep.
-        </h2>
-        <p className="section-intro">
-          Use Text to Poster when you need a visual direction before a finished
-          design file: describe the subject, audience, mood, and key words, then
-          compare generated options. It works well for launches, screenings,
-          workshops, social posts, and client rounds. Treat each result as a
-          starting point—check names, dates, logos, claims, and usage rights
-          before publishing, and finish the typography or accessibility review
-          your channel requires.
-        </p>
-        <div className="comparison-grid use-cases-grid">
-          <article>
-            <span className="eyebrow">Launches and events</span>
-            <h3>Make the announcement visible.</h3>
-            <p>
-              Start with the event name, date, audience, and one feeling you
-              want people to remember. Generate several directions before you
-              choose the visual language for a launch, screening, workshop, or
-              community gathering.
-            </p>
-          </article>
-          <article>
-            <span className="eyebrow">Social and content</span>
-            <h3>Give an idea a strong first frame.</h3>
-            <p>
-              Turn a post, video, newsletter, or campaign line into a poster
-              concept that can guide the rest of the content. The side-by-side
-              comparison makes it easier to find a cover image that feels
-              specific instead of interchangeable.
-            </p>
-          </article>
-          <article>
-            <span className="eyebrow">Client and team rounds</span>
-            <h3>Bring options to the conversation.</h3>
-            <p>
-              Use the first generation as a visual brief for a client or team.
-              Compare mood, hierarchy, and format together, then refine the
-              direction everyone can discuss. Pro history keeps the useful
-              rounds private while the idea develops.
-            </p>
-          </article>
-          <article>
-            <span className="eyebrow">Personal projects</span>
-            <h3>Make a rough idea tangible.</h3>
-            <p>
-              Turn a note, mood, or half-formed concept into a visual starting
-              point. Use the result to think, share, or decide what the idea
-              needs next.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section
         className="pricing-section"
         id="pricing"
         aria-labelledby="pricing-heading"
       >
-        <p className="eyebrow">The serious version</p>
-        <h2 id="pricing-heading">Room for the good idea.</h2>
+        <p className="eyebrow">Free to try, room to keep going</p>
+        <h2 id="pricing-heading">Choose your generation volume.</h2>
         <div className="pricing-card">
           <h3>Creator + Studio</h3>
           <p className="pricing-price">
             $9.90–$19.90 <small>/ month</small>
           </p>
           <ul>
-            <li>100 or 300 weighted credits each month</li>
+            <li>Guests get one watermarked generation per UTC day</li>
+            <li>Free accounts get four generations each day</li>
+            <li>Creator and Studio plans add monthly credits</li>
             <li>1K, 2K, and 4K exports</li>
             <li>Medium and High finishes</li>
             <li>Private history with no watermark</li>
@@ -438,7 +440,7 @@ export default async function Home({
 
       <section className="content-section" aria-labelledby="faq-heading">
         <p className="eyebrow">Questions, answered</p>
-        <h2 id="faq-heading">AI Poster Maker FAQs</h2>
+        <h2 id="faq-heading">AI Poster Generator FAQs</h2>
         <p className="section-intro">
           Start small, learn from the first result, and refine only what needs
           changing. These answers cover the practical details behind making a

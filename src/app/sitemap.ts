@@ -1,13 +1,11 @@
 import type { MetadataRoute } from "next";
 import { STYLE_LANDINGS } from "@/lib/domain/style-landing";
-
-const siteUrl =
-  process.env["NEXT_PUBLIC_APP_URL"] ?? "https://texttoposter.com";
+import { siteUrl } from "@/lib/seo";
 
 type SitemapEntry = { path: string; priority: number };
 
 const coreEntries: SitemapEntry[] = [
-  { path: "", priority: 1 },
+  { path: "/", priority: 1 },
   { path: "/about", priority: 0.8 },
   { path: "/pricing", priority: 0.8 },
 ];

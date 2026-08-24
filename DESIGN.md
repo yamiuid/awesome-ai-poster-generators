@@ -33,7 +33,7 @@ Text to Poster is an editorial poster studio for people who need a striking visu
 
 ## 4. Type scale
 
-- Display: self-hosted Geist, `clamp(2.75rem, 7.5vw, 7rem)`, tight leading.
+- Display: self-hosted Geist, `clamp(2.5rem, 6.5vw, 6rem)`, tight leading.
 - Section heading: self-hosted Geist, `clamp(2rem, 4vw, 4rem)`.
 - Body: self-hosted Geist, `1rem`, `1.6` leading.
 - Label: self-hosted Geist, `0.75rem`, uppercase, `0.12em` tracking.
