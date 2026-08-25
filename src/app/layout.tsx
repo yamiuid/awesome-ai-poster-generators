@@ -56,6 +56,20 @@ export default function RootLayout({
       <head>
         <meta name="msvalidate.01" content="896C512198E90A6BC88DC962F259BC8B" />
         <meta name="baidu-site-verification" content="codeva-DuEQZjohwj" />
+        {process.env.NODE_ENV === "development" && (
+          <>
+            <Script
+              src="//unpkg.com/react-grab/dist/index.global.js"
+              crossOrigin="anonymous"
+              strategy="beforeInteractive"
+            />
+            <Script
+              src="//unpkg.com/react-scan/dist/auto.global.js"
+              crossOrigin="anonymous"
+              strategy="beforeInteractive"
+            />
+          </>
+        )}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-P36HDHF4KN"
           strategy="afterInteractive"

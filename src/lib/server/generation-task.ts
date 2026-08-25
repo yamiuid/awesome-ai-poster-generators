@@ -133,6 +133,8 @@ async function finalizeCompleted(
     .update({
       status: "processing",
       progress: Math.max(generation.progress, FINALIZING_PROGRESS),
+      error_code: null,
+      error_message: null,
     })
     .eq("id", generation.id)
     .select()
@@ -171,6 +173,8 @@ async function finalizeCompleted(
       progress: 100,
       completed_at: new Date().toISOString(),
       reserved_credits: 0,
+      error_code: null,
+      error_message: null,
     })
     .eq("id", generation.id)
     .select()
@@ -201,6 +205,8 @@ export async function applyProviderTask(
             task.progress,
             PROVIDER_PROGRESS_CEILING,
           ),
+          error_code: null,
+          error_message: null,
           next_poll_at: nextPollAt(),
         })
         .eq("id", generation.id)

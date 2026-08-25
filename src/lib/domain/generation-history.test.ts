@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   flattenRecentPosterImages,
   isVisibleGuestHistory,
+  isVisibleGuestRecent,
 } from "./generation-history";
 import type { GenerationResponse } from "./poster";
 
@@ -50,6 +51,16 @@ describe("guest generation history", () => {
     ).toBe(false);
   });
 
+  it("keeps failed generations in recent history without treating them as posters", () => {
+    expect(isVisibleGuestRecent(generation({ status: "failed" }))).toBe(true);
+    expect(isVisibleGuestRecent(generation({ status: "timed_out" }))).toBe(
+      true,
+    );
+    expect(
+      isVisibleGuestRecent(generation({ status: "succeeded", images: [] })),
+    ).toBe(false);
+  });
+
   it("flattens images newest first and skips empty image URLs", () => {
     const newest = generation({
       id: "generation-newest",
@@ -68,6 +79,7 @@ describe("guest generation history", () => {
     expect(flattenRecentPosterImages([older, newest])).toEqual([
       expect.objectContaining({
         generationId: "generation-newest",
+        aspectRatio: "4:5",
         image: expect.objectContaining({ id: "image-1" }),
       }),
       expect.objectContaining({

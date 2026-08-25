@@ -136,6 +136,29 @@ export function generationOverlayLabel(phase: GenerationPhase): string {
   return labels[phase];
 }
 
+export function generationFailureMessage(
+  snapshot: Pick<GenerationResponse, "status" | "error">,
+): string {
+  const detail = snapshot.error?.trim();
+  if (detail) {
+    return detail;
+  }
+  return snapshot.status === "timed_out"
+    ? "The image service did not respond; your credits were returned."
+    : "Nothing was charged for this run. Try a shorter, more visual brief.";
+}
+
+export function generationFailureStatus(
+  source: "provider_poll" | "finalization",
+  failures: number,
+  maxFailures: number,
+): "retry" | "failed" | "timed_out" {
+  if (failures < maxFailures) {
+    return "retry";
+  }
+  return source === "finalization" ? "failed" : "timed_out";
+}
+
 export function generationAction(
   isPro: boolean,
   isSubmitting: boolean,

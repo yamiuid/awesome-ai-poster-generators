@@ -25,6 +25,9 @@ Text to Poster is an editorial poster studio for people who need a striking visu
   --success: #2f6d50;
   --danger: #ad3929;
   --focus: #174f80;
+  --container-max: 82rem;
+  --container-gutter: 1.5rem;
+  --studio-media-max-height: 30rem;
   --radius-card: 1.25rem;
   --radius-control: 0.75rem;
   --space-unit: 0.25rem;

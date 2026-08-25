@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { isVisibleGuestHistory } from "@/lib/domain/generation-history";
+import { isVisibleGuestRecent } from "@/lib/domain/generation-history";
+import { generationFailureStatus } from "@/lib/domain/generation-progress";
 import { getTask } from "./apimart";
 import { AppError } from "./errors";
 import { applyProviderTask, failGeneration } from "./generation-task";
@@ -15,6 +16,8 @@ import { createSupabaseAdminClient } from "./supabase/admin";
 const POLL_DELAY_MS = 4_000;
 const MAX_GENERATION_MS = 15 * 60 * 1_000;
 const MAX_POLL_FAILURES = 5;
+const PROVIDER_TIMEOUT_MESSAGE =
+  "The image service stopped responding and your credits were returned.";
 const GUEST_HISTORY_MS = 24 * 60 * 60 * 1_000;
 const SIGNED_RECENT_MS = 30 * 60 * 1_000;
 const RECENT_LIMIT = 20;
@@ -33,6 +36,20 @@ type RecentGenerationList = Readonly<{
 const migrationResultSchema = z.object({
   migrated: z.number().int().nonnegative(),
 });
+
+export function isRecoverableTimedOutGeneration(
+  generation: Pick<
+    GenerationRow,
+    "status" | "provider_task_id" | "poll_failures" | "error_message"
+  >,
+): boolean {
+  return (
+    generation.status === "timed_out" &&
+    generation.provider_task_id !== null &&
+    generation.poll_failures >= MAX_POLL_FAILURES - 1 &&
+    generation.error_message === PROVIDER_TIMEOUT_MESSAGE
+  );
+}
 
 function nextPollAt(): string {
   return new Date(Date.now() + POLL_DELAY_MS).toISOString();
@@ -99,6 +116,45 @@ async function loadGeneration(
   return generation;
 }
 
+async function recoverTimedOutGeneration(
+  generation: GenerationRow,
+): Promise<GenerationRow> {
+  if (
+    !isRecoverableTimedOutGeneration(generation) ||
+    !generation.provider_task_id
+  ) {
+    return generation;
+  }
+  try {
+    const task = await getTask(generation.provider_task_id);
+    if (
+      task.status === "pending" ||
+      task.status === "processing" ||
+      task.status === "completed"
+    ) {
+      return applyProviderTask(
+        {
+          ...generation,
+          status: "processing",
+          progress: Math.min(generation.progress, 94),
+          error_code: null,
+          error_message: null,
+          next_poll_at: null,
+          completed_at: null,
+          poll_failures: 0,
+        },
+        task,
+      );
+    }
+  } catch (error) {
+    console.error("Generation timeout recovery failed", {
+      generationId: generation.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+  return generation;
+}
+
 async function responseFor(
   generation: GenerationRow,
 ): Promise<Readonly<ReturnType<typeof toGenerationResponse>>> {
@@ -142,10 +198,7 @@ export async function listRecentGenerations(
   const recentWindow = new Date(
     Date.now() - (actor.mode === "guest" ? GUEST_HISTORY_MS : SIGNED_RECENT_MS),
   ).toISOString();
-  const recentStatuses =
-    actor.mode === "guest"
-      ? (["succeeded", "partially_succeeded"] as const)
-      : TERMINAL_STATUSES;
+  const recentStatuses = TERMINAL_STATUSES;
   const recentQuery = admin
     .from("generations")
     .select("*")
@@ -170,14 +223,16 @@ export async function listRecentGenerations(
     );
   }
   const activeRows = activeResult.data ?? [];
-  const recentRows = recentResult.data ?? [];
+  const recentRows = await Promise.all(
+    (recentResult.data ?? []).map(recoverTimedOutGeneration),
+  );
   const [active, recentRowsWithAssets] = await Promise.all([
     Promise.all(activeRows.map((row) => responseFor(row))),
     Promise.all(recentRows.map((row) => responseFor(row))),
   ]);
   const recent =
     actor.mode === "guest"
-      ? recentRowsWithAssets.filter(isVisibleGuestHistory)
+      ? recentRowsWithAssets.filter(isVisibleGuestRecent)
       : recentRowsWithAssets;
   return { active, recent };
 }
@@ -235,11 +290,28 @@ async function advanceGeneration(
       503,
     );
   }
+  let task: Awaited<ReturnType<typeof getTask>>;
   try {
-    const updated = await applyProviderTask(
-      generation,
-      await getTask(generation.provider_task_id),
+    task = await getTask(generation.provider_task_id);
+  } catch (error) {
+    const failures = (generation.poll_failures ?? 0) + 1;
+    const outcome = generationFailureStatus(
+      "provider_poll",
+      failures,
+      MAX_POLL_FAILURES,
     );
+    if (outcome === "timed_out") {
+      return failGeneration(generation, PROVIDER_TIMEOUT_MESSAGE, "timed_out");
+    }
+    await createSupabaseAdminClient()
+      .from("generations")
+      .update({ poll_failures: failures, next_poll_at: nextPollAt() })
+      .eq("id", generation.id);
+    throw error;
+  }
+
+  try {
+    const updated = await applyProviderTask(generation, task);
     await createSupabaseAdminClient()
       .from("generations")
       .update({ poll_failures: 0 })
@@ -247,18 +319,27 @@ async function advanceGeneration(
     return updated;
   } catch (error) {
     const failures = (generation.poll_failures ?? 0) + 1;
-    if (failures >= MAX_POLL_FAILURES) {
+    const outcome = generationFailureStatus(
+      "finalization",
+      failures,
+      MAX_POLL_FAILURES,
+    );
+    console.error("Generation finalization failed", {
+      generationId: generation.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    if (outcome === "failed") {
       return failGeneration(
         generation,
-        "The image service stopped responding and your credits were returned.",
-        "timed_out",
+        "The poster was generated, but we could not save it. Please try again.",
+        "failed",
       );
     }
     await createSupabaseAdminClient()
       .from("generations")
-      .update({ poll_failures: failures })
+      .update({ poll_failures: failures, next_poll_at: nextPollAt() })
       .eq("id", generation.id);
-    throw error;
+    return readGeneration(generation.id);
   }
 }
 

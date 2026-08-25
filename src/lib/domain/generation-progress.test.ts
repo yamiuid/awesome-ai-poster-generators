@@ -3,6 +3,8 @@ import {
   displayedProgress,
   FINALIZING_PROGRESS,
   generationAction,
+  generationFailureMessage,
+  generationFailureStatus,
   generationOverlayLabel,
   generationPhase,
   generationPollDelay,
@@ -28,6 +30,27 @@ const generation = (
 });
 
 describe("generation progress", () => {
+  it("reports local finalization exhaustion as failed instead of timed out", () => {
+    const status = generationFailureStatus("finalization", 5, 5);
+    expect(status).toBe("failed");
+  });
+
+  it("keeps provider polling exhaustion as timed out", () => {
+    expect(generationFailureStatus("provider_poll", 5, 5)).toBe("timed_out");
+  });
+
+  it("keeps the backend failure detail for the poster-ratio error state", () => {
+    expect(
+      generationFailureMessage({
+        status: "failed",
+        error: "The image service failed after generating the poster.",
+      }),
+    ).toBe("The image service failed after generating the poster.");
+    expect(generationFailureMessage({ status: "timed_out" })).toBe(
+      "The image service did not respond; your credits were returned.",
+    );
+  });
+
   it("maps submitting, provider work, finalization, reconnecting, and completion", () => {
     expect(
       generationPhase({ status: "submitted", progress: 0, isSubmitting: true }),

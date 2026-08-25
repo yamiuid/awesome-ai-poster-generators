@@ -5,7 +5,12 @@ import {
   ArrowDownToLine,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleAlert,
+  History,
+  Images,
+  LoaderCircle,
   LockKeyhole,
   Pencil,
   Sparkles,
@@ -16,7 +21,6 @@ import {
   type ClipboardEvent,
   type JSX,
   type KeyboardEvent,
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -26,8 +30,6 @@ import {
   BRIEF_CHAR_LIMITS,
   type BriefFields,
   buildBriefPrompt,
-  buildFallbackPrompt,
-  normalizeBriefFields,
 } from "@/lib/domain/brief";
 import { batchCreditCost } from "@/lib/domain/credits";
 import {
@@ -36,6 +38,7 @@ import {
 } from "@/lib/domain/generation-history";
 import {
   generationAction,
+  generationFailureMessage,
   generationPollDelay,
   mergeGenerationResponse,
 } from "@/lib/domain/generation-progress";
@@ -59,25 +62,27 @@ import {
   STYLES,
   styleLabels,
 } from "@/lib/domain/poster";
-import { GenerationProgressCard } from "./generation-progress-card";
 import { LoginForm } from "./login-form";
 import { UrlPipelineModal } from "./url-pipeline-modal";
+
+export type PosterStudioExample = Readonly<{
+  id?: string;
+  label: string;
+  prompt: string;
+  image: string;
+  alt: string;
+  width?: number;
+  height?: number;
+}>;
 
 type Props = Readonly<{
   isPro: boolean;
   isGuest: boolean;
   initialStyle?: PosterStyle;
+  examples?: readonly PosterStudioExample[];
 }>;
 
-type StudioJobExample = Readonly<{
-  id: "event" | "article" | "announcement";
-  label: string;
-  prompt: string;
-  image: string;
-  alt: string;
-}>;
-
-const STUDIO_JOB_EXAMPLES: readonly StudioJobExample[] = [
+const STUDIO_JOB_EXAMPLES: readonly PosterStudioExample[] = [
   {
     id: "event",
     label: "Event poster",
@@ -110,14 +115,6 @@ const FREE_QUALITY: Quality = "low";
 const FREE_MAX_IMAGES = 2;
 const GUEST_MAX_IMAGES = 1;
 
-const EXAMPLE_JOB_PLACEHOLDERS: Readonly<
-  Record<"event" | "article" | "announcement", string>
-> = {
-  event: "Describe your event — name, date, place, vibe…",
-  article: "Paste an article URL…",
-  announcement: "Paste your announcement, notes, or copy…",
-};
-
 const EMPTY_BRIEF_FIELDS: BriefFields = {
   headline: "",
   subtitle: "",
@@ -145,11 +142,6 @@ type GenerateOverrides = Readonly<{
   quality?: Quality;
   imageCount?: ImageCount;
 }>;
-
-function contentSnippet(value: string): string {
-  const normalized = value.trim().replace(/\s+/g, " ");
-  return normalized.length > 120 ? `${normalized.slice(0, 120)}…` : normalized;
-}
 
 function deriveFieldsFromPrompt(promptText: string): BriefFields {
   const lines = promptText
@@ -813,129 +805,463 @@ function downloadTrackedImage(url: string, filename: string): void {
   void downloadImage(url, filename);
 }
 
-function RecentPosterTile({
-  poster,
-  index,
-  onZoom,
-  onDownload,
-  onRetry,
+type StudioTab = "examples" | "history";
+type HistoryPoster = ReturnType<typeof flattenRecentPosterImages>[number];
+type HistoryItem =
+  | Readonly<{
+      kind: "poster";
+      key: string;
+      poster: HistoryPoster;
+    }>
+  | Readonly<{
+      kind: "failure";
+      key: string;
+      generation: GenerationResponse;
+    }>;
+
+function historyPosterKey(poster: HistoryPoster): string {
+  return `${poster.generationId}-${poster.image.id}`;
+}
+
+function historyFailureKey(generation: GenerationResponse): string {
+  return `failure-${generation.id}`;
+}
+
+function historyItemDate(item: HistoryItem): string {
+  return item.kind === "poster"
+    ? item.poster.createdAt
+    : item.generation.createdAt;
+}
+
+function formatHistoryDate(value: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function StudioTabs({
+  activeTab,
+  onChange,
 }: Readonly<{
-  poster: ReturnType<typeof flattenRecentPosterImages>[number];
-  index: number;
-  onZoom: (url: string) => void;
-  onDownload: (url: string, filename: string) => void;
-  onRetry: () => void;
+  activeTab: StudioTab;
+  onChange: (tab: StudioTab) => void;
 }>): JSX.Element {
-  const [loadError, setLoadError] = useState(false);
-  const filename = `text-to-poster-history-${index + 1}.png`;
-  const expiry = poster.expiresAt
-    ? ` Available until ${new Date(poster.expiresAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}.`
-    : "";
-  const accessibleDescription = `${poster.prompt}.${expiry}`;
   return (
-    <li className="recent-poster-tile">
-      <div className="recent-poster-frame" title={accessibleDescription}>
-        {loadError ? (
-          <button
-            type="button"
-            className="recent-poster-retry"
-            onClick={() => {
-              setLoadError(false);
-              onRetry();
-            }}
-            aria-label="Couldn’t load recent poster. Retry"
-          >
-            Couldn’t load poster. Retry
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="recent-poster-image"
-            onClick={() => onZoom(poster.image.url)}
-            aria-label={`View recent poster ${index + 1}. ${accessibleDescription}`}
-          >
-            <Image
-              src={poster.image.url}
-              alt={poster.image.alt}
-              width={320}
-              height={400}
-              sizes="8.5rem"
-              onError={() => setLoadError(true)}
-            />
-          </button>
-        )}
-        {!loadError && (
-          <button
-            type="button"
-            className="result-download-overlay"
-            onClick={() => onDownload(poster.image.url, filename)}
-            aria-label={`Download recent poster ${index + 1}`}
-          >
-            <ArrowDownToLine size={14} aria-hidden="true" />
-          </button>
-        )}
-      </div>
-    </li>
+    <div className="studio-tabs" role="tablist" aria-label="Poster results">
+      <button
+        type="button"
+        role="tab"
+        id="studio-examples-tab"
+        aria-selected={activeTab === "examples"}
+        aria-controls="studio-examples-panel"
+        className={`studio-tab ${activeTab === "examples" ? "is-active" : ""}`}
+        onClick={() => onChange("examples")}
+      >
+        <Images size={18} aria-hidden="true" /> Examples
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="studio-history-tab"
+        aria-selected={activeTab === "history"}
+        aria-controls="studio-history-panel"
+        className={`studio-tab ${activeTab === "history" ? "is-active" : ""}`}
+        onClick={() => onChange("history")}
+      >
+        <History size={18} aria-hidden="true" /> History
+      </button>
+    </div>
   );
 }
 
-function RecentPosterStrip({
-  generations,
-  isGuest,
-  onZoom,
-  onDownload,
-  onRetry,
+function StudioExamplesPanel({
+  examples,
+  activeIndex,
+  onIndexChange,
+  onUseExample,
 }: Readonly<{
-  generations: readonly GenerationResponse[];
-  isGuest: boolean;
-  onZoom: (url: string) => void;
-  onDownload: (url: string, filename: string) => void;
-  onRetry: (generationId: string) => void;
-}>): JSX.Element | null {
-  const posters = flattenRecentPosterImages(generations);
-  if (posters.length === 0) {
-    return null;
+  examples: readonly PosterStudioExample[];
+  activeIndex: number;
+  onIndexChange: (index: number) => void;
+  onUseExample: (example: PosterStudioExample) => void;
+}>): JSX.Element {
+  const example = examples[activeIndex] ?? examples[0];
+  if (!example) {
+    return <div className="studio-panel-empty">No examples available.</div>;
   }
+  const nextIndex = (activeIndex + 1) % examples.length;
+  const previousIndex = (activeIndex - 1 + examples.length) % examples.length;
+  const changeIndex = (index: number): void => {
+    onIndexChange((index + examples.length) % examples.length);
+  };
+  const move = (direction: -1 | 1): void => {
+    changeIndex(activeIndex + direction);
+  };
+
   return (
-    <section
-      className="recent-posters"
-      aria-labelledby="recent-posters-heading"
+    <div
+      id="studio-examples-panel"
+      className="studio-showcase studio-examples-panel"
+      role="tabpanel"
+      aria-labelledby="studio-examples-tab"
     >
-      <div className="recent-posters-head">
-        <div className="recent-posters-title">
-          <p className="eyebrow" id="recent-posters-heading">
-            Recent posters
-          </p>
-          <span className="recent-posters-count">{posters.length}</span>
-        </div>
-        <div className="recent-posters-meta">
-          {isGuest && <span>Only this browser · saved for 24 hours</span>}
-          {isGuest && (
-            <a href="/login?next=/%23studio">Sign in to keep 7 days</a>
-          )}
-        </div>
-      </div>
-      <ul className="recent-posters-track" aria-label="Recent poster images">
-        {posters.map((poster, index) => (
-          <RecentPosterTile
-            key={`${poster.generationId}-${poster.image.id}`}
-            poster={poster}
-            index={index}
-            onZoom={onZoom}
-            onDownload={onDownload}
-            onRetry={() => onRetry(poster.generationId)}
+      <section
+        className="studio-example-carousel"
+        aria-label={`Example ${activeIndex + 1} of ${examples.length}`}
+      >
+        <button
+          type="button"
+          className="studio-example-image-button"
+          onClick={() => onUseExample(example)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft") {
+              event.preventDefault();
+              move(-1);
+            } else if (event.key === "ArrowRight") {
+              event.preventDefault();
+              move(1);
+            }
+          }}
+          aria-label={`Use the ${example.label} example prompt`}
+        >
+          <Image
+            src={example.image}
+            alt={example.alt}
+            width={example.width ?? 1024}
+            height={example.height ?? 1280}
+            sizes="(max-width: 800px) 100vw, 52vw"
+            priority={activeIndex === 0}
+          />
+        </button>
+        {examples.length > 1 && (
+          <>
+            <button
+              type="button"
+              className="studio-carousel-arrow studio-carousel-arrow-left"
+              onClick={() => move(-1)}
+              aria-label={`Previous example: ${examples[previousIndex]?.label ?? ""}`}
+            >
+              <ChevronLeft size={22} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="studio-carousel-arrow studio-carousel-arrow-right"
+              onClick={() => move(1)}
+              aria-label={`Next example: ${examples[nextIndex]?.label ?? ""}`}
+            >
+              <ChevronRight size={22} aria-hidden="true" />
+            </button>
+          </>
+        )}
+      </section>
+      <fieldset className="studio-carousel-dots" aria-label="Choose an example">
+        {examples.map((item, index) => (
+          <button
+            type="button"
+            className={`studio-carousel-dot ${index === activeIndex ? "is-active" : ""}`}
+            key={item.image}
+            onClick={() => changeIndex(index)}
+            aria-label={`Show example ${index + 1}: ${item.label}`}
+            aria-current={index === activeIndex ? "true" : undefined}
           />
         ))}
-      </ul>
-    </section>
+      </fieldset>
+      <button
+        type="button"
+        className="studio-example-prompt"
+        onClick={() => onUseExample(example)}
+        title={example.prompt}
+      >
+        <span className="studio-example-label">{example.label}</span>
+        <span className="studio-example-prompt-text">{example.prompt}</span>
+      </button>
+    </div>
   );
 }
 
-export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
-  const [prompt, setPrompt] = useState("");
-  const [placeholder, setPlaceholder] = useState(
-    "Describe an idea, paste text, or drop a URL…",
+function StudioHistoryProgress({
+  generation,
+  onDismiss,
+}: Readonly<{
+  generation: GenerationResponse;
+  onDismiss?: () => void;
+}>): JSX.Element {
+  const isSubmitted = generation.status === "submitted";
+  const isFailure =
+    generation.status === "failed" || generation.status === "timed_out";
+  return (
+    <div className="studio-history-progress" aria-live="polite">
+      <div
+        className={`studio-history-progress-media ${isFailure ? "is-failure" : ""}`}
+        style={{ aspectRatio: generation.aspectRatio.replace(":", " / ") }}
+      >
+        {isFailure ? (
+          <div className="studio-history-progress-error" role="alert">
+            <CircleAlert size={18} aria-hidden="true" />
+            <strong>
+              {generation.status === "timed_out"
+                ? "Generation timed out"
+                : "Generation failed"}
+            </strong>
+            <p>{generationFailureMessage(generation)}</p>
+            {generation.error && <span>Nothing was charged for this run.</span>}
+            {onDismiss && (
+              <button type="button" onClick={onDismiss}>
+                Dismiss
+              </button>
+            )}
+          </div>
+        ) : (
+          <span>
+            {isSubmitted ? "Preparing poster…" : "Generating poster…"}
+          </span>
+        )}
+      </div>
+    </div>
   );
+}
+
+function StudioHistoryThumbnails({
+  items,
+  selectedKey,
+  onSelect,
+  isGenerating = false,
+}: Readonly<{
+  items: readonly HistoryItem[];
+  selectedKey: string | null;
+  onSelect: (key: string) => void;
+  isGenerating?: boolean;
+}>): JSX.Element {
+  return (
+    <fieldset
+      className="studio-history-thumbnails"
+      aria-label="Generation history"
+    >
+      {isGenerating && (
+        <div
+          className="studio-history-thumbnail is-pending"
+          role="status"
+          aria-label="Generation in progress"
+        >
+          <LoaderCircle size={22} aria-hidden="true" />
+        </div>
+      )}
+      {items.map((item, index) => (
+        <button
+          key={item.key}
+          type="button"
+          className={`studio-history-thumbnail ${item.kind === "failure" ? "is-failure" : ""} ${item.key === selectedKey ? "is-active" : ""}`}
+          onClick={() => onSelect(item.key)}
+          aria-label={
+            item.kind === "failure"
+              ? `View failed generation ${index + 1}, generated ${formatHistoryDate(item.generation.createdAt)}`
+              : `View poster ${index + 1}, generated ${formatHistoryDate(item.poster.createdAt)}`
+          }
+          aria-current={item.key === selectedKey ? "true" : undefined}
+        >
+          {item.kind === "failure" ? (
+            <CircleAlert size={22} aria-hidden="true" />
+          ) : (
+            <Image
+              src={item.poster.image.url}
+              alt=""
+              width={96}
+              height={120}
+              sizes="5rem"
+            />
+          )}
+        </button>
+      ))}
+    </fieldset>
+  );
+}
+
+function StudioHistoryPanel({
+  items,
+  selectedKey,
+  activeGeneration,
+  isGuest,
+  onSelect,
+  onZoom,
+  onDownload,
+  onEdit,
+  onRetry,
+  dismissibleFailureIds,
+  onDismissFailure,
+}: Readonly<{
+  items: readonly HistoryItem[];
+  selectedKey: string | null;
+  activeGeneration: GenerationResponse | undefined;
+  isGuest: boolean;
+  onSelect: (key: string) => void;
+  onZoom: (url: string) => void;
+  onDownload: (url: string, filename: string) => void;
+  onEdit: (generationId: string) => void;
+  onRetry: (generationId: string) => void;
+  dismissibleFailureIds: ReadonlySet<string>;
+  onDismissFailure: (generationId: string) => void;
+}>): JSX.Element {
+  const selected = items.find((item) => item.key === selectedKey);
+  const [loadError, setLoadError] = useState(false);
+
+  const selectedPoster =
+    selected?.kind === "poster" ? selected.poster : undefined;
+  const selectedFailure =
+    selected?.kind === "failure" ? selected.generation : undefined;
+
+  if (activeGeneration) {
+    return (
+      <div
+        id="studio-history-panel"
+        className="studio-showcase studio-history-panel"
+        role="tabpanel"
+        aria-labelledby="studio-history-tab"
+      >
+        <div className="studio-history-main">
+          <StudioHistoryProgress generation={activeGeneration} />
+        </div>
+        <StudioHistoryThumbnails
+          items={items}
+          selectedKey={selectedKey}
+          onSelect={onSelect}
+          isGenerating
+        />
+        {isGuest && (
+          <p className="studio-history-note">
+            Only this browser · saved for 24 hours ·{" "}
+            <a href="/login?next=/%23studio">Sign in to keep 7 days</a>
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (!selected || (!selectedPoster && !selectedFailure)) {
+    return (
+      <div
+        id="studio-history-panel"
+        className="studio-showcase studio-history-panel studio-history-empty"
+        role="tabpanel"
+        aria-labelledby="studio-history-tab"
+      >
+        <p className="eyebrow">No saved posters yet</p>
+        <p>Generate a poster and it will appear here for quick comparison.</p>
+        {isGuest && (
+          <span>Guest posters stay in this browser for 24 hours.</span>
+        )}
+      </div>
+    );
+  }
+
+  const filename = `text-to-poster-${selectedPoster?.generationId.slice(0, 8) ?? "poster"}.png`;
+  return (
+    <div
+      id="studio-history-panel"
+      className="studio-showcase studio-history-panel"
+      role="tabpanel"
+      aria-labelledby="studio-history-tab"
+    >
+      <div className="studio-history-main">
+        {selectedFailure ? (
+          <StudioHistoryProgress
+            generation={selectedFailure}
+            {...(dismissibleFailureIds.has(selectedFailure.id)
+              ? {
+                  onDismiss: () => onDismissFailure(selectedFailure.id),
+                }
+              : {})}
+          />
+        ) : selectedPoster ? (
+          loadError ? (
+            <button
+              type="button"
+              className="studio-history-retry"
+              style={{
+                aspectRatio: selectedPoster.aspectRatio.replace(":", " / "),
+              }}
+              onClick={() => {
+                setLoadError(false);
+                onRetry(selectedPoster.generationId);
+              }}
+            >
+              Couldn’t load poster. Retry
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="studio-history-image-button"
+              onClick={() => onZoom(selectedPoster.image.url)}
+              aria-label={`View ${selectedPoster.image.alt} full size`}
+              style={{
+                aspectRatio: selectedPoster.aspectRatio.replace(":", " / "),
+              }}
+            >
+              <Image
+                src={selectedPoster.image.url}
+                alt={selectedPoster.image.alt}
+                width={1024}
+                height={1280}
+                sizes="(max-width: 800px) 100vw, 52vw"
+                onError={() => setLoadError(true)}
+              />
+            </button>
+          )
+        ) : null}
+      </div>
+      <div className="studio-history-meta">
+        <time
+          dateTime={selectedPoster?.createdAt ?? selectedFailure?.createdAt}
+        >
+          {formatHistoryDate(
+            selectedPoster?.createdAt ?? selectedFailure?.createdAt ?? "",
+          )}
+        </time>
+        {selectedPoster && (
+          <div className="studio-history-actions">
+            <button
+              type="button"
+              className="result-action-button"
+              onClick={() => onDownload(selectedPoster.image.url, filename)}
+              disabled={loadError}
+            >
+              <ArrowDownToLine size={14} aria-hidden="true" /> Download
+            </button>
+            <button
+              type="button"
+              className="result-action-button"
+              onClick={() => onEdit(selectedPoster.generationId)}
+            >
+              <Pencil size={13} aria-hidden="true" /> Edit again
+            </button>
+          </div>
+        )}
+      </div>
+      <StudioHistoryThumbnails
+        items={items}
+        selectedKey={selectedKey}
+        onSelect={onSelect}
+      />
+      {isGuest && (
+        <p className="studio-history-note">
+          Only this browser · saved for 24 hours ·{" "}
+          <a href="/login?next=/%23studio">Sign in to keep 7 days</a>
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function PosterStudio({
+  isPro,
+  isGuest,
+  initialStyle,
+  examples: providedExamples,
+}: Props) {
+  const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState<PosterStyle>(initialStyle ?? "auto");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("4:5");
   const [resolution, setResolution] = useState<Resolution>("1k");
@@ -956,16 +1282,12 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingSubmission, setPendingSubmission] =
     useState<GenerationResponse | null>(null);
-  const [connectionFailures, setConnectionFailures] = useState<
-    Record<string, number>
-  >({});
-  const [lightbox, setLightbox] = useState<string | null>(null);
-  const [detectedType, setDetectedType] = useState<InputType>("idea");
-  const [briefStatus, setBriefStatus] = useState<"idle" | "loading" | "ready">(
-    "idle",
+  const [activeTab, setActiveTab] = useState<StudioTab>("examples");
+  const [activeExampleIndex, setActiveExampleIndex] = useState(0);
+  const [selectedHistoryKey, setSelectedHistoryKey] = useState<string | null>(
+    null,
   );
-  const [briefFields, setBriefFields] = useState<BriefFields | null>(null);
-  const [editingBrief, setEditingBrief] = useState(false);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const [editContentId, setEditContentId] = useState<string | null>(null);
   const [editContentFields, setEditContentFields] =
     useState<BriefFields>(EMPTY_BRIEF_FIELDS);
@@ -994,62 +1316,13 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
   const dismissedIds = useRef(new Set<string>());
   const givenUpIds = useRef(new Set<string>());
   const generationById = useRef(new Map<string, GenerationResponse>());
-  const generationKeys = useRef(new Map<string, string>());
   const submissionSequence = useRef(0);
-  const lastPromptRef = useRef("");
   const paramsByGeneration = useRef(new Map<string, GenerationParams>());
-  const briefByGeneration = useRef(new Map<string, BriefFields>());
   const inputTypeByGeneration = useRef(new Map<string, InputType>());
-
-  const resetInputWorkflow = useCallback((): void => {
-    setBriefStatus("idle");
-    setBriefFields(null);
-    setEditingBrief(false);
-  }, []);
-
-  async function prepareBrief(): Promise<void> {
-    if (detectedType !== "text" || briefStatus === "loading") {
-      return;
-    }
-    track("text_prepare_click");
-    setBriefStatus("loading");
-    try {
-      const content = prompt.trim().slice(0, 6000);
-      const raw: unknown = await ky
-        .post("/api/brief", {
-          json: {
-            inputType: "text",
-            content,
-          },
-          timeout: 20_000,
-        })
-        .json();
-      const fields = normalizeBriefFields(raw);
-      if (!fields) {
-        throw new Error("Invalid brief response.");
-      }
-      setBriefFields(fields);
-      setEditingBrief(false);
-      setBriefStatus("ready");
-      track("brief_generated");
-    } catch {
-      setBriefStatus("idle");
-      track("brief_fallback");
-      await generate({
-        prompt: buildFallbackPrompt({
-          inputType: "text",
-          prompt,
-        }),
-        inputType: "text",
-      });
-    }
-  }
+  const examples = providedExamples ?? STUDIO_JOB_EXAMPLES;
 
   function openEditContent(generation: GenerationResponse): void {
-    const storedBrief = briefByGeneration.current.get(generation.id);
-    setEditContentFields(
-      storedBrief ?? deriveFieldsFromPrompt(generation.prompt),
-    );
+    setEditContentFields(deriveFieldsFromPrompt(generation.prompt));
     setEditContentId(generation.id);
     track("edit_content_click");
   }
@@ -1077,31 +1350,6 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
           }
         : {}),
     });
-  }
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const trimmed = prompt.trim();
-      const type = detectInputType(prompt);
-      setDetectedType(type);
-      if (trimmed !== lastPromptRef.current) {
-        lastPromptRef.current = trimmed;
-        resetInputWorkflow();
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [prompt, resetInputWorkflow]);
-
-  function chooseExampleJob(job: "event" | "article" | "announcement"): void {
-    setPlaceholder(EXAMPLE_JOB_PLACEHOLDERS[job]);
-    promptFieldRef.current?.focus();
-    track(
-      job === "event"
-        ? "example_click_event"
-        : job === "article"
-          ? "example_click_article"
-          : "example_click_announcement",
-    );
   }
 
   function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>): void {
@@ -1168,16 +1416,6 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
     return pollDelay(id);
   }
 
-  function syncConnectionFailures(id: string): void {
-    const failures = Math.max(
-      pollAttempts.current.get(id) ?? 0,
-      advanceFailures.current.get(id) ?? 0,
-    );
-    setConnectionFailures((prev) =>
-      prev[id] === failures ? prev : { ...prev, [id]: failures },
-    );
-  }
-
   function trackGenerationOutcome(
     id: string,
     status: GenerationResponse["status"],
@@ -1222,6 +1460,14 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
     setRecentGenerations((prev) =>
       prev.filter((generation) => generation.id !== next.id),
     );
+    if (next.status === "failed" || next.status === "timed_out") {
+      setSelectedHistoryKey(historyFailureKey(next));
+    } else if (
+      (next.status === "succeeded" || next.status === "partially_succeeded") &&
+      next.images[0]
+    ) {
+      setSelectedHistoryKey(`${next.id}-${next.images[0].id}`);
+    }
     // 失败的不用恢复；成功的保留在 sessionStorage，刷新后仍能看到图片
     if (next.status === "failed" || next.status === "timed_out") {
       writePendingGenerationIds(
@@ -1319,7 +1565,6 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
       }
       pollAttempts.current.set(id, 0);
       advanceFailures.current.set(id, 0);
-      syncConnectionFailures(id);
       applyGeneration(parsed.data);
       if (isTerminalStatus(parsed.data.status)) {
         trackGenerationOutcome(id, parsed.data.status);
@@ -1329,7 +1574,6 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
       // 超过阈值后主动放弃，避免前端一直停留在“生成中/重连”
       const failures = (advanceFailures.current.get(id) ?? 0) + 1;
       advanceFailures.current.set(id, failures);
-      syncConnectionFailures(id);
       if (failures >= GIVE_UP_AFTER_FAILURES) {
         void giveUpGeneration(id);
       }
@@ -1360,16 +1604,28 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
     }
   }
 
-  function chooseExample(example: StudioJobExample): void {
+  function dismissGeneration(id: string): void {
+    dismissedIds.current.add(id);
+    setGenerations((prev) => prev.filter((generation) => generation.id !== id));
+    writePendingGenerationIds(
+      readPendingGenerationIds().filter((pending) => pending !== id),
+    );
+  }
+
+  function chooseExample(example: PosterStudioExample): void {
     setPrompt(example.prompt);
+    promptFieldRef.current?.focus();
+    track("studio_example_select");
   }
 
   function resetStudio(): void {
     dismissedIds.current.clear();
     generationById.current.clear();
-    generationKeys.current.clear();
     setGenerations([]);
     setPrompt("");
+    setActiveTab("examples");
+    setActiveExampleIndex(0);
+    setSelectedHistoryKey(null);
     setStyle("auto");
     setAspectRatio("4:5");
     setResolution("1k");
@@ -1559,7 +1815,6 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
       }
       pollAttempts.current.set(id, 0);
       poll404Counts.current.delete(id);
-      syncConnectionFailures(id);
       applyGeneration(parsed.data);
       if (isTerminalStatus(parsed.data.status)) {
         trackGenerationOutcome(id, parsed.data.status);
@@ -1603,13 +1858,11 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
           return;
         }
         const delay = recordPollFailure(id);
-        syncConnectionFailures(id);
         schedulePoll(id, delay);
         return;
       }
       // 无论什么错误都继续轮询（带退避），避免页面永久停在“生成中”
       const delay = recordPollFailure(id);
-      syncConnectionFailures(id);
       if (pollError instanceof TimeoutError) {
         schedulePoll(id, delay);
         return;
@@ -1653,6 +1906,7 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
       setError("Wait for the current run to finish before starting another.");
       return;
     }
+    setActiveTab("history");
     setIsSubmitting(true);
     const submissionKey = `pending-submission-${++submissionSequence.current}`;
     const submission: GenerationResponse = {
@@ -1679,9 +1933,6 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
     };
     paramsByGeneration.current.set(submissionKey, generationParams);
     inputTypeByGeneration.current.set(submissionKey, generationType);
-    if (briefFields) {
-      briefByGeneration.current.set(submissionKey, briefFields);
-    }
     setPendingSubmission(submission);
     track("generation_started");
     track(
@@ -1723,11 +1974,7 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
       const id = created.data.id;
       paramsByGeneration.current.set(id, generationParams);
       inputTypeByGeneration.current.set(id, generationType);
-      if (briefFields) {
-        briefByGeneration.current.set(id, briefFields);
-      }
       moveCompletedGenerationsToRecent();
-      generationKeys.current.set(id, submissionKey);
       writePendingGenerationIds([...readPendingGenerationIds(), id]);
       const accepted = generationAcceptedSchema.safeParse(raw);
       applyGeneration(
@@ -1798,15 +2045,84 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
       quality !== FREE_QUALITY ||
       imageCount > maxFreeImages);
   const action = generationAction(isPro, isSubmitting, anyWorking);
-  const currentGenerationIds = new Set(
-    generations.map((generation) => generation.id),
-  );
-  const visibleRecentGenerations = recentGenerations.filter(
-    (generation) => !currentGenerationIds.has(generation.id),
-  );
   const visibleGenerations = pendingSubmission
     ? [pendingSubmission, ...generations]
     : generations;
+  const historyPosters = useMemo(() => {
+    const seen = new Set<string>();
+    return flattenRecentPosterImages([
+      ...recentGenerations,
+      ...generations,
+    ]).filter((poster) => {
+      const key = historyPosterKey(poster);
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }, [generations, recentGenerations]);
+  const historyFailures = useMemo(() => {
+    const byId = new Map<string, GenerationResponse>();
+    for (const generation of [...recentGenerations, ...generations]) {
+      if (generation.status === "failed" || generation.status === "timed_out") {
+        byId.set(generation.id, generation);
+      }
+    }
+    return [...byId.values()].sort(
+      (left, right) =>
+        new Date(right.createdAt).getTime() -
+        new Date(left.createdAt).getTime(),
+    );
+  }, [generations, recentGenerations]);
+  const historyItems = useMemo(() => {
+    const byKey = new Map<string, HistoryItem>();
+    for (const poster of historyPosters) {
+      const key = historyPosterKey(poster);
+      byKey.set(key, { kind: "poster", key, poster });
+    }
+    for (const generation of historyFailures) {
+      const key = historyFailureKey(generation);
+      byKey.set(key, { kind: "failure", key, generation });
+    }
+    return [...byKey.values()].sort(
+      (left, right) =>
+        new Date(historyItemDate(right)).getTime() -
+        new Date(historyItemDate(left)).getTime(),
+    );
+  }, [historyFailures, historyPosters]);
+  const dismissibleFailureIds = useMemo(
+    () =>
+      new Set(
+        generations
+          .filter(
+            (generation) =>
+              generation.status === "failed" ||
+              generation.status === "timed_out",
+          )
+          .map((generation) => generation.id),
+      ),
+    [generations],
+  );
+  const activeHistoryGeneration = [...visibleGenerations]
+    .filter(
+      (generation) =>
+        generation.status === "submitted" || generation.status === "processing",
+    )
+    .sort(
+      (left, right) =>
+        new Date(right.createdAt).getTime() -
+        new Date(left.createdAt).getTime(),
+    )[0];
+
+  useEffect(() => {
+    setSelectedHistoryKey((current) => {
+      if (current && historyItems.some((item) => item.key === current)) {
+        return current;
+      }
+      return historyItems[0]?.key ?? null;
+    });
+  }, [historyItems]);
 
   return (
     <section
@@ -1834,7 +2150,7 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             onPaste={handlePaste}
-            placeholder={placeholder}
+            placeholder="Describe an idea, paste text, or drop a URL…"
             maxLength={1500}
             rows={5}
             disabled={isSubmitting}
@@ -1843,224 +2159,6 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
             <span>Works with Idea · Text · URL</span>
             <span>{prompt.length}/1500</span>
           </div>
-          <fieldset
-            className="example-job-chips"
-            aria-label="Example ways to start"
-          >
-            <button
-              type="button"
-              className="choice-chip"
-              onClick={() => chooseExampleJob("event")}
-            >
-              Event poster
-            </button>
-            <button
-              type="button"
-              className="choice-chip"
-              onClick={() => chooseExampleJob("article")}
-            >
-              Article → Poster
-            </button>
-            <button
-              type="button"
-              className="choice-chip"
-              onClick={() => chooseExampleJob("announcement")}
-            >
-              Announcement → Poster
-            </button>
-          </fieldset>
-
-          {detectedType === "text" &&
-            (briefStatus === "ready" && briefFields ? (
-              <div className="brief-panel">
-                <p className="eyebrow">We found the story</p>
-                {!editingBrief ? (
-                  <div className="brief-preview">
-                    <div className="brief-preview-copy">
-                      <h3>{briefFields.headline || "Untitled poster"}</h3>
-                      {briefFields.subtitle && (
-                        <p className="brief-subtitle">{briefFields.subtitle}</p>
-                      )}
-                      {briefFields.points.some(Boolean) && (
-                        <ul className="brief-points">
-                          {briefFields.points.filter(Boolean).map((point) => (
-                            <li key={point}>{point}</li>
-                          ))}
-                        </ul>
-                      )}
-                      {briefFields.cta && (
-                        <p className="brief-cta">{briefFields.cta}</p>
-                      )}
-                      <p className="brief-source">Source: Your text</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="brief-edit-button"
-                      onClick={() => setEditingBrief(true)}
-                    >
-                      Edit
-                    </button>
-                  </div>
-                ) : (
-                  <div className="brief-form">
-                    <label>
-                      <span>Headline</span>
-                      <input
-                        type="text"
-                        value={briefFields.headline}
-                        maxLength={BRIEF_CHAR_LIMITS.headline}
-                        onChange={(event) =>
-                          setBriefFields({
-                            ...briefFields,
-                            headline: event.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                    <label>
-                      <span>Subtitle</span>
-                      <input
-                        type="text"
-                        value={briefFields.subtitle}
-                        maxLength={BRIEF_CHAR_LIMITS.subtitle}
-                        onChange={(event) =>
-                          setBriefFields({
-                            ...briefFields,
-                            subtitle: event.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                    <fieldset className="brief-points-field">
-                      <legend>Key points</legend>
-                      <BriefPointInput
-                        value={briefFields.points[0] ?? ""}
-                        onChange={(value) =>
-                          setBriefFields({
-                            ...briefFields,
-                            points: [
-                              value,
-                              briefFields.points[1] ?? "",
-                              briefFields.points[2] ?? "",
-                            ],
-                          })
-                        }
-                      />
-                      <BriefPointInput
-                        value={briefFields.points[1] ?? ""}
-                        onChange={(value) =>
-                          setBriefFields({
-                            ...briefFields,
-                            points: [
-                              briefFields.points[0] ?? "",
-                              value,
-                              briefFields.points[2] ?? "",
-                            ],
-                          })
-                        }
-                      />
-                      <BriefPointInput
-                        value={briefFields.points[2] ?? ""}
-                        onChange={(value) =>
-                          setBriefFields({
-                            ...briefFields,
-                            points: [
-                              briefFields.points[0] ?? "",
-                              briefFields.points[1] ?? "",
-                              value,
-                            ],
-                          })
-                        }
-                      />
-                    </fieldset>
-                    <label>
-                      <span>CTA (optional)</span>
-                      <input
-                        type="text"
-                        value={briefFields.cta}
-                        maxLength={BRIEF_CHAR_LIMITS.cta}
-                        onChange={(event) =>
-                          setBriefFields({
-                            ...briefFields,
-                            cta: event.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      className="brief-edit-button"
-                      onClick={() => setEditingBrief(false)}
-                    >
-                      Done editing
-                    </button>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  className="generate-button"
-                  onClick={() =>
-                    void generate({
-                      prompt: buildBriefPrompt(briefFields),
-                      inputType: "text",
-                    })
-                  }
-                >
-                  <Sparkles size={18} /> Generate poster
-                </button>
-                <button
-                  type="button"
-                  className="brief-start-over"
-                  onClick={resetInputWorkflow}
-                >
-                  Start over
-                </button>
-              </div>
-            ) : (
-              <div className="input-source-card">
-                <p className="input-source-label">
-                  📄 Pasted text · {prompt.trim().length} characters
-                </p>
-                <p className="input-source-note">“{contentSnippet(prompt)}”</p>
-                <p className="input-source-action">
-                  Turn this content into a poster
-                </p>
-                <div className="input-source-actions">
-                  <button
-                    type="button"
-                    className="generate-button"
-                    disabled={briefStatus === "loading"}
-                    onClick={() => void prepareBrief()}
-                  >
-                    {briefStatus === "loading"
-                      ? "Finding the story…"
-                      : "Prepare poster"}
-                  </button>
-                  <button
-                    type="button"
-                    className="outline-button"
-                    onClick={() =>
-                      void generate({
-                        prompt: buildFallbackPrompt({
-                          inputType: "text",
-                          prompt,
-                        }),
-                        inputType: "text",
-                      })
-                    }
-                  >
-                    Create now
-                  </button>
-                  <button
-                    type="button"
-                    className="brief-edit-button"
-                    onClick={() => promptFieldRef.current?.focus()}
-                  >
-                    Edit
-                  </button>
-                </div>
-              </div>
-            ))}
 
           <fieldset className="control-block">
             <legend className="field-label">Output settings</legend>
@@ -2187,155 +2285,45 @@ export function PosterStudio({ isPro, isGuest, initialStyle }: Props) {
         </div>
 
         <div className="studio-results">
-          {generations.length === 0 && !pendingSubmission && (
-            <div className="empty-studio">
-              <fieldset
-                className="empty-preview-grid"
-                aria-label="Example poster outputs"
-              >
-                {STUDIO_JOB_EXAMPLES.map((example, index) => (
-                  <button
-                    className="empty-preview"
-                    key={example.id}
-                    type="button"
-                    onClick={() => chooseExample(example)}
-                    aria-label={`Use the ${example.label} example brief`}
-                  >
-                    <Image
-                      src={example.image}
-                      alt=""
-                      width={1024}
-                      height={1280}
-                      sizes="(max-width: 520px) 45vw, 20vw"
-                    />
-                    <span>
-                      {String(index + 1).padStart(2, "0")} / {example.label}
-                    </span>
-                  </button>
-                ))}
-              </fieldset>
-              <div className="empty-copy">
-                <span className="empty-mark">01</span>
-                <div>
-                  <p>
-                    Turn anything into a poster. Start with an event, an
-                    article, or an announcement.
-                  </p>
-                  <div className="example-list">
-                    {STUDIO_JOB_EXAMPLES.map((example) => (
-                      <button
-                        key={`${example.id}-prompt`}
-                        type="button"
-                        onClick={() => chooseExample(example)}
-                      >
-                        {example.prompt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          {visibleGenerations.map((generation) => {
-            const submitting = generation.id === pendingSubmission?.id;
-            const working =
-              generation.status === "submitted" ||
-              generation.status === "processing";
-            const hasResult =
-              generation.status === "succeeded" ||
-              generation.status === "partially_succeeded";
-            const resultImageUrl = generation.images[0]?.url;
-            return (
-              <div
-                className="generation-block"
-                id={
-                  submitting
-                    ? "generation-pending-submission"
-                    : `generation-${generation.id}`
-                }
-                key={generationKeys.current.get(generation.id) ?? generation.id}
-              >
-                {(submitting || working || hasResult) && (
-                  <GenerationProgressCard
-                    generation={generation}
-                    isGuest={isGuest}
-                    isSubmitting={submitting}
-                    connectionFailures={connectionFailures[generation.id] ?? 0}
-                    onZoom={openLightbox}
-                    onRetry={(id) => void retryGenerationImage(id)}
-                  />
-                )}
-                {hasResult && (
-                  <div className="result-actions-row">
-                    <button
-                      type="button"
-                      className="result-action-button"
-                      onClick={() => openEditContent(generation)}
-                    >
-                      <Pencil size={13} aria-hidden="true" /> Edit content
-                    </button>
-                    {resultImageUrl && (
-                      <button
-                        type="button"
-                        className="result-action-button"
-                        onClick={() =>
-                          downloadTrackedImage(
-                            resultImageUrl,
-                            `text-to-poster-${generation.id.slice(0, 8)}.png`,
-                          )
-                        }
-                      >
-                        <ArrowDownToLine size={13} aria-hidden="true" />{" "}
-                        Download
-                      </button>
-                    )}
-                  </div>
-                )}
-                {!working && !hasResult && (
-                  <div className="failure-card">
-                    <CircleAlert size={22} />
-                    <p>
-                      Nothing was charged for this run. Try a shorter, more
-                      visual brief.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        dismissedIds.current.add(generation.id);
-                        setGenerations((prev) =>
-                          prev.filter((g) => g.id !== generation.id),
-                        );
-                        writePendingGenerationIds(
-                          readPendingGenerationIds().filter(
-                            (id) => id !== generation.id,
-                          ),
-                        );
-                      }}
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {visibleRecentGenerations.length > 0 && (
-            <RecentPosterStrip
-              generations={visibleRecentGenerations}
-              isGuest={isGuest}
-              onZoom={openLightbox}
-              onDownload={downloadTrackedImage}
-              onRetry={(id) => void retryGenerationImage(id)}
+          <StudioTabs activeTab={activeTab} onChange={setActiveTab} />
+          {activeTab === "examples" ? (
+            <StudioExamplesPanel
+              examples={examples}
+              activeIndex={activeExampleIndex}
+              onIndexChange={setActiveExampleIndex}
+              onUseExample={chooseExample}
             />
-          )}
-          {generations.length > 0 && !anyWorking && (
-            <button
-              className="reset-button"
-              type="button"
-              onClick={resetStudio}
-            >
-              Start a new brief
-            </button>
+          ) : (
+            <>
+              <StudioHistoryPanel
+                key={selectedHistoryKey ?? "empty-history"}
+                items={historyItems}
+                selectedKey={selectedHistoryKey}
+                activeGeneration={activeHistoryGeneration}
+                isGuest={isGuest}
+                onSelect={setSelectedHistoryKey}
+                onZoom={openLightbox}
+                onDownload={downloadTrackedImage}
+                onEdit={(generationId) => {
+                  const generation = generationById.current.get(generationId);
+                  if (generation) {
+                    openEditContent(generation);
+                  }
+                }}
+                onRetry={(id) => void retryGenerationImage(id)}
+                dismissibleFailureIds={dismissibleFailureIds}
+                onDismissFailure={dismissGeneration}
+              />
+              {generations.length > 0 && !anyWorking && (
+                <button
+                  className="reset-button"
+                  type="button"
+                  onClick={resetStudio}
+                >
+                  Start a new brief
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
