@@ -10,6 +10,7 @@ import {
 } from "./generation-settlement";
 import type { GenerationActor, GenerationRow } from "./generation-types";
 import type { GuestIdentity } from "./guest";
+import { enforcePromptSafety } from "./prompt-safety";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
 const limitedGenerationResultSchema = z.object({
@@ -212,6 +213,7 @@ export async function createGeneration(
   }
 
   try {
+    await enforcePromptSafety(request.prompt);
     const provider = await submitGeneration(
       providerInput,
       buildPosterPrompt(request, {
