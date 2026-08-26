@@ -736,7 +736,9 @@ function track(name: string): void {
   window.umami?.track(name);
 }
 
-function generationLimitKind(error: unknown): "guest" | "free" | null {
+type ApiSubmitError = Readonly<{ code: string; message: string | null }>;
+
+function readApiSubmitError(error: unknown): ApiSubmitError | null {
   if (!(error instanceof HTTPError)) {
     return null;
   }
@@ -749,11 +751,38 @@ function generationLimitKind(error: unknown): "guest" | "free" | null {
   ) {
     return null;
   }
-  switch (body.code) {
+  return {
+    code: body.code,
+    message:
+      "error" in body && typeof body.error === "string" ? body.error : null,
+  };
+}
+
+function generationLimitKind(error: unknown): "guest" | "free" | null {
+  const parsed = readApiSubmitError(error);
+  if (!parsed) {
+    return null;
+  }
+  switch (parsed.code) {
     case "GUEST_LIMIT_REACHED":
       return "guest";
     case "FREE_DAILY_LIMIT_REACHED":
       return "free";
+    default:
+      return null;
+  }
+}
+
+function promptSafetyFailureMessage(error: unknown): string | null {
+  const parsed = readApiSubmitError(error);
+  if (!parsed) {
+    return null;
+  }
+  switch (parsed.code) {
+    case "PROMPT_SAFETY_BLOCKED":
+    case "PROMPT_SAFETY_REVIEW_REQUIRED":
+    case "PROMPT_SAFETY_UNAVAILABLE":
+      return parsed.message ?? "The prompt could not pass the safety review.";
     default:
       return null;
   }
@@ -806,6 +835,7 @@ function downloadTrackedImage(url: string, filename: string): void {
 }
 
 type StudioTab = "examples" | "history";
+type MobileStudioTab = "create" | "results";
 type HistoryPoster = ReturnType<typeof flattenRecentPosterImages>[number];
 type HistoryItem =
   | Readonly<{
@@ -878,16 +908,59 @@ function StudioTabs({
   );
 }
 
+function MobileStudioTabs({
+  activeTab,
+  onChange,
+}: Readonly<{
+  activeTab: MobileStudioTab;
+  onChange: (tab: MobileStudioTab) => void;
+}>): JSX.Element {
+  return (
+    <div
+      className="studio-mobile-tabs"
+      role="tablist"
+      aria-label="Poster studio"
+    >
+      <button
+        type="button"
+        role="tab"
+        id="studio-mobile-create-tab"
+        aria-selected={activeTab === "create"}
+        aria-controls="studio-mobile-create-panel"
+        className={`studio-tab ${activeTab === "create" ? "is-active" : ""}`}
+        onClick={() => onChange("create")}
+      >
+        <Sparkles size={18} aria-hidden="true" /> Create
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="studio-mobile-results-tab"
+        aria-selected={activeTab === "results"}
+        aria-controls="studio-mobile-results-panel"
+        className={`studio-tab ${activeTab === "results" ? "is-active" : ""}`}
+        onClick={() => onChange("results")}
+      >
+        <History size={18} aria-hidden="true" /> Results
+      </button>
+    </div>
+  );
+}
+
 function StudioExamplesPanel({
   examples,
   activeIndex,
   onIndexChange,
   onUseExample,
+  panelId = "studio-examples-panel",
+  labelledById,
 }: Readonly<{
   examples: readonly PosterStudioExample[];
   activeIndex: number;
   onIndexChange: (index: number) => void;
   onUseExample: (example: PosterStudioExample) => void;
+  panelId?: string;
+  labelledById?: string;
 }>): JSX.Element {
   const example = examples[activeIndex] ?? examples[0];
   if (!example) {
@@ -904,10 +977,12 @@ function StudioExamplesPanel({
 
   return (
     <div
-      id="studio-examples-panel"
+      id={panelId}
       className="studio-showcase studio-examples-panel"
       role="tabpanel"
-      aria-labelledby="studio-examples-tab"
+      {...(labelledById
+        ? { "aria-labelledby": labelledById }
+        : { "aria-label": "Poster examples" })}
     >
       <section
         className="studio-example-carousel"
@@ -1283,6 +1358,8 @@ export function PosterStudio({
   const [pendingSubmission, setPendingSubmission] =
     useState<GenerationResponse | null>(null);
   const [activeTab, setActiveTab] = useState<StudioTab>("examples");
+  const [mobileStudioTab, setMobileStudioTab] =
+    useState<MobileStudioTab>("create");
   const [activeExampleIndex, setActiveExampleIndex] = useState(0);
   const [selectedHistoryKey, setSelectedHistoryKey] = useState<string | null>(
     null,
@@ -1614,6 +1691,7 @@ export function PosterStudio({
 
   function chooseExample(example: PosterStudioExample): void {
     setPrompt(example.prompt);
+    setMobileStudioTab("create");
     promptFieldRef.current?.focus();
     track("studio_example_select");
   }
@@ -1624,6 +1702,7 @@ export function PosterStudio({
     setGenerations([]);
     setPrompt("");
     setActiveTab("examples");
+    setMobileStudioTab("create");
     setActiveExampleIndex(0);
     setSelectedHistoryKey(null);
     setStyle("auto");
@@ -1907,6 +1986,7 @@ export function PosterStudio({
       return;
     }
     setActiveTab("history");
+    setMobileStudioTab("results");
     setIsSubmitting(true);
     const submissionKey = `pending-submission-${++submissionSequence.current}`;
     const submission: GenerationResponse = {
@@ -2003,8 +2083,16 @@ export function PosterStudio({
       revealGeneration(id);
     } catch (submitError) {
       setPendingSubmission(null);
+      const safetyFailure = promptSafetyFailureMessage(submitError);
       const limitKind = generationLimitKind(submitError);
-      if (limitKind === "guest") {
+      if (safetyFailure) {
+        applyGeneration({
+          ...submission,
+          status: "failed",
+          progress: 100,
+          error: safetyFailure,
+        });
+      } else if (limitKind === "guest") {
         guestLimitPreviousFocus.current = generateButtonRef.current;
         setGuestLimitPrompt(true);
       } else if (limitKind === "free") {
@@ -2138,8 +2226,23 @@ export function PosterStudio({
         <span className="studio-count">One brief / multiple directions</span>
       </div>
 
+      <MobileStudioTabs
+        activeTab={mobileStudioTab}
+        onChange={(tab) => {
+          setMobileStudioTab(tab);
+          if (tab === "results") {
+            setActiveTab("history");
+          }
+        }}
+      />
+
       <div className="studio-grid">
-        <div className="studio-controls">
+        <div
+          id="studio-mobile-create-panel"
+          className={`studio-controls ${mobileStudioTab === "create" ? "is-mobile-active" : ""}`}
+          role="tabpanel"
+          aria-labelledby="studio-mobile-create-tab"
+        >
           <label className="field-label" htmlFor="poster-prompt">
             Describe your poster idea
           </label>
@@ -2284,7 +2387,12 @@ export function PosterStudio({
           )}
         </div>
 
-        <div className="studio-results">
+        <div
+          id="studio-mobile-results-panel"
+          className={`studio-results ${mobileStudioTab === "results" ? "is-mobile-active" : ""}`}
+          role="tabpanel"
+          aria-labelledby="studio-mobile-results-tab"
+        >
           <StudioTabs activeTab={activeTab} onChange={setActiveTab} />
           {activeTab === "examples" ? (
             <StudioExamplesPanel
@@ -2326,6 +2434,15 @@ export function PosterStudio({
             </>
           )}
         </div>
+      </div>
+      <div className="studio-mobile-examples">
+        <StudioExamplesPanel
+          examples={examples}
+          activeIndex={activeExampleIndex}
+          onIndexChange={setActiveExampleIndex}
+          onUseExample={chooseExample}
+          panelId="studio-mobile-examples-panel"
+        />
       </div>
       <dialog
         ref={guestLimitDialogRef}

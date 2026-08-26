@@ -105,6 +105,16 @@ export function UserMenu({ email, avatarUrl, tier }: Props) {
       >
         <Avatar email={email} avatarUrl={avatarUrl} />
       </button>
+      {email && (
+        <div className="user-menu-mobile-identity">
+          <span className="user-menu-mobile-email">{email}</span>
+          <span
+            className={`tier-badge user-menu-mobile-tier is-${tier ?? "free"}`}
+          >
+            {tierLabel(tier)}
+          </span>
+        </div>
+      )}
       {open && (
         <div className="user-menu-dropdown" role="menu" aria-label="Account">
           <div className="user-menu-identity">

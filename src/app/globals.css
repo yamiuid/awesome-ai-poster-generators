@@ -127,6 +127,12 @@ textarea:focus-visible {
 .user-menu {
   position: relative;
 }
+.user-menu-mobile-email {
+  display: none;
+}
+.user-menu-mobile-identity {
+  display: none;
+}
 .user-menu-trigger {
   display: inline-flex;
   align-items: center;
@@ -1091,7 +1097,8 @@ textarea:focus-visible {
   padding: clamp(1.2rem, 3vw, 2.5rem);
   background: var(--paper-deep);
 }
-.studio-tabs {
+.studio-tabs,
+.studio-mobile-tabs {
   display: flex;
   align-self: center;
   gap: 0.15rem;
@@ -1100,6 +1107,10 @@ textarea:focus-visible {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: color-mix(in srgb, var(--paper) 72%, var(--paper-deep));
+}
+.studio-mobile-tabs,
+.studio-mobile-examples {
+  display: none;
 }
 .studio-tab {
   display: inline-flex;
@@ -2373,6 +2384,39 @@ textarea:focus-visible {
   }
 }
 @media (max-width: 767px) {
+  .studio-mobile-tabs {
+    display: flex;
+    align-self: stretch;
+    width: 100%;
+  }
+  .studio-mobile-tabs .studio-tab {
+    flex: 1;
+    min-width: 0;
+  }
+  .studio-grid {
+    display: block;
+    min-height: 0;
+  }
+  .studio-grid > .studio-controls,
+  .studio-grid > .studio-results {
+    display: none;
+  }
+  .studio-grid > .studio-controls.is-mobile-active {
+    display: block;
+  }
+  .studio-grid > .studio-results.is-mobile-active {
+    display: flex;
+  }
+  .studio-results .studio-tabs {
+    display: none;
+  }
+  .studio-mobile-examples {
+    display: block;
+    margin-top: 1rem;
+    padding: 1.2rem;
+    border: 1px solid var(--line);
+    background: var(--paper-deep);
+  }
   .header-menu-button {
     display: inline-flex;
     align-items: center;
@@ -2413,6 +2457,35 @@ textarea:focus-visible {
     justify-content: center;
     padding: 0 0.95rem;
   }
+  .header-nav .user-menu {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.7rem;
+  }
+  .header-nav .user-menu-mobile-email {
+    display: block;
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .header-nav .user-menu-mobile-identity {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.12rem;
+  }
+  .header-nav .user-menu-mobile-tier {
+    margin-top: 0;
+  }
 }
 @media (max-width: 520px) {
   :root {
@@ -2428,7 +2501,10 @@ textarea:focus-visible {
     padding-inline: 1rem;
   }
   .studio-options {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .studio-options .option-select--wide {
+    grid-column: 1 / -1;
   }
   .output-settings-menu {
     gap: 0.3rem;
