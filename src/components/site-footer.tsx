@@ -46,6 +46,9 @@ export function SiteFooter() {
             <a href="https://www.ai138.com" target="_blank" rel="noreferrer">
               Ai138
             </a>
+            <a href="https://dang.ai" target="_blank" rel="noreferrer">
+              Dang！
+            </a>
           </nav>
         </div>
       </div>
