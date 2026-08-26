@@ -26,7 +26,7 @@ export default async function LoginPage({
         <h1>Sign in to save your directions.</h1>
         <p>
           Use Google or a magic link. Your free account gets a seven-day history
-          and four free generations per UTC day; Pro removes the watermark and
+          and four free poster images per UTC day; Pro removes the watermark and
           keeps high-definition exports private.
         </p>
         <LoginForm next={next} initialError={error} />

@@ -15,7 +15,7 @@ const movieFaqs = [
   ],
   [
     "Is this movie poster generator free?",
-    "Guests can make one watermarked 1K generation per UTC day. A free account gets four generations each day, and paid plans add more credits, resolutions, and private history.",
+    "Guests can make one watermarked 1K generation per UTC day. A free account gets four poster images per UTC day: four one-poster runs or two two-poster runs. Paid plans add more credits, resolutions, and private history.",
   ],
   [
     "Can I make a movie poster from a photo?",
@@ -332,7 +332,7 @@ export default async function MoviePosterMakerPage() {
             You can test the movie poster generator free before deciding whether
             it belongs in your production workflow. Guests get one watermarked
             1K generation per UTC day with no sign-up required. A free account
-            raises that to four generations each day, while paid plans add
+            raises that to four poster images per UTC day, while paid plans add
             monthly credits, higher resolutions, more posters per run, and
             private history.
           </p>

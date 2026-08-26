@@ -115,8 +115,9 @@ export default async function PricingPage() {
         <p className="eyebrow">Simple, weighted credits</p>
         <h1>Pay for the directions worth keeping.</h1>
         <p>
-          Every generation returns four posters. Choose the credit volume that
-          fits your practice; annual plans still refresh credits monthly.
+          Paid plans return up to four posters per generation. Free accounts get
+          up to four poster images per UTC day; annual plans still refresh
+          credits monthly.
         </p>
       </section>
       <PricingPlans

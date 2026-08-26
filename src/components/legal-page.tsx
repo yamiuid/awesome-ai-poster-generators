@@ -24,7 +24,7 @@ const content: Readonly<
       ],
       [
         "Anonymous limits",
-        "Before sign-in, a random HttpOnly cookie is hashed with a server-only salt to keep your browser's private generation history available for 24 hours. A separate salted hash of that cookie, your IP, and User-Agent enforces the four-generation-per-UTC-day limit. We store only derived keys, never the raw IP or User-Agent.",
+        "Before sign-in, a random HttpOnly cookie is hashed with a server-only salt to keep your browser's private generation history available for 24 hours. A separate salted hash of that cookie, your IP, and User-Agent enforces the one-generation-per-UTC-day limit. We store only derived keys, never the raw IP or User-Agent.",
       ],
       [
         "Service providers",
@@ -59,7 +59,7 @@ const content: Readonly<
     sections: [
       [
         "The service",
-        "Text to Poster turns text briefs into four AI-generated image directions using APIMart's gpt-image-2-official (GPT Image 2) endpoint. APIMart is the service provider; Text to Poster is not the model provider and does not claim provider endorsement. Availability, generation time, safety filtering, and output details can vary. You must be at least 13 years old or meet the higher minimum age required where you live.",
+        "Text to Poster turns text briefs into up to four AI-generated image directions using APIMart's gpt-image-2-official (GPT Image 2) endpoint. APIMart is the service provider; Text to Poster is not the model provider and does not claim provider endorsement. Availability, generation time, safety filtering, and output details can vary. You must be at least 13 years old or meet the higher minimum age required where you live.",
       ],
       [
         "Your material",

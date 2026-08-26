@@ -6,7 +6,7 @@ import { pageMeta } from "@/lib/seo";
 export const metadata = pageMeta({
   title: "About | Text to Poster",
   description:
-    "Text to Poster turns a written brief into four poster directions in seconds. Built by a small independent team on Next.js, Supabase, and GPT Image 2.",
+    "Text to Poster turns a written brief into up to four poster directions in seconds. Built by a small independent team on Next.js, Supabase, and GPT Image 2.",
   path: "/about",
 });
 
@@ -27,17 +27,17 @@ export default function AboutPage() {
         <h1>The tool we wanted for our own client work.</h1>
         <p className="legal-intro">
           Text to Poster is a small, independent project: an AI poster maker
-          that turns a written brief into four poster directions in seconds. No
-          templates, no drag-and-drop — describe the mood, subject, or words,
-          and compare four different visual readings at once.
+          that turns a written brief into up to four poster directions in
+          seconds. No templates, no drag-and-drop — describe the mood, subject,
+          or words, and compare different visual readings at once.
         </p>
         <section>
           <h2>Why it exists</h2>
           <p>
             Early concepts are fragile. A brief that lives only in your head is
             hard to share with a client, a team, or your own taste. We wanted a
-            tool that makes a first draft cheap: type a sentence, get four
-            directions, and only then decide which one deserves real design
+            tool that makes a first draft cheap: type a sentence, get one to
+            four directions, and only then decide which one deserves real design
             time. That is the whole product.
           </p>
         </section>

@@ -120,8 +120,8 @@ export async function createGeneration(
           ? "GUEST_LIMIT_REACHED"
           : "FREE_DAILY_LIMIT_REACHED",
         actor.mode === "guest"
-          ? "You have used your 1 free generation for today. Sign in or create an account for 4 free generations each day."
-          : "You have used all 4 free generations for today. Upgrade to Pro or come back tomorrow.",
+          ? "You have used your 1 free generation for today. Sign in or create an account for 4 free poster images each day."
+          : "You have used all 4 free poster images for today. Upgrade to Pro or come back tomorrow.",
         429,
       );
     }

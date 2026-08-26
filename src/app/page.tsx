@@ -22,7 +22,7 @@ export const metadata = pageMeta({
 const faqs = [
   [
     "Is this really free?",
-    "Yes. Guests can make one generation per UTC day, with one watermarked 1K poster per run. Sign in or create a free account for four generations each day. Failed generations do not count.",
+    "Yes. Guests can make one generation per UTC day, with one watermarked 1K poster per run. Free accounts can create four poster images per UTC day: four one-poster runs or two two-poster runs. Failed generations do not count.",
   ],
   [
     "What is an AI poster generator from text?",
@@ -426,7 +426,7 @@ export default async function Home({
           </p>
           <ul>
             <li>Guests get one watermarked generation per UTC day</li>
-            <li>Free accounts get four generations each day</li>
+            <li>Free accounts get four poster images per UTC day</li>
             <li>Creator and Studio plans add monthly credits</li>
             <li>1K, 2K, and 4K exports</li>
             <li>Medium and High finishes</li>

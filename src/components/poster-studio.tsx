@@ -2243,8 +2243,8 @@ export function PosterStudio({
             <p className="pro-note">
               <LockKeyhole size={14} />
               {isGuest
-                ? " Guests can make 1 generation per UTC day. Sign in for 4 free generations each day."
-                : " Free accounts can make up to 4 generations per UTC day. Runs are 1K, watermarked, and include up to 2 posters. Pro unlocks full quality and 4 posters."}
+                ? " Guests can make 1 generation per UTC day. Sign in for 4 free poster images each day."
+                : " Free accounts can make up to 4 poster images per UTC day: four one-poster runs or two two-poster runs. Runs are 1K and watermarked. Pro unlocks full quality and 4 posters."}
             </p>
           )}
 
@@ -2358,7 +2358,7 @@ export function PosterStudio({
             <X size={18} />
           </button>
           <p className="eyebrow">Free account</p>
-          <h3 id="guest-limit-title">Get 4 free generations every day.</h3>
+          <h3 id="guest-limit-title">Get 4 free poster images every day.</h3>
           <p className="modal-note" id="guest-limit-note">
             You&apos;ve used today&apos;s guest generation. Sign in or create a
             free account to keep generating today. Failed generations do not
@@ -2403,12 +2403,12 @@ export function PosterStudio({
           <p className="eyebrow">Pro feature</p>
           <h3 id="upgrade-title">
             {upgradePromptReason === "daily"
-              ? "Today\u2019s free generations are used up."
+              ? "Today\u2019s free poster images are used up."
               : "These options are Pro only."}
           </h3>
           <p className="modal-note" id="upgrade-note">
             {upgradePromptReason === "daily"
-              ? "You\u2019ve used today\u2019s 4 free generations. Upgrade to Pro to keep creating today, or come back tomorrow after the quota resets at 00:00 UTC."
+              ? "You\u2019ve used today\u2019s 4 free poster images. Upgrade to Pro to keep creating today, or come back tomorrow after the quota resets at 00:00 UTC."
               : "You picked a higher resolution, finish, or more posters. Upgrade to Pro to generate with these options."}
           </p>
           <div className="modal-actions">
