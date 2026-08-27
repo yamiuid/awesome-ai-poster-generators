@@ -2,31 +2,47 @@ import Link from "next/link";
 import { PricingPlans } from "@/components/pricing-plans";
 import { SiteHeader } from "@/components/site-header";
 import { UserMenu } from "@/components/user-menu";
-import { yearlySavings } from "@/lib/domain/plans";
+import { creditsForTier, yearlySavings } from "@/lib/domain/plans";
 import { pageMeta } from "@/lib/seo";
 import { getAuthContext } from "@/lib/server/auth";
 import { isStudioPlanConfigured } from "@/lib/server/env";
 
+const CREATOR_CREDITS = creditsForTier("creator").toLocaleString("en-US");
+const STUDIO_CREDITS = creditsForTier("studio").toLocaleString("en-US");
+
 export const metadata = pageMeta({
   title: "Pricing | Text to Poster",
-  description:
-    "Creator and Studio plans with 100 or 300 monthly credits, 1K-4K exports, no watermark, and private history. From $9.90/month.",
+  description: `Creator and Studio plans with ${CREATOR_CREDITS} or ${STUDIO_CREDITS} monthly credits, 1K-4K exports, no watermark, and private history. From $9.90/month.`,
   path: "/pricing",
 });
 
 export default async function PricingPage() {
   const auth = await getAuthContext();
   const studioConfigured = isStudioPlanConfigured();
-  const plans = [
+  const freePlan = {
+    kind: "free",
+    eyebrow: "Free / account",
+    price: "$0",
+    cadence: "/ forever",
+    description:
+      "Four poster images every UTC day — enough room to try the studio before subscribing.",
+    features: [
+      "4 poster images every UTC day",
+      "1K output",
+      "Watermarked downloads",
+      "7-day account history",
+    ],
+  } as const;
+  const paidPlans = [
     {
+      kind: "paid",
       billingPeriod: "monthly",
       eyebrow: "Creator / monthly",
       price: "$9.90",
       cadence: "/ month",
-      description:
-        "100 credits every month — a flexible starting point for regular poster work.",
+      description: `${CREATOR_CREDITS} credits every month — a flexible starting point for regular poster work.`,
       features: [
-        "100 credits every month",
+        `${CREATOR_CREDITS} credits every month`,
         "1K / 2K / 4K output",
         "Medium and High finish",
         "No watermark, private history",
@@ -38,14 +54,14 @@ export default async function PricingPage() {
       savings: null,
     },
     {
+      kind: "paid",
       billingPeriod: "yearly",
       eyebrow: "Creator / yearly",
       price: "$79",
       cadence: "/ year",
-      description:
-        "100 credits in each monthly window — the lower-cost annual rhythm for individual creators.",
+      description: `${CREATOR_CREDITS} credits in each monthly window — the lower-cost annual rhythm for individual creators.`,
       features: [
-        "100 credits in each monthly window",
+        `${CREATOR_CREDITS} credits in each monthly window`,
         "Same full Creator studio access",
         "Credits reset monthly, never roll",
         "Private history and clean downloads",
@@ -57,14 +73,14 @@ export default async function PricingPage() {
       savings: yearlySavings(9.9, 79),
     },
     {
+      kind: "paid",
       billingPeriod: "monthly",
       eyebrow: "Studio / monthly",
       price: "$19.90",
       cadence: "/ month",
-      description:
-        "300 credits every month — more room for campaigns, client rounds, and print work.",
+      description: `${STUDIO_CREDITS} credits every month — more room for campaigns, client rounds, and print work.`,
       features: [
-        "300 credits every month",
+        `${STUDIO_CREDITS} credits every month`,
         "1K / 2K / 4K output",
         "High finish for final exports",
         "No watermark, private history",
@@ -76,14 +92,14 @@ export default async function PricingPage() {
       savings: null,
     },
     {
+      kind: "paid",
       billingPeriod: "yearly",
       eyebrow: "Studio / yearly",
       price: "$169",
       cadence: "/ year",
-      description:
-        "300 credits in each monthly window — the best value for a high-volume creative practice.",
+      description: `${STUDIO_CREDITS} credits in each monthly window — the best value for a high-volume creative practice.`,
       features: [
-        "300 credits in each monthly window",
+        `${STUDIO_CREDITS} credits in each monthly window`,
         "Same full Studio access",
         "Credits reset monthly, never roll",
         "Priority billing support",
@@ -116,12 +132,14 @@ export default async function PricingPage() {
         <h1>Pay for the directions worth keeping.</h1>
         <p>
           Paid plans return up to four posters per generation. Free accounts get
-          up to four poster images per UTC day; annual plans still refresh
-          credits monthly.
+          up to four poster images per UTC day. Guests can try one watermarked
+          1K generation per UTC day without signing in; annual plans still
+          refresh credits monthly.
         </p>
       </section>
       <PricingPlans
-        plans={plans}
+        freePlan={freePlan}
+        plans={paidPlans}
         subscriptionState={auth.subscriptionState}
         isSignedIn={Boolean(auth.userId)}
       />

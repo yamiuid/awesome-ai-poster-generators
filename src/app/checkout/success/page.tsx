@@ -25,9 +25,6 @@ export default function CheckoutSuccessPage() {
           for confirmation automatically; you can safely leave it open.
         </p>
         <SubscriptionStatus />
-        <Link className="pricing-link" href="/account">
-          Go to your history
-        </Link>
       </section>
     </main>
   );

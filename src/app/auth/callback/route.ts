@@ -1,17 +1,6 @@
 import { NextResponse } from "next/server";
+import { loginRedirectPath } from "@/lib/domain/navigation";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
-
-function safeRedirectPath(next: string | null): string {
-  if (
-    next === null ||
-    !next.startsWith("/") ||
-    next.startsWith("//") ||
-    next.startsWith("/auth")
-  ) {
-    return "/account";
-  }
-  return next;
-}
 
 function loginWithError(
   origin: string,
@@ -69,5 +58,5 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.redirect(new URL(safeRedirectPath(next), url.origin));
+  return NextResponse.redirect(new URL(loginRedirectPath(next), url.origin));
 }

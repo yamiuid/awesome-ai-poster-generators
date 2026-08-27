@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { CancelSubscriptionButton } from "@/components/cancel-subscription-button";
 import { LogoMark } from "@/components/logo";
 import { UserMenu } from "@/components/user-menu";
+import { creditsForTier } from "@/lib/domain/plans";
 import { getAuthContext } from "@/lib/server/auth";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
 
@@ -62,7 +63,8 @@ export default async function BillingPage() {
                 </h2>
               </div>
               <span className="billing-price">
-                {subscription.tier === "studio" ? 300 : 100} credits / month
+                {creditsForTier(subscription.tier).toLocaleString("en-US")}{" "}
+                credits / month
               </span>
             </div>
             <p>

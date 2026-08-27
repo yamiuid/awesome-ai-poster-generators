@@ -115,6 +115,18 @@ export function UserMenu({ email, avatarUrl, tier }: Props) {
           </span>
         </div>
       )}
+      <div className="user-menu-mobile-actions">
+        <Link href="/account/billing">Billing</Link>
+        <Link href="/account">My history</Link>
+        <button
+          type="button"
+          className="user-menu-mobile-signout"
+          onClick={() => void signOut()}
+          disabled={signingOut}
+        >
+          {signingOut ? "Signing out…" : "Sign out"}
+        </button>
+      </div>
       {open && (
         <div className="user-menu-dropdown" role="menu" aria-label="Account">
           <div className="user-menu-identity">

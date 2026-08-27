@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { LogoMark } from "@/components/logo";
+import { creditsForTier } from "@/lib/domain/plans";
 
 type Kind = "privacy" | "terms" | "refunds" | "ai-policy";
+
+const CREATOR_CREDITS = creditsForTier("creator").toLocaleString("en-US");
+const STUDIO_CREDITS = creditsForTier("studio").toLocaleString("en-US");
 
 const content: Readonly<
   Record<
@@ -79,7 +83,7 @@ const content: Readonly<
       ],
       [
         "Accounts and subscriptions",
-        "Creator and Studio subscriptions are available at the price shown at checkout. Waffo processes payment and subscription events. Creator grants 100 weighted credits in each monthly window; Studio grants 300. Annual plans still refresh credits monthly, and credits do not roll over. Cancellation takes effect at the end of the current paid period. Refund eligibility is described in the Refunds policy and does not limit mandatory consumer rights.",
+        `Creator and Studio subscriptions are available at the price shown at checkout. Waffo processes payment and subscription events. Creator grants ${CREATOR_CREDITS} weighted credits in each monthly window; Studio grants ${STUDIO_CREDITS}. Annual plans still refresh credits monthly, and credits do not roll over. Cancellation takes effect at the end of the current paid period. Refund eligibility is described in the Refunds policy and does not limit mandatory consumer rights.`,
       ],
       [
         "No professional advice",

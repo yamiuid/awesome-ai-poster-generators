@@ -138,7 +138,7 @@ export default async function Home({
         <Link href="#examples">Examples</Link>
         <Link href="#use-cases">Use cases</Link>
         <Link href="#how-it-works">How it works</Link>
-        <Link href="#pricing">Pricing</Link>
+        <Link href="/pricing">Pricing</Link>
         {auth.userId ? (
           <UserMenu
             email={auth.email}

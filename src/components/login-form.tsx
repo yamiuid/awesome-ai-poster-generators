@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { loginRedirectPath } from "@/lib/domain/navigation";
 import { createSupabaseBrowserClient } from "@/lib/server/supabase/browser";
 
 type Props = Readonly<{
@@ -11,6 +12,10 @@ type Props = Readonly<{
 }>;
 
 type Step = "email" | "code";
+type Message = Readonly<{
+  tone: "success" | "error";
+  text: string;
+}>;
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
@@ -47,7 +52,9 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [message, setMessage] = useState<string | null>(initialError ?? null);
+  const [message, setMessage] = useState<Message | null>(
+    initialError ? { tone: "error", text: initialError } : null,
+  );
   const [loading, setLoading] = useState(false);
   const [googlePending, setGooglePending] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -67,6 +74,14 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
     ? `/auth/callback?next=${encodeURIComponent(next)}`
     : "/auth/callback";
 
+  function showError(text: string): void {
+    setMessage({ tone: "error", text });
+  }
+
+  function showSuccess(text: string): void {
+    setMessage({ tone: "success", text });
+  }
+
   async function google(): Promise<void> {
     // 点击瞬间先出全屏遮罩（await 之前），成功跳转 Google 时保持显示
     setGooglePending(true);
@@ -81,12 +96,12 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
       });
       if (result.error) {
         setGooglePending(false);
-        setMessage(result.error.message);
+        showError(result.error.message);
         setLoading(false);
       }
     } catch (error) {
       setGooglePending(false);
-      setMessage(
+      showError(
         error instanceof Error
           ? "Google sign-in is temporarily unavailable. Check the Supabase configuration."
           : "Google sign-in is temporarily unavailable.",
@@ -110,7 +125,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
         },
       });
       if (result.error) {
-        setMessage(
+        showError(
           errorMessage(
             result,
             "The sign-in code could not be sent. Please try again.",
@@ -119,10 +134,10 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
       } else {
         setStep("code");
         setCountdown(RESEND_COOLDOWN_SECONDS);
-        setMessage(`We emailed a sign-in code to ${email}.`);
+        showSuccess(`We emailed a 6-digit sign-in code to ${email}.`);
       }
     } catch {
-      setMessage("The sign-in code could not be sent. Please try again.");
+      showError("The sign-in code could not be sent. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -140,7 +155,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
         },
       });
       if (result.error) {
-        setMessage(
+        showError(
           errorMessage(
             result,
             "The sign-in code could not be sent. Please try again.",
@@ -148,10 +163,10 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
         );
       } else {
         setCountdown(RESEND_COOLDOWN_SECONDS);
-        setMessage("A new code is on its way.");
+        showSuccess("A new 6-digit code is on its way.");
       }
     } catch {
-      setMessage("The sign-in code could not be sent. Please try again.");
+      showError("The sign-in code could not be sent. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -163,7 +178,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
     event.preventDefault();
     const token = code.trim();
     if (token.length !== 6) {
-      setMessage("Enter the code from the email.");
+      showError("Enter the 6-digit code from the email.");
       return;
     }
     setLoading(true);
@@ -175,7 +190,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
         type: "email",
       });
       if (result.error) {
-        setMessage(
+        showError(
           errorMessage(
             result,
             "That code is not valid. Check the email or request a new code.",
@@ -184,10 +199,10 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
         return;
       }
       onSuccess?.();
-      router.push(next ?? "/account");
+      router.push(loginRedirectPath(next));
       router.refresh();
     } catch {
-      setMessage("We could not verify that code. Please try again.");
+      showError("We could not verify that code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -213,7 +228,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
         </p>
         <form onSubmit={(event) => void verify(event)}>
           <label className="field-label" htmlFor="login-code">
-            Sign-in code
+            6-digit sign-in code
           </label>
           <div className="code-field">
             <input
@@ -243,12 +258,15 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
             type="submit"
             disabled={loading}
           >
-            {loading ? "Verifying..." : "Verify and sign in"}
+            {loading ? "Verifying..." : "Verify and continue"}
           </button>
         </form>
         {message && (
-          <p className="form-message" role="status">
-            {message}
+          <p
+            className={`form-message is-${message.tone}`}
+            role={message.tone === "error" ? "alert" : "status"}
+          >
+            {message.text}
           </p>
         )}
       </div>
@@ -300,12 +318,15 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
           required
         />
         <button className="solid-button wide" type="submit" disabled={loading}>
-          {loading ? "Sending..." : "Send me a sign-in code"}
+          {loading ? "Sending..." : "Send me a 6-digit code"}
         </button>
       </form>
       {message && (
-        <p className="form-message" role="status">
-          {message}
+        <p
+          className={`form-message is-${message.tone}`}
+          role={message.tone === "error" ? "alert" : "status"}
+        >
+          {message.text}
         </p>
       )}
       {googlePending && (

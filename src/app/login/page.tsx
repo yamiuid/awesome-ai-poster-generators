@@ -3,7 +3,7 @@ import { LoginForm } from "@/components/login-form";
 import { LogoMark } from "@/components/logo";
 
 export const metadata: Metadata = {
-  title: "Sign in | Text to Poster",
+  title: "Sign in or create an account | Text to Poster",
   robots: { index: false, follow: false },
 };
 
@@ -23,11 +23,12 @@ export default async function LoginPage({
       </header>
       <section className="auth-card">
         <p className="eyebrow">Your studio, kept close</p>
-        <h1>Sign in to save your directions.</h1>
+        <h1>Sign in or create a free account.</h1>
         <p>
-          Use Google or a magic link. Your free account gets a seven-day history
-          and four free poster images per UTC day; Pro removes the watermark and
-          keeps high-definition exports private.
+          Use Google or email. We&apos;ll send a 6-digit sign-in code, and your
+          first email sign-in automatically creates a free account. Free
+          accounts get a seven-day history and four poster images per UTC day;
+          Pro removes the watermark and keeps high-definition exports private.
         </p>
         <LoginForm next={next} initialError={error} />
       </section>

@@ -27,10 +27,12 @@ export function PricingAction({
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function startCheckout(): Promise<void> {
     setLoading(true);
     setError(null);
+    setNotice(null);
     window.umami?.track("checkout_started");
     try {
       const result = await ky
@@ -43,6 +45,9 @@ export function PricingAction({
       );
       if (!checkoutWindow) {
         window.location.assign(result.checkoutUrl);
+      } else {
+        setLoading(false);
+        setNotice("Checkout opened in a new tab.");
       }
     } catch (checkoutError) {
       if (checkoutError instanceof HTTPError) {
@@ -60,6 +65,7 @@ export function PricingAction({
       } else {
         setError("Checkout could not be started.");
       }
+      setNotice(null);
       setLoading(false);
     }
   }
@@ -106,6 +112,11 @@ export function PricingAction({
       {error && (
         <p className="error-message" role="alert">
           {error}
+        </p>
+      )}
+      {notice && (
+        <p className="form-message is-success" role="status">
+          {notice}
         </p>
       )}
     </div>

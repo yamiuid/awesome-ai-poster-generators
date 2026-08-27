@@ -36,8 +36,8 @@ describe("subscription plans", () => {
   });
 
   it.each([
-    ["creator", 100],
-    ["studio", 300],
+    ["creator", 500],
+    ["studio", 1_000],
   ] as const)("grants %s credits per monthly window", (tier, credits) => {
     expect(creditsForTier(tier)).toBe(credits);
   });

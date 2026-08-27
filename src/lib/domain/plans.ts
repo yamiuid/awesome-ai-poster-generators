@@ -60,9 +60,9 @@ export function normalizeCheckoutPlan(value: string): PlanSelection | null {
 export function creditsForTier(tier: SubscriptionTier): number {
   switch (tier) {
     case "creator":
-      return 100;
+      return 500;
     case "studio":
-      return 300;
+      return 1_000;
   }
 }
 

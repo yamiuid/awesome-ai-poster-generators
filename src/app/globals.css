@@ -133,6 +133,9 @@ textarea:focus-visible {
 .user-menu-mobile-identity {
   display: none;
 }
+.user-menu-mobile-actions {
+  display: none;
+}
 .user-menu-trigger {
   display: inline-flex;
   align-items: center;
@@ -2461,6 +2464,7 @@ textarea:focus-visible {
     display: flex;
     width: 100%;
     min-width: 0;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: flex-start;
     gap: 0.7rem;
@@ -2485,6 +2489,36 @@ textarea:focus-visible {
   }
   .header-nav .user-menu-mobile-tier {
     margin-top: 0;
+  }
+  .header-nav .user-menu-mobile-actions {
+    display: grid;
+    flex: 0 0 100%;
+    gap: 0.25rem;
+    margin-top: 0.35rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--line);
+  }
+  .header-nav .user-menu-mobile-actions a,
+  .header-nav .user-menu-mobile-signout {
+    display: flex;
+    width: 100%;
+    min-height: 2.75rem;
+    align-items: center;
+    padding: 0 0.5rem;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+  }
+  .header-nav .user-menu-mobile-signout {
+    color: var(--ink-muted);
+    cursor: pointer;
+  }
+  .header-nav .user-menu-mobile-signout:disabled {
+    cursor: wait;
+    opacity: 0.65;
   }
 }
 @media (max-width: 520px) {
@@ -2705,6 +2739,19 @@ textarea:focus-visible {
   color: var(--success);
   font-size: 0.82rem;
   line-height: 1.5;
+}
+.subscription-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+.subscription-status-actions .pricing-link {
+  margin-top: 0;
+}
+.form-message.is-error {
+  color: var(--danger);
 }
 .code-hint {
   margin: 1.2rem 0 0.2rem;
@@ -2951,7 +2998,7 @@ dialog.modal-backdrop:not([open]) {
 }
 .plan-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   max-width: none;
   margin: 0 auto;
@@ -3016,6 +3063,11 @@ dialog.modal-backdrop:not([open]) {
   padding: 0 var(--container-gutter) 4rem;
   color: var(--ink-muted);
   font-size: 0.78rem;
+}
+@media (max-width: 960px) {
+  .plan-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .account-page {
   max-width: var(--container-max);

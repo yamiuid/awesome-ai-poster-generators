@@ -1,6 +1,7 @@
 "use client";
 
 import ky from "ky";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { creditsForTier } from "@/lib/domain/plans";
@@ -77,7 +78,7 @@ export function SubscriptionStatus() {
       role={phase === "error" || phase === "timeout" ? "alert" : "status"}
     >
       {phase === "active"
-        ? `Pro is active. Your ${credits}-credit period is ready.`
+        ? `Pro is active. Your ${credits.toLocaleString("en-US")}-credit period is ready.`
         : phase === "timeout"
           ? "Payment received, but confirmation is taking longer than expected."
           : phase === "error"
@@ -90,6 +91,18 @@ export function SubscriptionStatus() {
           </button>{" "}
           <a href="mailto:support@texttoposter.com">Contact support</a>
         </>
+      ) : phase === "active" ? (
+        <div className="subscription-status-actions">
+          <Link className="solid-button" href="/#studio">
+            Create a poster
+          </Link>
+          <Link className="pricing-link" href="/account/billing">
+            View billing
+          </Link>
+          <Link className="pricing-link" href="/account">
+            View history
+          </Link>
+        </div>
       ) : null}
     </div>
   );

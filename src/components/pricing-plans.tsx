@@ -1,30 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { BILLING_PERIODS, type BillingPeriod } from "@/lib/domain/plans";
 import {
-  BILLING_PERIODS,
-  type BillingPeriod,
-  type CheckoutPlan,
-} from "@/lib/domain/plans";
+  type FreePricingPlan,
+  getVisiblePricingPlans,
+  type PaidPricingPlan,
+  type VisiblePricingPlan,
+} from "@/lib/domain/pricing";
 import type { SubscriptionLifecycleState } from "@/lib/server/waffo-subscription";
 import { PricingAction } from "./pricing-actions";
 
-type PricingPlan = Readonly<{
-  billingPeriod: BillingPeriod;
-  eyebrow: string;
-  price: string;
-  cadence: string;
-  description: string;
-  features: readonly string[];
-  plan: CheckoutPlan;
-  featured: boolean;
-  isConfigured: boolean;
-  originalPrice: string | null;
-  savings: number | null;
-}>;
-
 type Props = Readonly<{
-  plans: readonly PricingPlan[];
+  freePlan: FreePricingPlan;
+  plans: readonly PaidPricingPlan[];
   subscriptionState: SubscriptionLifecycleState;
   isSignedIn: boolean;
 }>;
@@ -42,11 +32,84 @@ function formatSavings(amount: number): string {
   }).format(amount);
 }
 
-export function PricingPlans({ plans, subscriptionState, isSignedIn }: Props) {
+function assertNever(value: never): never {
+  throw new Error(`Unknown pricing plan kind: ${String(value)}`);
+}
+
+function PricingPlanCard({
+  plan,
+  subscriptionState,
+  isSignedIn,
+}: Readonly<{
+  plan: VisiblePricingPlan;
+  subscriptionState: SubscriptionLifecycleState;
+  isSignedIn: boolean;
+}>) {
+  switch (plan.kind) {
+    case "free":
+      return (
+        <article className="plan-card" key="free">
+          <p className="eyebrow">{plan.eyebrow}</p>
+          <h2>
+            {plan.price} <small>{plan.cadence}</small>
+          </h2>
+          <p>{plan.description}</p>
+          <ul>
+            {plan.features.map((feature) => (
+              <li key={feature}>{feature}</li>
+            ))}
+          </ul>
+          {isSignedIn ? (
+            <Link className="solid-button" href="/#studio">
+              Open free studio
+            </Link>
+          ) : (
+            <Link className="solid-button" href="/login?next=/%23studio">
+              Create free account
+            </Link>
+          )}
+        </article>
+      );
+    case "paid":
+      return (
+        <article
+          className={`plan-card ${plan.featured ? "featured" : ""}`}
+          key={plan.plan}
+        >
+          <p className="eyebrow">{plan.eyebrow}</p>
+          <h2>
+            {plan.price} <small>{plan.cadence}</small>
+            {plan.originalPrice ? (
+              <del className="plan-original-price">{plan.originalPrice}</del>
+            ) : null}
+          </h2>
+          <p>{plan.description}</p>
+          <ul>
+            {plan.features.map((feature) => (
+              <li key={feature}>{feature}</li>
+            ))}
+          </ul>
+          <PricingAction
+            plan={plan.plan}
+            subscriptionState={subscriptionState}
+            isSignedIn={isSignedIn}
+            isConfigured={plan.isConfigured}
+          />
+        </article>
+      );
+    default:
+      return assertNever(plan);
+  }
+}
+
+export function PricingPlans({
+  freePlan,
+  plans,
+  subscriptionState,
+  isSignedIn,
+}: Props) {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
-  const visiblePlans = plans.filter(
-    (plan) => plan.billingPeriod === billingPeriod,
-  );
+  const visiblePlans = getVisiblePricingPlans(freePlan, plans, billingPeriod);
   const maxYearlySavings = plans.reduce(
     (maximum, plan) => Math.max(maximum, plan.savings ?? 0),
     0,
@@ -86,30 +149,12 @@ export function PricingPlans({ plans, subscriptionState, isSignedIn }: Props) {
         role="tabpanel"
       >
         {visiblePlans.map((plan) => (
-          <article
-            className={`plan-card ${plan.featured ? "featured" : ""}`}
-            key={plan.plan}
-          >
-            <p className="eyebrow">{plan.eyebrow}</p>
-            <h2>
-              {plan.price} <small>{plan.cadence}</small>
-              {plan.originalPrice ? (
-                <del className="plan-original-price">{plan.originalPrice}</del>
-              ) : null}
-            </h2>
-            <p>{plan.description}</p>
-            <ul>
-              {plan.features.map((feature) => (
-                <li key={feature}>{feature}</li>
-              ))}
-            </ul>
-            <PricingAction
-              plan={plan.plan}
-              subscriptionState={subscriptionState}
-              isSignedIn={isSignedIn}
-              isConfigured={plan.isConfigured}
-            />
-          </article>
+          <PricingPlanCard
+            key={plan.kind === "free" ? "free" : plan.plan}
+            plan={plan}
+            subscriptionState={subscriptionState}
+            isSignedIn={isSignedIn}
+          />
         ))}
       </div>
     </section>

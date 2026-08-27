@@ -20,7 +20,6 @@ export const IMAGE_COUNTS = [1, 2, 3, 4] as const;
 export type ImageCount = (typeof IMAGE_COUNTS)[number];
 
 export const IMAGES_PER_GENERATION = 4 as const;
-export const MONTHLY_CREDITS = 100 as const;
 
 /**
  * GPT Image 2 官方通道（gpt-image-2-official）实际简化扣费档（积分/张）。
