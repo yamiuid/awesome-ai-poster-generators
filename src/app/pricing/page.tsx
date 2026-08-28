@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { PricingPlans } from "@/components/pricing-plans";
 import { SiteHeader } from "@/components/site-header";
-import { UserMenu } from "@/components/user-menu";
 import { creditsForTier, yearlySavings } from "@/lib/domain/plans";
 import { pageMeta } from "@/lib/seo";
 import { getAuthContext } from "@/lib/server/auth";
@@ -113,20 +112,7 @@ export default async function PricingPage() {
   ] as const;
   return (
     <main className="pricing-page">
-      <SiteHeader>
-        <Link href="/#studio">Studio</Link>
-        {auth.userId ? (
-          <UserMenu
-            email={auth.email}
-            avatarUrl={auth.avatarUrl}
-            tier={auth.tier}
-          />
-        ) : (
-          <Link className="header-cta" href="/login?next=/pricing">
-            Sign in
-          </Link>
-        )}
-      </SiteHeader>
+      <SiteHeader initialAuth={auth} />
       <section className="pricing-intro">
         <p className="eyebrow">Simple, weighted credits</p>
         <h1>Pay for the directions worth keeping.</h1>

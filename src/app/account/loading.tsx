@@ -1,4 +1,4 @@
-import { LogoMark } from "@/components/logo";
+import { SiteHeader } from "@/components/site-header";
 
 /**
  * /account 加载骨架屏：镜像 account/page.tsx 的布局结构，
@@ -8,16 +8,7 @@ import { LogoMark } from "@/components/logo";
 export default function AccountLoading() {
   return (
     <main className="account-page">
-      <header className="site-header">
-        <span className="wordmark">
-          <LogoMark className="wordmark-mark" />
-          <span>Text to Poster</span>
-        </span>
-        <nav className="header-nav" aria-hidden="true">
-          <span className="skeleton-nav" />
-          <span className="skeleton-avatar" />
-        </nav>
-      </header>
+      <SiteHeader />
       <section className="account-heading">
         <div>
           <p className="eyebrow">Private history</p>

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { PosterStudio } from "@/components/poster-studio";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { UserMenu } from "@/components/user-menu";
 import { pageMeta, siteUrl } from "@/lib/seo";
 import { getAuthContext } from "@/lib/server/auth";
 
@@ -152,27 +151,7 @@ export default async function MoviePosterMakerPage() {
       <script type="application/ld+json">
         {JSON.stringify(breadcrumbJsonLd)}
       </script>
-      <SiteHeader>
-        <Link href="#directions">Examples</Link>
-        <Link href="#movie-how-heading">How it works</Link>
-        <Link href="/">AI poster generator</Link>
-        {auth.userId ? (
-          <UserMenu
-            email={auth.email}
-            avatarUrl={auth.avatarUrl}
-            tier={auth.tier}
-          />
-        ) : (
-          <Link href="/login">Sign in</Link>
-        )}
-        <Link
-          className="header-cta"
-          href="#studio"
-          data-umami-event="movie_cta_click"
-        >
-          Generate a movie poster <ArrowUpRight size={15} />
-        </Link>
-      </SiteHeader>
+      <SiteHeader initialAuth={auth} />
 
       <article className="legal-copy movie-landing-copy">
         <nav className="breadcrumbs" aria-label="Breadcrumb">

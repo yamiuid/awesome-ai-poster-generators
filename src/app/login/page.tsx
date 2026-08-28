@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/login-form";
-import { LogoMark } from "@/components/logo";
+import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
   title: "Sign in or create an account | Text to Poster",
@@ -15,12 +15,7 @@ export default async function LoginPage({
   const { next, error } = await searchParams;
   return (
     <main className="narrow-page">
-      <header className="site-header">
-        <a className="wordmark" href="/">
-          <LogoMark className="wordmark-mark" />
-          <span>Text to Poster</span>
-        </a>
-      </header>
+      <SiteHeader variant="minimal" />
       <section className="auth-card">
         <p className="eyebrow">Your studio, kept close</p>
         <h1>Sign in or create a free account.</h1>

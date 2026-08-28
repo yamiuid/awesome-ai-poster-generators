@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { LogoMark } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 import { pageMeta } from "@/lib/seo";
 
 export const metadata = pageMeta({
@@ -13,15 +12,7 @@ export const metadata = pageMeta({
 export default function AboutPage() {
   return (
     <main className="legal-page">
-      <header className="site-header">
-        <Link className="wordmark" href="/">
-          <LogoMark className="wordmark-mark" />
-          <span>Text to Poster</span>
-        </Link>
-        <Link className="header-cta" href="/#studio">
-          Open studio
-        </Link>
-      </header>
+      <SiteHeader />
       <article className="legal-copy">
         <p className="eyebrow">Text to Poster / about</p>
         <h1>The tool we wanted for our own client work.</h1>

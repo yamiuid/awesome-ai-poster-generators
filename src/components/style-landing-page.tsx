@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { LogoMark } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 import { POSTER_EXAMPLES } from "@/lib/domain/poster-examples";
 import { STYLE_LANDINGS, type StyleLanding } from "@/lib/domain/style-landing";
 
@@ -17,15 +17,7 @@ export function StyleLandingPage({
 
   return (
     <main className="legal-page">
-      <header className="site-header">
-        <Link className="wordmark" href="/">
-          <LogoMark className="wordmark-mark" />
-          <span>Text to Poster</span>
-        </Link>
-        <Link className="header-cta" href="/#studio">
-          Open studio
-        </Link>
-      </header>
+      <SiteHeader />
 
       <article className="legal-copy">
         <p className="eyebrow">Text to Poster / {landing.label}</p>

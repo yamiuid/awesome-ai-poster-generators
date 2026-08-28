@@ -106,6 +106,16 @@ const STUDIO_JOB_EXAMPLES: readonly PosterStudioExample[] = [
     image: "/examples/business-next-shift.webp",
     alt: "An example announcement poster with a confident business look.",
   },
+  {
+    id: "vintage-romance",
+    label: "Vintage romance",
+    prompt:
+      "Period romance poster for The Orchard Letters, set in 1936 rural Provence where two separated lovers exchange handwritten notes through an old orchard. Use a painterly gouache style with a couple seen from above on opposite sides of a long picnic blanket, connected by a winding path of white blossoms that creates a soft S-curve. Build a warm terracotta, faded teal, butter-yellow, and paper-cream palette, with sun-faded print texture, a generous top margin, and an elegant centered serif title framed by small botanical ornaments.",
+    image: "/examples/movie-the-orchard-letters.webp",
+    alt: "The Orchard Letters period-romance poster with two letter writers in a Provençal orchard.",
+    width: 1024,
+    height: 1280,
+  },
 ];
 
 // 免费档位：1K / low / 最多 2 张；免费用户选了更高档位才显示锁，
@@ -1338,7 +1348,7 @@ export function PosterStudio({
 }: Props) {
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState<PosterStyle>(initialStyle ?? "auto");
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("4:5");
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("2:3");
   const [resolution, setResolution] = useState<Resolution>("1k");
   const [quality, setQuality] = useState<Quality>("low");
   // 默认 1 张；免费用户最大 2 张，Pro 可选 1-4 张
@@ -1706,7 +1716,7 @@ export function PosterStudio({
     setActiveExampleIndex(0);
     setSelectedHistoryKey(null);
     setStyle("auto");
-    setAspectRatio("4:5");
+    setAspectRatio("2:3");
     setResolution("1k");
     setQuality("low");
     setImageCount(1);

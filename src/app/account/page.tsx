@@ -8,8 +8,7 @@ import {
   type HistoryImage,
   type HistoryItem,
 } from "@/components/history-gallery";
-import { LogoMark } from "@/components/logo";
-import { UserMenu } from "@/components/user-menu";
+import { SiteHeader } from "@/components/site-header";
 import { getAuthContext } from "@/lib/server/auth";
 import {
   getAccountBalance,
@@ -131,23 +130,7 @@ export default async function AccountPage({ searchParams }: PageProps) {
   return (
     <main className="account-page">
       {hasPendingGeneration && <meta httpEquiv="refresh" content="5" />}
-      <header className="site-header">
-        <Link className="wordmark" href="/">
-          <LogoMark className="wordmark-mark" />
-          <span>Text to Poster</span>
-        </Link>
-        <nav className="header-nav">
-          <Link href="/account/billing">Billing</Link>
-          <Link className="header-cta" href="/#studio">
-            New brief
-          </Link>
-          <UserMenu
-            email={auth.email}
-            avatarUrl={auth.avatarUrl}
-            tier={auth.tier}
-          />
-        </nav>
-      </header>
+      <SiteHeader initialAuth={auth} />
       <section className="account-heading">
         <div>
           <p className="eyebrow">Private history</p>

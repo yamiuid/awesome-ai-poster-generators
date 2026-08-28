@@ -44,7 +44,10 @@ Text to Poster is an editorial poster studio for people who need a striking visu
 
 ## 5. Reusable patterns
 
-- `SiteHeader`: wordmark, primary action, pricing link, accessible mobile navigation.
+- `SiteHeader`: fixed `Generators`, `Examples`, `Pricing`, and `About` links,
+  a logged-in account menu, a guest-only `Free to start` sign-in dialog
+  trigger, accessible mobile navigation, and a minimal wordmark-only mode for
+  sign-in and payment confirmation flows.
 - `PosterStudio`: prompt field, style chips, ratio controls, resolution controls, generate action.
 - `ResultCard`: fixed aspect ratio, image, status, watermark/download treatment.
 - `GenerationProgressCard`: result grid with centered one-line generation state, in-place result reveal, and hover/focus download affordance.

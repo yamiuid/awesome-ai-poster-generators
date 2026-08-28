@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogoMark } from "@/components/logo";
+import { SiteHeader } from "@/components/site-header";
 import { creditsForTier } from "@/lib/domain/plans";
 
 type Kind = "privacy" | "terms" | "refunds" | "ai-policy";
@@ -175,15 +175,7 @@ export function LegalPage({ kind }: Readonly<{ kind: Kind }>) {
   const page = content[kind];
   return (
     <main className="legal-page">
-      <header className="site-header">
-        <Link className="wordmark" href="/">
-          <LogoMark className="wordmark-mark" />
-          <span>Text to Poster</span>
-        </Link>
-        <Link className="header-cta" href="/#studio">
-          Open studio
-        </Link>
-      </header>
+      <SiteHeader />
       <article className="legal-copy">
         <p className="eyebrow">Text to Poster / {kind}</p>
         <h1>{page.title}</h1>

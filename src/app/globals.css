@@ -108,6 +108,18 @@ textarea:focus-visible {
 .header-nav a:hover {
   color: var(--ink);
 }
+.header-nav-link.is-active {
+  color: var(--ink);
+  font-weight: 600;
+}
+.header-account-loading {
+  display: block;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper-deep);
+}
 .header-menu-button {
   display: none;
 }
@@ -117,12 +129,18 @@ textarea:focus-visible {
   gap: 0.45rem;
   min-height: 2.75rem;
   padding: 0 0.95rem;
+  border: 0;
   border-radius: 999px;
   background: var(--ink);
   color: var(--paper) !important;
+  cursor: pointer;
   font-size: 0.82rem;
+  font-family: inherit;
   line-height: 1.6;
   white-space: nowrap;
+}
+.header-cta:hover {
+  background: var(--accent-dark);
 }
 .user-menu {
   position: relative;
@@ -2456,6 +2474,11 @@ textarea:focus-visible {
     padding: 0 0.5rem;
     color: var(--ink);
   }
+  .header-nav .header-account-loading {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: 0 0.5rem;
+  }
   .header-nav .header-cta {
     justify-content: center;
     padding: 0 0.95rem;
@@ -2867,6 +2890,13 @@ dialog.modal-backdrop:not([open]) {
   margin: 0.2rem 0 0.6rem;
   font-size: 1.25rem;
   color: var(--ink);
+}
+.header-login-card {
+  max-height: min(90dvh, 44rem);
+  overflow-y: auto;
+}
+.header-login-card .login-form {
+  margin-top: 1.4rem;
 }
 .modal-note {
   margin: 0 0 1.4rem;

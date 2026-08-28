@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CancelSubscriptionButton } from "@/components/cancel-subscription-button";
-import { LogoMark } from "@/components/logo";
-import { UserMenu } from "@/components/user-menu";
+import { SiteHeader } from "@/components/site-header";
 import { creditsForTier } from "@/lib/domain/plans";
 import { getAuthContext } from "@/lib/server/auth";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
@@ -23,22 +22,7 @@ export default async function BillingPage() {
     .maybeSingle();
   return (
     <main className="narrow-page">
-      <header className="site-header">
-        <Link className="wordmark" href="/">
-          <LogoMark className="wordmark-mark" />
-          <span>Text to Poster</span>
-        </Link>
-        <nav className="header-nav">
-          <Link className="header-cta" href="/account">
-            History
-          </Link>
-          <UserMenu
-            email={auth.email}
-            avatarUrl={auth.avatarUrl}
-            tier={auth.tier}
-          />
-        </nav>
-      </header>
+      <SiteHeader initialAuth={auth} />
       <section className="account-heading">
         <div>
           <p className="eyebrow">Billing</p>

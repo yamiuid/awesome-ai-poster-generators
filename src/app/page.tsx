@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { PosterStudio } from "@/components/poster-studio";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { UserMenu } from "@/components/user-menu";
 import { isPosterStyle } from "@/lib/domain/poster";
 import { POSTER_EXAMPLES } from "@/lib/domain/poster-examples";
 import { STYLE_LANDINGS } from "@/lib/domain/style-landing";
@@ -134,24 +133,7 @@ export default async function Home({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <SiteHeader>
-        <Link href="#examples">Examples</Link>
-        <Link href="#use-cases">Use cases</Link>
-        <Link href="#how-it-works">How it works</Link>
-        <Link href="/pricing">Pricing</Link>
-        {auth.userId ? (
-          <UserMenu
-            email={auth.email}
-            avatarUrl={auth.avatarUrl}
-            tier={auth.tier}
-          />
-        ) : (
-          <Link href="/login">Sign in</Link>
-        )}
-        <Link className="header-cta" href="#studio">
-          Generate a poster <ArrowUpRight size={15} />
-        </Link>
-      </SiteHeader>
+      <SiteHeader initialAuth={auth} />
 
       <section className="hero" aria-labelledby="hero-heading">
         <div className="hero-grid">
@@ -371,7 +353,11 @@ export default async function Home({
         </div>
       </section>
 
-      <section className="content-section" aria-labelledby="styles-heading">
+      <section
+        className="content-section"
+        id="styles"
+        aria-labelledby="styles-heading"
+      >
         <p className="eyebrow">Product visual directions</p>
         <h2 id="styles-heading">Choose a Visual Style</h2>
         <p className="section-intro">
