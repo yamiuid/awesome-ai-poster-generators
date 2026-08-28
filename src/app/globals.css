@@ -2616,6 +2616,9 @@ textarea:focus-visible {
   .studio-history-meta {
     align-items: flex-start;
     flex-direction: column;
+    height: auto;
+    gap: 0.2rem;
+    margin-top: 0.35rem;
   }
   .studio-history-actions {
     width: 100%;
