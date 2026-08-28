@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { type JSX, useEffect, useState } from "react";
 import {
   displayedProgress,
@@ -15,19 +16,24 @@ import type {
 
 const POSTER_SLOTS = [0, 1, 2, 3] as const;
 
-function creditLineText(generation: GenerationResponse): string {
+type Translator = (
+  key: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
+
+function creditLineText(generation: GenerationResponse, t: Translator): string {
   const { creditsReserved: reserved, creditsConsumed, status } = generation;
   if (status === "submitted" || status === "processing") {
-    return `Reserving ${reserved} credits`;
+    return t("reserving", { credits: reserved });
   }
   if (status === "failed" || status === "timed_out") {
-    return `Released ${reserved} credits`;
+    return t("released", { credits: reserved });
   }
   const consumed = creditsConsumed ?? reserved;
   const saved = reserved - consumed;
   return saved > 0
-    ? `Used ${consumed} credits · ${saved} saved`
-    : `Used ${consumed} credits`;
+    ? t("usedSaved", { used: consumed, saved })
+    : t("used", { credits: consumed });
 }
 
 function PosterCard({
@@ -47,6 +53,7 @@ function PosterCard({
   onZoom: (url: string) => void;
   onRetry: () => void;
 }>): JSX.Element {
+  const t = useTranslations("account");
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const imageUrl = image?.url;
@@ -59,7 +66,7 @@ function PosterCard({
   }, [imageUrl]);
   const imageIsLoading = Boolean(imageUrl) && !loaded && !loadError;
   const visibleProgressLabel =
-    progressLabel || (imageIsLoading ? "Loading poster…" : "");
+    progressLabel || (imageIsLoading ? t("loadingPoster") : "");
   const isPending = visibleProgressLabel.length > 0 || loadError;
   const announcesProgress = isPending && index === 0;
   return (
@@ -74,7 +81,7 @@ function PosterCard({
             type="button"
             className="result-zoom"
             onClick={() => onZoom(image.url)}
-            aria-label={`View ${image.alt} full size`}
+            aria-label={`${t("fullSizePreview")}: ${image.alt}`}
           >
             <Image
               src={imageUrl}
@@ -102,15 +109,15 @@ function PosterCard({
               setLoaded(false);
               onRetry();
             }}
-            aria-label="Couldn’t load poster. Retry"
+            aria-label={t("retryPoster")}
           >
-            Couldn’t load poster. Retry
+            {t("retryPoster")}
           </button>
         ) : announcesProgress ? (
           <span
             className="result-progress-overlay"
             role="progressbar"
-            aria-label="Poster generation progress"
+            aria-label={t("generationProgress")}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={progressLabel ? (progress ?? undefined) : undefined}
@@ -144,6 +151,7 @@ export function GenerationProgressCard({
   onZoom: (url: string) => void;
   onRetry: (generationId: string) => void;
 }>): JSX.Element {
+  const t = useTranslations("account");
   const snapshot = {
     status: generation.status,
     progress: generation.progress,
@@ -180,7 +188,7 @@ export function GenerationProgressCard({
 
       {phase === "complete" && generation.creditsReserved > 0 && (
         <p className="credit-line generation-credit-line">
-          {creditLineText(generation)}
+          {creditLineText(generation, t)}
         </p>
       )}
     </div>

@@ -10,6 +10,7 @@ import {
 } from "./generation-settlement";
 import type { GenerationActor, GenerationRow } from "./generation-types";
 import type { GuestIdentity } from "./guest";
+import { detectPosterLanguage } from "./prompt-language";
 import { enforcePromptSafety } from "./prompt-safety";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
@@ -36,10 +37,11 @@ function providerRequest(
   request: GenerationRequest,
   actor: GenerationActor,
 ): ProviderGenerationRequest {
+  const { siteLocale: _siteLocale, ...providerBase } = request;
   const quality: ProviderQuality =
     actor.mode === "pro" ? request.quality : "low";
   return {
-    ...request,
+    ...providerBase,
     resolution: actor.mode === "pro" ? request.resolution : "1k",
     quality,
     imageCount:
@@ -214,10 +216,15 @@ export async function createGeneration(
 
   try {
     await enforcePromptSafety(request.prompt);
+    const textLanguage = await detectPosterLanguage(
+      request.prompt,
+      request.siteLocale,
+    );
     const provider = await submitGeneration(
       providerInput,
       buildPosterPrompt(request, {
         hasReferenceImage: Boolean(request.referenceImageUrl),
+        textLanguage,
       }),
     );
     const { data: updated, error: updateError } = await admin

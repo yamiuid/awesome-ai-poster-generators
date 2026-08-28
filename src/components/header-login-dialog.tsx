@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import { LoginForm } from "@/components/login-form";
 
@@ -10,6 +11,7 @@ type HeaderLoginDialogProps = Readonly<{
 }>;
 
 export function HeaderLoginDialog({ open, onClose }: HeaderLoginDialogProps) {
+  const t = useTranslations("header");
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -53,17 +55,14 @@ export function HeaderLoginDialog({ open, onClose }: HeaderLoginDialogProps) {
         <button
           type="button"
           className="modal-close"
-          aria-label="Close sign-in dialog"
+          aria-label={t("closeMenu")}
           onClick={onClose}
         >
           <X size={18} aria-hidden="true" />
         </button>
-        <p className="eyebrow">Your studio, kept close</p>
-        <h3 id="header-login-title">Sign in to start creating.</h3>
-        <p className="modal-note">
-          Use Google or email to create a free account and keep your poster
-          history available across devices.
-        </p>
+        <p className="eyebrow">{t("loginTitle")}</p>
+        <h3 id="header-login-title">{t("loginHeading")}</h3>
+        <p className="modal-note">{t("loginBody")}</p>
         <LoginForm next="/#studio" onSuccess={onClose} />
       </div>
     </dialog>

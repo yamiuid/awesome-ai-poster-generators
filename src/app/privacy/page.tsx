@@ -6,6 +6,7 @@ export const metadata = pageMeta({
   description:
     "How Text to Poster collects, uses, stores, and deletes your data, and how to request access, correction, or deletion.",
   path: "/privacy",
+  localizedAlternates: false,
 });
 export default function PrivacyPage() {
   return <LegalPage kind="privacy" />;

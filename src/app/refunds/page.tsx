@@ -6,6 +6,7 @@ export const metadata = pageMeta({
   description:
     "Text to Poster refund policy: eligibility within 7 days, how to request a refund, and what happens to unused credits.",
   path: "/refunds",
+  localizedAlternates: false,
 });
 export default function RefundsPage() {
   return <LegalPage kind="refunds" />;

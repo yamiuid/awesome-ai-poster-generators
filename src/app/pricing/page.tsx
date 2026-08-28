@@ -1,50 +1,59 @@
-import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { PricingPlans } from "@/components/pricing-plans";
 import { SiteHeader } from "@/components/site-header";
 import { creditsForTier, yearlySavings } from "@/lib/domain/plans";
+import { isUiLocale } from "@/lib/i18n/locale";
 import { pageMeta } from "@/lib/seo";
 import { getAuthContext } from "@/lib/server/auth";
 import { isStudioPlanConfigured } from "@/lib/server/env";
 
-const CREATOR_CREDITS = creditsForTier("creator").toLocaleString("en-US");
-const STUDIO_CREDITS = creditsForTier("studio").toLocaleString("en-US");
-
-export const metadata = pageMeta({
-  title: "Pricing | Text to Poster",
-  description: `Creator and Studio plans with ${CREATOR_CREDITS} or ${STUDIO_CREDITS} monthly credits, 1K-4K exports, no watermark, and private history. From $9.90/month.`,
-  path: "/pricing",
-});
+export async function generateMetadata() {
+  const rawLocale = await getLocale();
+  const locale = isUiLocale(rawLocale) ? rawLocale : "en";
+  const t = await getTranslations("pricing");
+  return pageMeta({
+    title: t("metadataTitle"),
+    description: t("metadataDescription"),
+    path: "/pricing",
+    locale,
+  });
+}
 
 export default async function PricingPage() {
+  const rawLocale = await getLocale();
+  const locale = isUiLocale(rawLocale) ? rawLocale : "en";
+  const t = await getTranslations("pricing");
+  const formatNumber = new Intl.NumberFormat(locale);
+  const creatorCredits = formatNumber.format(creditsForTier("creator"));
+  const studioCredits = formatNumber.format(creditsForTier("studio"));
   const auth = await getAuthContext();
   const studioConfigured = isStudioPlanConfigured();
   const freePlan = {
     kind: "free",
-    eyebrow: "Free / account",
+    eyebrow: t("freeEyebrow"),
     price: "$0",
-    cadence: "/ forever",
-    description:
-      "Four poster images every UTC day — enough room to try the studio before subscribing.",
+    cadence: t("freeCadence"),
+    description: t("freeDescription"),
     features: [
-      "4 poster images every UTC day",
-      "1K output",
-      "Watermarked downloads",
-      "7-day account history",
+      t("freeFeature1"),
+      t("freeFeature2"),
+      t("freeFeature3"),
+      t("freeFeature4"),
     ],
   } as const;
   const paidPlans = [
     {
       kind: "paid",
       billingPeriod: "monthly",
-      eyebrow: "Creator / monthly",
+      eyebrow: t("creatorMonthlyEyebrow"),
       price: "$9.90",
-      cadence: "/ month",
-      description: `${CREATOR_CREDITS} credits every month — a flexible starting point for regular poster work.`,
+      cadence: t("monthCadence"),
+      description: t("creatorMonthlyDescription", { credits: creatorCredits }),
       features: [
-        `${CREATOR_CREDITS} credits every month`,
-        "1K / 2K / 4K output",
-        "Medium and High finish",
-        "No watermark, private history",
+        t("monthlyCredits", { credits: creatorCredits }),
+        t("outputOptions"),
+        t("mediumHighFinish"),
+        t("noWatermarkHistory"),
       ],
       plan: "creator_monthly",
       featured: false,
@@ -55,15 +64,15 @@ export default async function PricingPage() {
     {
       kind: "paid",
       billingPeriod: "yearly",
-      eyebrow: "Creator / yearly",
+      eyebrow: t("creatorYearlyEyebrow"),
       price: "$79",
-      cadence: "/ year",
-      description: `${CREATOR_CREDITS} credits in each monthly window — the lower-cost annual rhythm for individual creators.`,
+      cadence: t("yearCadence"),
+      description: t("creatorYearlyDescription", { credits: creatorCredits }),
       features: [
-        `${CREATOR_CREDITS} credits in each monthly window`,
-        "Same full Creator studio access",
-        "Credits reset monthly, never roll",
-        "Private history and clean downloads",
+        t("monthlyWindowCredits", { credits: creatorCredits }),
+        t("fullCreatorAccess"),
+        t("monthlyReset"),
+        t("noWatermarkHistory"),
       ],
       plan: "creator_yearly",
       featured: false,
@@ -74,15 +83,15 @@ export default async function PricingPage() {
     {
       kind: "paid",
       billingPeriod: "monthly",
-      eyebrow: "Studio / monthly",
+      eyebrow: t("studioMonthlyEyebrow"),
       price: "$19.90",
-      cadence: "/ month",
-      description: `${STUDIO_CREDITS} credits every month — more room for campaigns, client rounds, and print work.`,
+      cadence: t("monthCadence"),
+      description: t("studioMonthlyDescription", { credits: studioCredits }),
       features: [
-        `${STUDIO_CREDITS} credits every month`,
-        "1K / 2K / 4K output",
-        "High finish for final exports",
-        "No watermark, private history",
+        t("monthlyCredits", { credits: studioCredits }),
+        t("outputOptions"),
+        t("highFinish"),
+        t("noWatermarkHistory"),
       ],
       plan: "studio_monthly",
       featured: false,
@@ -93,15 +102,15 @@ export default async function PricingPage() {
     {
       kind: "paid",
       billingPeriod: "yearly",
-      eyebrow: "Studio / yearly",
+      eyebrow: t("studioYearlyEyebrow"),
       price: "$169",
-      cadence: "/ year",
-      description: `${STUDIO_CREDITS} credits in each monthly window — the best value for a high-volume creative practice.`,
+      cadence: t("yearCadence"),
+      description: t("studioYearlyDescription", { credits: studioCredits }),
       features: [
-        `${STUDIO_CREDITS} credits in each monthly window`,
-        "Same full Studio access",
-        "Credits reset monthly, never roll",
-        "Priority billing support",
+        t("monthlyWindowCredits", { credits: studioCredits }),
+        t("fullStudioAccess"),
+        t("monthlyReset"),
+        t("prioritySupport"),
       ],
       plan: "studio_yearly",
       featured: false,
@@ -114,14 +123,9 @@ export default async function PricingPage() {
     <main className="pricing-page">
       <SiteHeader initialAuth={auth} />
       <section className="pricing-intro">
-        <p className="eyebrow">Simple, weighted credits</p>
-        <h1>Pay for the directions worth keeping.</h1>
-        <p>
-          Paid plans return up to four posters per generation. Free accounts get
-          up to four poster images per UTC day. Guests can try one watermarked
-          1K generation per UTC day without signing in; annual plans still
-          refresh credits monthly.
-        </p>
+        <p className="eyebrow">{t("eyebrow")}</p>
+        <h1>{t("heading")}</h1>
+        <p>{t("intro")}</p>
       </section>
       <PricingPlans
         freePlan={freePlan}
@@ -130,10 +134,7 @@ export default async function PricingPage() {
         isSignedIn={Boolean(auth.userId)}
       />
       <p className="pricing-footnote">
-        Image engine: GPT Image 2 via APIMart. Outputs are AI-generated and
-        should be reviewed before publication. Refunds are eligible within 7
-        days only when no credits have been settled.{" "}
-        <Link href="/refunds">Read the policy.</Link>
+        {t("footnote")} <a href="/refunds">{t("readRefundPolicy")}</a>
       </p>
     </main>
   );

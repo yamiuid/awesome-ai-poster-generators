@@ -1,20 +1,32 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { CancelSubscriptionButton } from "@/components/cancel-subscription-button";
 import { SiteHeader } from "@/components/site-header";
+import { Link } from "@/i18n/navigation";
 import { creditsForTier } from "@/lib/domain/plans";
+import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
 import { getAuthContext } from "@/lib/server/auth";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
 
-export const metadata: Metadata = {
-  title: "Billing | Text to Poster",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("billing");
+  return { title: t("metadataTitle"), robots: { index: false, follow: false } };
+}
 
 export default async function BillingPage() {
+  const rawLocale = await getLocale();
+  const locale: UiLocale = isUiLocale(rawLocale) ? rawLocale : "en";
+  const t = await getTranslations("billing");
   const auth = await getAuthContext();
-  if (!auth.userId) redirect("/login?next=/account/billing");
+  if (!auth.userId) {
+    redirect(
+      localizedPath(
+        `/login?next=${encodeURIComponent(localizedPath("/account/billing", locale))}`,
+        locale,
+      ),
+    );
+  }
   const { data: subscription } = await (await createSupabaseServerClient())
     .from("subscriptions")
     .select("plan, tier, status, period_end, cancel_at_period_end")
@@ -25,8 +37,8 @@ export default async function BillingPage() {
       <SiteHeader initialAuth={auth} />
       <section className="account-heading">
         <div>
-          <p className="eyebrow">Billing</p>
-          <h1>Keep the good ideas moving.</h1>
+          <p className="eyebrow">{t("billing")}</p>
+          <h1>{t("keepIdeasMoving")}</h1>
         </div>
       </section>
       <section className="billing-card">
@@ -37,82 +49,71 @@ export default async function BillingPage() {
             <div className="billing-top">
               <div>
                 <p className="eyebrow">
-                  {subscription.tier === "studio" ? "Studio" : "Creator"} /{" "}
-                  {subscription.plan === "yearly" ? "yearly" : "monthly"}
+                  {subscription.tier === "studio" ? t("studio") : t("creator")}{" "}
+                  /{" "}
+                  {subscription.plan === "yearly" ? t("yearly") : t("monthly")}
                 </p>
                 <h2>
                   {auth.subscriptionState === "canceling"
-                    ? "Cancellation scheduled"
-                    : "Active"}
+                    ? t("cancellationScheduled")
+                    : t("active")}
                 </h2>
               </div>
               <span className="billing-price">
-                {creditsForTier(subscription.tier).toLocaleString("en-US")}{" "}
-                credits / month
+                {creditsForTier(subscription.tier).toLocaleString(locale)}{" "}
+                {t("creditsMonth")}
               </span>
             </div>
             <p>
-              Your current period ends{" "}
-              {new Date(subscription.period_end).toLocaleDateString("en-US", {
-                dateStyle: "long",
+              {t("periodEnds", {
+                date: new Date(subscription.period_end).toLocaleDateString(
+                  locale,
+                  {
+                    dateStyle: "long",
+                  },
+                ),
               })}
-              . Credits reset each period and never roll over.
             </p>
             {auth.subscriptionState === "canceling" ? (
-              <p className="form-message">
-                Your Pro access remains available until the period ends. You can
-                choose any new plan after that date.
-              </p>
+              <p className="form-message">{t("accessUntilPeriod")}</p>
             ) : (
               <CancelSubscriptionButton />
             )}
           </>
         ) : auth.subscriptionState === "ended" ? (
           <>
-            <p className="eyebrow">Subscription ended</p>
-            <h2>Choose your next plan.</h2>
-            <p>
-              Your previous subscription has ended. Choose Creator or Studio to
-              start a new billing period.
-            </p>
+            <p className="eyebrow">{t("subscriptionEnded")}</p>
+            <h2>{t("chooseNextPlan")}</h2>
+            <p>{t("previousEnded")}</p>
             <Link className="solid-button" href="/pricing">
-              Choose a plan
+              {t("choosePlan")}
             </Link>
           </>
         ) : auth.subscriptionState === "past_due" ||
           auth.subscriptionState === "stale" ? (
           <>
-            <p className="eyebrow">Billing needs attention</p>
-            <h2>We need to check your subscription.</h2>
-            <p>
-              We could not confirm the latest billing state. New purchases are
-              paused so you are not charged twice.
-            </p>
+            <p className="eyebrow">{t("needsAttention")}</p>
+            <h2>{t("checkSubscription")}</h2>
+            <p>{t("couldNotConfirm")}</p>
             <a className="solid-button" href="mailto:support@texttoposter.com">
-              Contact support
+              {t("contactSupport")}
             </a>
           </>
         ) : (
           <>
-            <p className="eyebrow">Free studio</p>
-            <h2>Start with two directions at a time.</h2>
-            <p>
-              Upgrade to Creator or Studio for more weighted credits, clean
-              exports, and private history.
-            </p>
+            <p className="eyebrow">{t("freeStudio")}</p>
+            <h2>{t("startDirections")}</h2>
+            <p>{t("upgradeDescription")}</p>
             <Link className="solid-button" href="/pricing">
-              See plans
+              {t("seePlans")}
             </Link>
           </>
         )}
       </section>
       <section className="policy-note">
-        <h2>Refunds</h2>
-        <p>
-          Purchases may qualify for a refund within 7 days only when no credits
-          have been settled. We review requests manually.
-        </p>
-        <a href="mailto:support@texttoposter.com">Contact support</a>
+        <h2>{t("refunds")}</h2>
+        <p>{t("refundPolicy")}</p>
+        <a href="mailto:support@texttoposter.com">{t("contactSupport")}</a>
       </section>
     </main>
   );

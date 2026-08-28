@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
+import { LocaleSuggestion } from "@/components/locale-suggestion";
 import { siteUrl } from "@/lib/seo";
 import "./globals.css";
 
@@ -44,15 +47,21 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
   const umamiWebsiteId = process.env["NEXT_PUBLIC_UMAMI_WEBSITE_ID"];
   const umamiScriptUrl = process.env["NEXT_PUBLIC_UMAMI_SCRIPT_URL"];
   return (
-    <html lang="en" className={`${localTypeface.variable} h-full antialiased`}>
+    <html
+      lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
+      className={`${localTypeface.variable} h-full antialiased`}
+    >
       <head>
         <meta name="msvalidate.01" content="896C512198E90A6BC88DC962F259BC8B" />
         <meta name="baidu-site-verification" content="codeva-DuEQZjohwj" />
@@ -89,7 +98,10 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="min-h-full flex flex-col">
-        {children}
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <LocaleSuggestion />
+          {children}
+        </NextIntlClientProvider>
         {umamiWebsiteId && umamiScriptUrl && (
           <Script
             src={umamiScriptUrl}

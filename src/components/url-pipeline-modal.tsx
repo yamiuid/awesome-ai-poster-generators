@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, CircleAlert, Sparkles, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import {
   BRIEF_CHAR_LIMITS,
@@ -21,11 +22,7 @@ const EMPTY_BRIEF_FIELDS: BriefFields = {
   cta: "",
 };
 
-const USER_STEPS = [
-  { id: 1, label: "Read the page" },
-  { id: 2, label: "Understand the content" },
-  { id: 3, label: "Poster copy" },
-] as const;
+const USER_STEPS = [{ id: 1 }, { id: 2 }, { id: 3 }] as const;
 
 type UserStepId = (typeof USER_STEPS)[number]["id"];
 type StepStatus = "pending" | "running" | "done" | "error" | "interactive";
@@ -128,6 +125,7 @@ export function UrlPipelineModal({
   onClose,
   onGenerate,
 }: Props): JSX.Element {
+  const t = useTranslations("studio");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const activeStepRef = useRef<UserStepId>(1);
   const [steps, setSteps] =
@@ -319,9 +317,7 @@ export function UrlPipelineModal({
       } catch (error) {
         if (!cancelledRef.current) {
           const message =
-            error instanceof Error
-              ? error.message
-              : "Something went wrong while processing this page.";
+            error instanceof Error ? error.message : t("pipelineError");
           setStreamError(message);
           const currentStep = activeStepRef.current;
           setSteps((prev) => ({
@@ -332,7 +328,7 @@ export function UrlPipelineModal({
         }
       }
     })();
-  }, [url, handleAnalyzeEvent]);
+  }, [url, handleAnalyzeEvent, t]);
 
   useEffect(() => {
     if (!open) {
@@ -357,7 +353,7 @@ export function UrlPipelineModal({
       case 1:
         return (
           <div className="pipeline-content-card">
-            <p className="eyebrow">Read the page</p>
+            <p className="eyebrow">{t("readPage")}</p>
             {step1Data?.domain && (
               <p className="pipeline-domain">🔗 {step1Data.domain}</p>
             )}
@@ -381,18 +377,18 @@ export function UrlPipelineModal({
             {step1Data?.excerpt && (
               <p className="pipeline-meta">
                 {step1Data.contentType} · {formatBytes(step1Data.byteLength)} ·{" "}
-                {step1Data.cleanedLength?.toLocaleString()} characters
+                {step1Data.cleanedLength?.toLocaleString()} {t("characters")}
               </p>
             )}
             {!step1Data?.excerpt && (
-              <p className="pipeline-note">Reading the page…</p>
+              <p className="pipeline-note">{t("readingPage")}</p>
             )}
           </div>
         );
       case 2:
         return (
           <div className="pipeline-content-card">
-            <p className="eyebrow">Understand the content</p>
+            <p className="eyebrow">{t("understandContent")}</p>
             {step2Data ? (
               <div className="understanding-card">
                 <p className="understanding-tag">{step2Data.pageType}</p>
@@ -400,7 +396,7 @@ export function UrlPipelineModal({
                 <p className="pipeline-note">{step2Data.primaryMessage}</p>
                 {step2Data.audience && (
                   <p className="pipeline-meta">
-                    Audience · {step2Data.audience}
+                    {t("audience")} · {step2Data.audience}
                   </p>
                 )}
                 {step2Data.keyPoints.length > 0 && (
@@ -412,22 +408,22 @@ export function UrlPipelineModal({
                 )}
               </div>
             ) : (
-              <p className="pipeline-note">Understanding the content…</p>
+              <p className="pipeline-note">{t("understandingContent")}</p>
             )}
           </div>
         );
       case 3:
         return (
           <div className="pipeline-content-card">
-            <p className="eyebrow">Poster copy</p>
+            <p className="eyebrow">{t("posterCopy")}</p>
             {steps[3]?.status === "running" ? (
-              <p className="pipeline-note">Writing the poster copy…</p>
+              <p className="pipeline-note">{t("writingCopy")}</p>
             ) : (
               <>
                 {!editingBrief ? (
                   <div className="brief-preview">
                     <div className="brief-preview-copy">
-                      <h3>{briefFields.headline || "Untitled poster"}</h3>
+                      <h3>{briefFields.headline || t("untitledPoster")}</h3>
                       {briefFields.subtitle && (
                         <p className="brief-subtitle">{briefFields.subtitle}</p>
                       )}
@@ -447,13 +443,13 @@ export function UrlPipelineModal({
                       className="brief-edit-button"
                       onClick={() => setEditingBrief(true)}
                     >
-                      Edit
+                      {t("edit")}
                     </button>
                   </div>
                 ) : (
                   <div className="brief-form">
                     <label>
-                      <span>Headline</span>
+                      <span>{t("headline")}</span>
                       <input
                         type="text"
                         value={briefFields.headline}
@@ -467,7 +463,7 @@ export function UrlPipelineModal({
                       />
                     </label>
                     <label>
-                      <span>Subtitle</span>
+                      <span>{t("subtitle")}</span>
                       <input
                         type="text"
                         value={briefFields.subtitle}
@@ -481,7 +477,7 @@ export function UrlPipelineModal({
                       />
                     </label>
                     <fieldset className="brief-points-field">
-                      <legend>Key points</legend>
+                      <legend>{t("keyPoints")}</legend>
                       <PipelinePointInput
                         value={briefFields.points[0] ?? ""}
                         onChange={(value) =>
@@ -523,7 +519,7 @@ export function UrlPipelineModal({
                       />
                     </fieldset>
                     <label>
-                      <span>CTA (optional)</span>
+                      <span>{t("optionalCta")}</span>
                       <input
                         type="text"
                         value={briefFields.cta}
@@ -541,7 +537,7 @@ export function UrlPipelineModal({
                       className="brief-edit-button"
                       onClick={() => setEditingBrief(false)}
                     >
-                      Done editing
+                      {t("doneEditing")}
                     </button>
                   </div>
                 )}
@@ -550,12 +546,10 @@ export function UrlPipelineModal({
                   className="generate-button"
                   onClick={handleGenerate}
                 >
-                  <Sparkles size={18} /> Generate poster
+                  <Sparkles size={18} /> {t("generate")}
                 </button>
                 {step1Data?.ogImage && (
-                  <p className="pipeline-meta">
-                    Page image will be used as the visual reference.
-                  </p>
+                  <p className="pipeline-meta">{t("pageImageReference")}</p>
                 )}
               </>
             )}
@@ -590,13 +584,13 @@ export function UrlPipelineModal({
         <button
           type="button"
           className="modal-close"
-          aria-label="Close URL pipeline"
+          aria-label={t("closeUrlPipeline")}
           onClick={onClose}
         >
           <X size={18} />
         </button>
-        <p className="eyebrow">URL to poster</p>
-        <h3 id="url-pipeline-title">Create a poster from your link</h3>
+        <p className="eyebrow">{t("urlToPoster")}</p>
+        <h3 id="url-pipeline-title">{t("createFromLink")}</h3>
         <div className="url-pipeline">
           <ol className="url-pipeline-steps">
             {USER_STEPS.map((step) => {
@@ -627,7 +621,13 @@ export function UrlPipelineModal({
                     <span className="url-step-icon">
                       <StepIcon status={state.status} />
                     </span>
-                    <span>{step.label}</span>
+                    <span>
+                      {step.id === 1
+                        ? t("readPage")
+                        : step.id === 2
+                          ? t("understandContent")
+                          : t("posterCopy")}
+                    </span>
                   </button>
                 </li>
               );
@@ -643,7 +643,7 @@ export function UrlPipelineModal({
                   className="brief-edit-button"
                   onClick={startPipeline}
                 >
-                  Retry
+                  {t("retry")}
                 </button>
               </div>
             )}

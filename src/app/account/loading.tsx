@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { SiteHeader } from "@/components/site-header";
 
 /**
@@ -5,13 +6,14 @@ import { SiteHeader } from "@/components/site-header";
  * 在 SSR（getAuthContext + generations + signed URLs）完成前展示。
  * 服务端组件，纯标记 + CSS，不引客户端组件。
  */
-export default function AccountLoading() {
+export default async function AccountLoading() {
+  const t = await getTranslations("account");
   return (
     <main className="account-page">
       <SiteHeader />
       <section className="account-heading">
         <div>
-          <p className="eyebrow">Private history</p>
+          <p className="eyebrow">{t("privateHistory")}</p>
           <div className="skeleton-title" />
         </div>
         <div className="skeleton-sub" />

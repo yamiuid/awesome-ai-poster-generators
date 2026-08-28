@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { Link } from "@/i18n/navigation";
 import { BILLING_PERIODS, type BillingPeriod } from "@/lib/domain/plans";
 import {
   type FreePricingPlan,
@@ -9,6 +10,7 @@ import {
   type PaidPricingPlan,
   type VisiblePricingPlan,
 } from "@/lib/domain/pricing";
+import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
 import type { SubscriptionLifecycleState } from "@/lib/server/waffo-subscription";
 import { PricingAction } from "./pricing-actions";
 
@@ -18,19 +20,6 @@ type Props = Readonly<{
   subscriptionState: SubscriptionLifecycleState;
   isSignedIn: boolean;
 }>;
-
-const BILLING_LABELS: Readonly<Record<BillingPeriod, string>> = {
-  monthly: "Monthly",
-  yearly: "Yearly",
-};
-
-function formatSavings(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
 
 function assertNever(value: never): never {
   throw new Error(`Unknown pricing plan kind: ${String(value)}`);
@@ -45,6 +34,9 @@ function PricingPlanCard({
   subscriptionState: SubscriptionLifecycleState;
   isSignedIn: boolean;
 }>) {
+  const t = useTranslations("pricing");
+  const rawLocale = useLocale();
+  const locale: UiLocale = isUiLocale(rawLocale) ? rawLocale : "en";
   switch (plan.kind) {
     case "free":
       return (
@@ -61,11 +53,14 @@ function PricingPlanCard({
           </ul>
           {isSignedIn ? (
             <Link className="solid-button" href="/#studio">
-              Open free studio
+              {t("openFreeStudio")}
             </Link>
           ) : (
-            <Link className="solid-button" href="/login?next=/%23studio">
-              Create free account
+            <Link
+              className="solid-button"
+              href={`/login?next=${encodeURIComponent(localizedPath("/#studio", locale))}`}
+            >
+              {t("createFreeAccount")}
             </Link>
           )}
         </article>
@@ -108,6 +103,8 @@ export function PricingPlans({
   subscriptionState,
   isSignedIn,
 }: Props) {
+  const t = useTranslations("pricing");
+  const format = useFormatter();
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
   const visiblePlans = getVisiblePricingPlans(freePlan, plans, billingPeriod);
   const maxYearlySavings = plans.reduce(
@@ -116,8 +113,12 @@ export function PricingPlans({
   );
 
   return (
-    <section className="pricing-plans" aria-label="Subscription plans">
-      <div className="billing-tabs" role="tablist" aria-label="Billing period">
+    <section className="pricing-plans" aria-label={t("subscriptionPlans")}>
+      <div
+        className="billing-tabs"
+        role="tablist"
+        aria-label={t("billingPeriod")}
+      >
         {BILLING_PERIODS.map((period) => {
           const selected = period === billingPeriod;
           const tabId = `billing-tab-${period}`;
@@ -132,10 +133,15 @@ export function PricingPlans({
               role="tab"
               type="button"
             >
-              <span>{BILLING_LABELS[period]}</span>
+              <span>{period === "monthly" ? t("monthly") : t("yearly")}</span>
               {period === "yearly" ? (
                 <span className="billing-tab-note">
-                  Save up to {formatSavings(maxYearlySavings)}
+                  {t("saveUpTo", {
+                    amount: format.number(maxYearlySavings, {
+                      style: "currency",
+                      currency: "USD",
+                    }),
+                  })}
                 </span>
               ) : null}
             </button>

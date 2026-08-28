@@ -1,4 +1,15 @@
+import type { UiLocale } from "@/lib/i18n/locale";
 import type { AspectRatio, GenerationRequest, PosterStyle } from "./poster";
+
+export const PROMPT_LANGUAGES = [
+  "en",
+  "zh-Hans",
+  "zh-TW",
+  "ja",
+  "es-419",
+  "ar",
+] as const;
+export type PromptLanguage = (typeof PROMPT_LANGUAGES)[number];
 
 const STYLE_INSTRUCTIONS: Readonly<Record<PosterStyle, string>> = {
   auto: "infer the single most suitable art direction from the core idea, its mood, subject, and intended audience; keep the visual language coherent rather than mixing unrelated styles",
@@ -45,36 +56,103 @@ const RATIO_INSTRUCTIONS: Readonly<Record<AspectRatio, string>> = {
   "3:2": "landscape poster composition with photographic framing",
 };
 
-/**
- * 检测提示词正文的主导语言：有 CJK 字符且占比不低于拉丁字母一半时视为中文，
- * 否则视为英文。用于让海报文字与提示词语言保持一致。
- */
-export function detectTextLanguage(text: string): "zh" | "en" {
-  const cjk = (text.match(/[\u3400-\u9fff\uf900-\ufaff]/g) ?? []).length;
-  const latin = (text.match(/[A-Za-z]/g) ?? []).length;
-  return cjk > 0 && cjk >= latin * 0.5 ? "zh" : "en";
+function promptLanguageForLocale(locale: UiLocale): PromptLanguage {
+  switch (locale) {
+    case "zh-TW":
+      return "zh-TW";
+    case "ja":
+      return "ja";
+    case "es":
+      return "es-419";
+    case "ar":
+      return "ar";
+    case "en":
+      return "en";
+    default:
+      return assertNever(locale);
+  }
 }
 
-function languageInstruction(prompt: string): string {
-  if (detectTextLanguage(prompt) === "zh") {
-    return (
-      "All poster text must be written in Simplified Chinese. " +
-      "Do not use English or any other non-Chinese language for any text on the poster."
-    );
-  }
+function assertNever(value: never): never {
+  throw new Error(`Unexpected prompt language value: ${String(value)}`);
+}
+
+function containsTraditionalChinese(text: string): boolean {
+  return /[邊樂組臺灣體後廣發設計產業帳戶]/u.test(text);
+}
+
+function containsSimplifiedChinese(text: string): boolean {
+  return /[边乐组台湾体后广发设计产业账户]/u.test(text);
+}
+
+function containsSpanishSignals(text: string): boolean {
   return (
-    "All poster text must be written in English. " +
-    "Do not use Chinese characters or any other non-English language for any text on the poster."
+    /[¿¡ñáéíóúü]/iu.test(text) ||
+    /\b(el|la|los|las|una|para|con|que|de|y|música|verano)\b/iu.test(text)
   );
+}
+
+export function isAmbiguousLatinPrompt(text: string): boolean {
+  return (
+    !/[\u0600-\u06ff\u0750-\u077f\u3040-\u30ff\u3400-\u9fff]/u.test(text) &&
+    !containsSpanishSignals(text)
+  );
+}
+
+export function detectTextLanguage(
+  text: string,
+  fallbackLocale: UiLocale = "en",
+): PromptLanguage {
+  if (/[\u0600-\u06ff\u0750-\u077f]/u.test(text)) {
+    return "ar";
+  }
+  if (/[\u3040-\u30ff]/u.test(text)) {
+    return "ja";
+  }
+  if (containsTraditionalChinese(text)) {
+    return "zh-TW";
+  }
+  if (containsSimplifiedChinese(text)) {
+    return "zh-Hans";
+  }
+  if (containsSpanishSignals(text)) {
+    return "es-419";
+  }
+  return promptLanguageForLocale(fallbackLocale);
+}
+
+function languageInstruction(language: PromptLanguage): string {
+  switch (language) {
+    case "zh-Hans":
+      return "All poster text must be written in Simplified Chinese. Do not use English or any other non-Chinese language for any text on the poster.";
+    case "zh-TW":
+      return "All poster text must be written in Traditional Chinese using Taiwan usage and punctuation. Do not use Simplified Chinese, English, or any other non-Chinese language for any text on the poster.";
+    case "ja":
+      return "All poster text must be written in natural Japanese. Use appropriate Japanese punctuation and do not use English or any other non-Japanese language for poster copy unless it is part of a proper name supplied in the brief.";
+    case "es-419":
+      return "All poster text must be written in neutral Latin American Spanish. Use correct accents, inverted punctuation, and natural gender and number agreement. Do not use English or any other non-Spanish language for poster copy unless it is part of a proper name supplied in the brief.";
+    case "ar":
+      return "All poster text must be written in Modern Standard Arabic with natural Arabic punctuation and right-to-left reading order. Do not use English or any other non-Arabic language for poster copy unless it is part of a proper name supplied in the brief.";
+    case "en":
+      return "All poster text must be written in English. Do not use Chinese characters or any other non-English language for any text on the poster.";
+    default:
+      return assertNever(language);
+  }
 }
 
 export function buildPosterPrompt(
   request: GenerationRequest,
-  options?: Readonly<{ hasReferenceImage?: boolean }>,
+  options?: Readonly<{
+    hasReferenceImage?: boolean;
+    textLanguage?: PromptLanguage;
+  }>,
 ): string {
+  const textLanguage =
+    options?.textLanguage ??
+    detectTextLanguage(request.prompt, request.siteLocale);
   return [
     "Create a finished poster, not a mockup and not a blank template.",
-    languageInstruction(request.prompt),
+    languageInstruction(textLanguage),
     ...(options?.hasReferenceImage
       ? [
           "Use the provided reference image as the primary visual material: keep its subject and composition recognizable, and build a polished poster around it. Do not copy any text, logos, or watermarks from the reference image.",

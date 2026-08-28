@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import type { CreditTransactionView } from "@/lib/server/credit-ledger";
 
 export function CreditActivity({
@@ -8,17 +9,19 @@ export function CreditActivity({
   transactions: readonly CreditTransactionView[];
   isPro: boolean;
 }>) {
+  const locale = useLocale();
+  const t = useTranslations("account");
   if (!isPro) {
     return (
       <div className="empty-history">
-        <p className="eyebrow">Credit activity</p>
-        <h2>Track every run&apos;s cost.</h2>
+        <p className="eyebrow">{t("creditActivity")}</p>
+        <h2>{t("trackEveryRun")}</h2>
         <p className="empty-history-copy">
           Credit activity is available on Pro. Upgrade to see exactly how many
           credits each generation used.
         </p>
         <Link className="solid-button" href="/pricing">
-          Upgrade to Pro
+          {t("upgradeToPro")}
         </Link>
       </div>
     );
@@ -26,8 +29,8 @@ export function CreditActivity({
   if (transactions.length === 0) {
     return (
       <div className="empty-history">
-        <p className="eyebrow">Credit activity</p>
-        <h2>No credits spent yet.</h2>
+        <p className="eyebrow">{t("creditActivity")}</p>
+        <h2>{t("noCreditsSpent")}</h2>
         <p className="empty-history-copy">
           Your first Pro run will appear here with its exact credit cost.
         </p>
@@ -39,20 +42,20 @@ export function CreditActivity({
       <table className="credit-activity-table">
         <thead>
           <tr>
-            <th scope="col">Date</th>
-            <th scope="col">Prompt</th>
-            <th scope="col">Mode</th>
-            <th scope="col">Resolution</th>
-            <th scope="col">Quality</th>
-            <th scope="col">Images</th>
-            <th scope="col">Amount</th>
+            <th scope="col">{t("date")}</th>
+            <th scope="col">{t("prompt")}</th>
+            <th scope="col">{t("mode")}</th>
+            <th scope="col">{t("resolution")}</th>
+            <th scope="col">{t("quality")}</th>
+            <th scope="col">{t("images")}</th>
+            <th scope="col">{t("amount")}</th>
           </tr>
         </thead>
         <tbody>
           {transactions.map((transaction) => (
             <tr key={transaction.id}>
               <td>
-                {new Date(transaction.createdAt).toLocaleDateString("en-US", {
+                {new Date(transaction.createdAt).toLocaleDateString(locale, {
                   month: "short",
                   day: "numeric",
                   year: "numeric",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { AccountTabs } from "@/components/account-tabs";
 import { CreditActivity } from "@/components/credit-activity";
 import {
@@ -9,6 +9,8 @@ import {
   type HistoryItem,
 } from "@/components/history-gallery";
 import { SiteHeader } from "@/components/site-header";
+import { Link } from "@/i18n/navigation";
+import { localizedPath, type UiLocale } from "@/lib/i18n/locale";
 import { getAuthContext } from "@/lib/server/auth";
 import {
   getAccountBalance,
@@ -17,19 +19,33 @@ import {
 import { createPosterUrl } from "@/lib/server/storage";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
 
-export const metadata: Metadata = {
-  title: "History | Text to Poster",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("account");
+  return { title: t("metadataTitle"), robots: { index: false, follow: false } };
+}
 
 type PageProps = Readonly<{
   searchParams: Promise<Readonly<{ tab?: string | undefined }>>;
 }>;
 
 export default async function AccountPage({ searchParams }: PageProps) {
+  const rawLocale = await getLocale();
+  const locale: UiLocale =
+    rawLocale === "zh-TW" ||
+    rawLocale === "ja" ||
+    rawLocale === "es" ||
+    rawLocale === "ar"
+      ? rawLocale
+      : "en";
+  const t = await getTranslations("account");
   const auth = await getAuthContext();
   if (!auth.userId) {
-    redirect("/login?next=/account");
+    redirect(
+      localizedPath(
+        `/login?next=${encodeURIComponent(localizedPath("/account", locale))}`,
+        locale,
+      ),
+    );
   }
   const client = await createSupabaseServerClient();
   const [rawSearch, { data: generations }] = await Promise.all([
@@ -133,19 +149,17 @@ export default async function AccountPage({ searchParams }: PageProps) {
       <SiteHeader initialAuth={auth} />
       <section className="account-heading">
         <div>
-          <p className="eyebrow">Private history</p>
-          <h1>Your directions.</h1>
+          <p className="eyebrow">{t("privateHistory")}</p>
+          <h1>{t("yourDirections")}</h1>
         </div>
         <p>
           {auth.email ? `${auth.email} · ` : ""}
-          {auth.isPro
-            ? "Pro studio / no watermark"
-            : "Free account / seven-day history"}
+          {auth.isPro ? t("proStudio") : t("freeHistory")}
         </p>
       </section>
       {balance && (
         <div className="account-balance">
-          <p className="eyebrow">Available credits</p>
+          <p className="eyebrow">{t("availableCredits")}</p>
           <p className="account-balance-number">{balance.available}</p>
           <p className="account-balance-meta">
             {balance.tier} · {balance.periodStart} → {balance.periodEnd} ·{" "}
@@ -158,14 +172,14 @@ export default async function AccountPage({ searchParams }: PageProps) {
         panes={[
           {
             id: "generations",
-            label: "Generations",
+            label: t("generations"),
             content:
               items.length === 0 ? (
                 <div className="empty-history">
-                  <p className="eyebrow">Nothing here yet</p>
-                  <h2>Your first direction is waiting.</h2>
+                  <p className="eyebrow">{t("nothingHere")}</p>
+                  <h2>{t("firstDirection")}</h2>
                   <Link className="solid-button" href="/#studio">
-                    Open the studio
+                    {t("openStudio")}
                   </Link>
                 </div>
               ) : (
@@ -174,7 +188,7 @@ export default async function AccountPage({ searchParams }: PageProps) {
           },
           {
             id: "credits",
-            label: "Credits",
+            label: t("credits"),
             content: (
               <CreditActivity transactions={transactions} isPro={auth.isPro} />
             ),

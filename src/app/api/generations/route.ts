@@ -15,7 +15,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     const parsed = generationRequestSchema.safeParse(body);
     if (!parsed.success) {
       return Response.json(
-        { error: "Please check your poster description and options." },
+        {
+          error: "Please check your poster description and options.",
+          code: "INVALID_GENERATION_REQUEST",
+        },
         { status: 400 },
       );
     }

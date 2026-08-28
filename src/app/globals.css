@@ -183,7 +183,7 @@ textarea:focus-visible {
 }
 .user-menu-dropdown {
   position: absolute;
-  right: 0;
+  inset-inline-end: 0;
   top: calc(100% + 0.6rem);
   min-width: 13rem;
   max-width: min(20rem, calc(100vw - 2rem));
@@ -373,7 +373,7 @@ textarea:focus-visible {
 .studio-controls {
   container-type: inline-size;
   padding: clamp(0.9rem, 2vw, 1.6rem);
-  border-right: 1px solid var(--line);
+  border-inline-end: 1px solid var(--line);
 }
 .field-label {
   display: block;
@@ -765,7 +765,7 @@ textarea:focus-visible {
   position: absolute;
   z-index: 20;
   top: calc(100% + 0.45rem);
-  left: 0;
+  inset-inline-start: 0;
   width: min(26rem, calc(100vw - 3rem));
   min-inline-size: 0;
   margin: 0;
@@ -928,8 +928,7 @@ textarea:focus-visible {
 .option-menu {
   position: absolute;
   top: calc(100% + 0.4rem);
-  left: -0.75rem;
-  right: auto;
+  inset-inline-start: -0.75rem;
   width: max-content;
   min-width: calc(100% + 2.5rem);
   max-width: 20rem;
@@ -1017,7 +1016,7 @@ textarea:focus-visible {
   width: max-content;
   min-width: calc(100% + 2.5rem);
   max-width: min(26rem, calc(100vw - 2rem));
-  left: -0.75rem;
+  inset-inline-start: -0.75rem;
 }
 .art-direction-menu .option-item {
   justify-content: center;
@@ -1229,10 +1228,10 @@ textarea:focus-visible {
     background-color 180ms ease;
 }
 .studio-carousel-arrow-left {
-  left: 0.7rem;
+  inset-inline-start: 0.7rem;
 }
 .studio-carousel-arrow-right {
-  right: 0.7rem;
+  inset-inline-end: 0.7rem;
 }
 .studio-example-carousel:hover .studio-carousel-arrow,
 .studio-example-carousel:focus-within .studio-carousel-arrow,
@@ -1798,7 +1797,7 @@ textarea:focus-visible {
   position: absolute;
   z-index: 4;
   top: 0.45rem;
-  right: 0.45rem;
+  inset-inline-end: 0.45rem;
   display: grid;
   place-items: center;
   width: 2.25rem;
@@ -2374,12 +2373,12 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
   .studio-controls {
-    border-right: 0;
+    border-inline-end: 0;
     border-bottom: 1px solid var(--line);
   }
   .more-styles-menu {
-    right: 0;
-    left: auto;
+    inset-inline-start: auto;
+    inset-inline-end: 0;
   }
   .content-grid {
     grid-template-columns: 1fr;
@@ -2639,6 +2638,158 @@ textarea:focus-visible {
     gap: 1.5rem;
   }
 }
+
+.locale-switcher {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 8.5rem;
+  min-width: 0;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.locale-switcher .option-control {
+  min-height: 2rem;
+  padding-inline: 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.72rem;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+.locale-switcher .option-control:hover,
+.locale-switcher .option-control[aria-expanded="true"] {
+  border-color: var(--ink-muted);
+  background: var(--paper-deep);
+}
+.locale-switcher .option-control[aria-expanded="true"] .option-chevron {
+  transform: rotate(180deg);
+}
+.locale-switcher-menu {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  min-width: 100%;
+}
+.locale-switcher-menu .option-item {
+  min-height: 2.5rem;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 767px) {
+  .header-nav .locale-switcher {
+    align-self: stretch;
+    width: 100%;
+    margin-block: 0.25rem;
+  }
+  .header-nav .locale-switcher .option-control {
+    min-height: 2.75rem;
+    padding-inline: 0.5rem;
+    font-size: 0.82rem;
+  }
+  .header-nav .locale-switcher-menu {
+    inset-inline: 0;
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.locale-suggestion {
+  position: fixed;
+  z-index: 100;
+  inset-block-end: 1rem;
+  inset-inline-end: 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.7rem;
+  align-items: center;
+  width: min(31rem, calc(100vw - 2rem));
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--ink);
+  border-radius: 0.75rem;
+  background: var(--paper);
+  box-shadow: 0 0.8rem 2rem rgba(29, 26, 23, 0.16);
+  font-size: 0.78rem;
+}
+.locale-suggestion p {
+  margin: 0;
+}
+.checkout-locale-notice {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--paper-deep);
+  color: var(--ink);
+  font-size: 0.78rem;
+}
+.checkout-locale-notice p {
+  margin: 0;
+}
+:where(.checkout-locale-notice) .modal-actions {
+  margin-top: 0.65rem;
+}
+.locale-suggestion a,
+.locale-suggestion button {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+html[lang="ar"] {
+  --font-body: "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-display: "Segoe UI", Tahoma, Arial, sans-serif;
+}
+html[lang="ja"],
+html[lang="zh-TW"] {
+  --font-body:
+    var(--font-local), "Noto Sans CJK TC", "Noto Sans JP", sans-serif;
+  --font-display:
+    var(--font-local), "Noto Sans CJK TC", "Noto Sans JP", sans-serif;
+}
+html[lang="ja"] .wordmark,
+html[lang="zh-TW"] .wordmark,
+html[lang="ar"] .wordmark {
+  letter-spacing: normal;
+  text-transform: none;
+}
+[dir="rtl"] .user-menu-dropdown {
+  text-align: start;
+}
+[dir="rtl"] .user-menu-dropdown a,
+[dir="rtl"] .user-menu-dropdown button,
+[dir="rtl"] .header-nav .user-menu-mobile-actions a,
+[dir="rtl"] .header-nav .user-menu-mobile-signout,
+[dir="rtl"] .option-item {
+  text-align: start;
+}
+[dir="rtl"] .studio-carousel-arrow-left svg,
+[dir="rtl"] .studio-carousel-arrow-right svg {
+  transform: scaleX(-1);
+}
+:where([dir="rtl"]) .style-landing-list {
+  padding-inline-start: 1.2rem;
+  padding-inline-end: 0;
+}
+[dir="rtl"] .locale-suggestion {
+  inset-inline-end: auto;
+  inset-inline-start: 1rem;
+}
+@media (max-width: 520px) {
+  .locale-suggestion {
+    grid-template-columns: 1fr auto;
+  }
+  .locale-suggestion p {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

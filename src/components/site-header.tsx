@@ -2,13 +2,15 @@
 
 import ky from "ky";
 import { ArrowUpRight, Menu, X } from "lucide-react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { HeaderLoginDialog } from "@/components/header-login-dialog";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { LogoMark } from "@/components/logo";
 import { UserMenu } from "@/components/user-menu";
+import { Link } from "@/i18n/navigation";
 import { activePrimaryNav, PRIMARY_NAV_ITEMS } from "@/lib/domain/navigation";
 import type { AuthContext } from "@/lib/server/auth";
 import { createSupabaseBrowserClient } from "@/lib/server/supabase/browser";
@@ -142,6 +144,7 @@ export function SiteHeader({
   variant = "global",
   initialAuth,
 }: SiteHeaderProps) {
+  const t = useTranslations("header");
   const pathname = usePathname();
   const activeKey = activePrimaryNav(pathname);
   const account = useHeaderAccount(initialAuth);
@@ -190,7 +193,7 @@ export function SiteHeader({
             className="header-menu-button"
             aria-expanded={open}
             aria-controls="site-header-nav"
-            aria-label={open ? "Close menu" : "Open menu"}
+            aria-label={open ? t("closeMenu") : t("openMenu")}
             onClick={() => setOpen((value) => !value)}
           >
             {open ? (
@@ -203,7 +206,7 @@ export function SiteHeader({
           <nav
             id="site-header-nav"
             className={`header-nav${open ? " is-open" : ""}`}
-            aria-label="Primary navigation"
+            aria-label={t("primaryNavigation")}
           >
             {PRIMARY_NAV_ITEMS.map((item) => (
               <Link
@@ -218,9 +221,10 @@ export function SiteHeader({
                     : undefined
                 }
               >
-                {item.label}
+                {t(item.key)}
               </Link>
             ))}
+            <LocaleSwitcher />
             <HeaderAccount account={account} />
             {account !== null && !account.userId && (
               <button
@@ -239,7 +243,7 @@ export function SiteHeader({
                     : "header_cta_click"
                 }
               >
-                Free to start <ArrowUpRight size={15} aria-hidden="true" />
+                {t("freeToStart")} <ArrowUpRight size={15} aria-hidden="true" />
               </button>
             )}
           </nav>

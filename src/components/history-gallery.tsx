@@ -3,6 +3,7 @@
 import ky from "ky";
 import { ArrowDownToLine, X } from "lucide-react";
 import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 export type HistoryImage = Readonly<{
@@ -23,34 +24,34 @@ export type HistoryItem = Readonly<{
   creditsConsumed?: number | undefined;
 }>;
 
-const STATUS_LABELS: Readonly<Record<string, string>> = {
-  submitted: "Generating",
-  processing: "Generating",
-  succeeded: "Ready",
-  partially_succeeded: "Partly ready",
-  failed: "Failed",
-  timed_out: "Timed out",
-};
+type Translator = (
+  key: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
 
-function creditChipText(item: HistoryItem): string | null {
+function creditChipText(item: HistoryItem, t: Translator): string | null {
   const reserved = item.creditsReserved;
   if (!reserved || reserved <= 0 || item.mode !== "pro") {
     return null;
   }
   if (item.status === "submitted" || item.status === "processing") {
-    return `Reserving ${reserved}`;
+    return t("reserving", { credits: reserved });
   }
   if (item.status === "failed" || item.status === "timed_out") {
-    return `Released ${reserved}`;
+    return t("released", { credits: reserved });
   }
   const consumed = item.creditsConsumed ?? reserved;
   const saved = reserved - consumed;
-  return saved > 0 ? `Used ${consumed} · ${saved} saved` : `Used ${consumed}`;
+  return saved > 0
+    ? t("usedSaved", { used: consumed, saved })
+    : t("used", { credits: consumed });
 }
 
 export function HistoryGallery({
   items,
 }: Readonly<{ items: readonly HistoryItem[] }>) {
+  const locale = useLocale();
+  const t = useTranslations("account");
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   // 对挂起任务触发后台推进（重活：查 APIMart + 下载/水印/上传）。
@@ -85,32 +86,42 @@ export function HistoryGallery({
   }, [lightbox]);
 
   return (
-    <section className="history-grid" aria-label="Generation history">
+    <section className="history-grid" aria-label={t("generationHistory")}>
       {items.map((item) => (
         <article className="history-card" key={item.id}>
           <div className="history-card-head">
             <span>
-              {new Date(item.createdAt).toLocaleDateString("en-US", {
+              {new Date(item.createdAt).toLocaleDateString(locale, {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
               })}
             </span>
             <span className="history-card-meta">
-              {creditChipText(item) && (
+              {creditChipText(item, t) && (
                 <span className="history-credit-chip">
-                  {creditChipText(item)}
+                  {creditChipText(item, t)}
                 </span>
               )}
-              {STATUS_LABELS[item.status] ?? item.status}
+              {item.status === "submitted" || item.status === "processing"
+                ? t("generating")
+                : item.status === "succeeded"
+                  ? t("ready")
+                  : item.status === "partially_succeeded"
+                    ? t("partlyReady")
+                    : item.status === "failed"
+                      ? t("failed")
+                      : item.status === "timed_out"
+                        ? t("timedOut")
+                        : item.status}
             </span>
           </div>
           <div className="history-thumbs">
             {item.images.length === 0 && (
               <div className="history-no-images">
                 {item.status === "failed" || item.status === "timed_out"
-                  ? "No images for this run."
-                  : "Images are on their way."}
+                  ? t("noImages")
+                  : t("imagesOnWay")}
               </div>
             )}
             {item.images.map((image) => (
@@ -134,10 +145,10 @@ export function HistoryGallery({
                     href={image.url}
                     download={`text-to-poster-${item.id.slice(0, 8)}.png`}
                   >
-                    <ArrowDownToLine size={14} /> Download
+                    <ArrowDownToLine size={14} /> {t("download")}
                   </a>
                   {image.watermarked && (
-                    <span className="watermark-note">Free preview</span>
+                    <span className="watermark-note">{t("freePreview")}</span>
                   )}
                 </figcaption>
               </figure>
@@ -151,7 +162,7 @@ export function HistoryGallery({
           className="lightbox"
           role="dialog"
           aria-modal="true"
-          aria-label="Full size preview"
+          aria-label={t("fullSizePreview")}
           onClick={() => setLightbox(null)}
           onKeyUp={(event) => {
             if (event.key === "Escape") {
@@ -162,14 +173,14 @@ export function HistoryGallery({
           <button
             type="button"
             className="lightbox-close"
-            aria-label="Close preview"
+            aria-label={t("closePreview")}
             onClick={() => setLightbox(null)}
           >
             <X size={20} />
           </button>
           <Image
             src={lightbox}
-            alt="Poster preview"
+            alt={t("posterPreview")}
             width={1024}
             height={1280}
             className="lightbox-image"

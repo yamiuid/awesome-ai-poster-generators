@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { creditsForTier } from "@/lib/domain/plans";
 
@@ -171,12 +172,14 @@ const content: Readonly<
   },
 };
 
-export function LegalPage({ kind }: Readonly<{ kind: Kind }>) {
+export async function LegalPage({ kind }: Readonly<{ kind: Kind }>) {
   const page = content[kind];
+  const footer = await getTranslations("footer");
   return (
     <main className="legal-page">
       <SiteHeader />
       <article className="legal-copy">
+        <p className="legal-language-note">{footer("legalEnglish")}</p>
         <p className="eyebrow">Text to Poster / {kind}</p>
         <h1>{page.title}</h1>
         <p className="legal-intro">{page.intro}</p>
@@ -187,32 +190,7 @@ export function LegalPage({ kind }: Readonly<{ kind: Kind }>) {
           </section>
         ))}
       </article>
-      <footer className="site-footer">
-        <span>© 2026 Text to Poster</span>
-        <div className="site-footer-groups">
-          <div className="site-footer-group">
-            <span className="site-footer-label">Site</span>
-            <nav aria-label="Site links">
-              <Link href="/about">About</Link>
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/terms">Terms</Link>
-              <Link href="/refunds">Refunds</Link>
-              <Link href="/ai-policy">AI use</Link>
-            </nav>
-          </div>
-          <div className="site-footer-group">
-            <span className="site-footer-label">Friendly links</span>
-            <nav aria-label="Friendly links">
-              <a href="https://www.ai138.com" target="_blank" rel="noreferrer">
-                Ai138
-              </a>
-              <a href="https://dang.ai" target="_blank" rel="noreferrer">
-                Dang！
-              </a>
-            </nav>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

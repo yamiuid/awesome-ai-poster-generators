@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "@/i18n/navigation";
+import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
 import type { SubscriptionTier } from "@/lib/server/auth";
 import { createSupabaseBrowserClient } from "@/lib/server/supabase/browser";
 
@@ -12,16 +14,6 @@ type Props = Readonly<{
   avatarUrl: string | null;
   tier: SubscriptionTier | null;
 }>;
-
-const TIER_LABEL: Readonly<Record<SubscriptionTier | "free", string>> = {
-  free: "Free",
-  creator: "Creator",
-  studio: "Studio",
-};
-
-function tierLabel(tier: SubscriptionTier | null): string {
-  return TIER_LABEL[tier ?? "free"];
-}
 
 function Avatar({
   email,
@@ -57,6 +49,15 @@ function Avatar({
 }
 
 export function UserMenu({ email, avatarUrl, tier }: Props) {
+  const rawLocale = useLocale();
+  const locale: UiLocale = isUiLocale(rawLocale) ? rawLocale : "en";
+  const t = useTranslations("account");
+  const tierLabel =
+    tier === "creator"
+      ? t("creator")
+      : tier === "studio"
+        ? t("studio")
+        : t("free");
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -88,7 +89,7 @@ export function UserMenu({ email, avatarUrl, tier }: Props) {
     } catch {
       // ignore — clear client session regardless
     } finally {
-      router.push("/");
+      router.push(localizedPath("/", locale));
       router.refresh();
     }
   }
@@ -101,7 +102,7 @@ export function UserMenu({ email, avatarUrl, tier }: Props) {
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={email ? `Account menu for ${email}` : "Account menu"}
+        aria-label={email ? t("accountForEmail", { email }) : t("accountMenu")}
       >
         <Avatar email={email} avatarUrl={avatarUrl} />
       </button>
@@ -111,30 +112,34 @@ export function UserMenu({ email, avatarUrl, tier }: Props) {
           <span
             className={`tier-badge user-menu-mobile-tier is-${tier ?? "free"}`}
           >
-            {tierLabel(tier)}
+            {tierLabel}
           </span>
         </div>
       )}
       <div className="user-menu-mobile-actions">
-        <Link href="/account/billing">Billing</Link>
-        <Link href="/account">My history</Link>
+        <Link href="/account/billing">{t("billing")}</Link>
+        <Link href="/account">{t("history")}</Link>
         <button
           type="button"
           className="user-menu-mobile-signout"
           onClick={() => void signOut()}
           disabled={signingOut}
         >
-          {signingOut ? "Signing out…" : "Sign out"}
+          {signingOut ? t("signingOut") : t("signOut")}
         </button>
       </div>
       {open && (
-        <div className="user-menu-dropdown" role="menu" aria-label="Account">
+        <div
+          className="user-menu-dropdown"
+          role="menu"
+          aria-label={t("accountMenu")}
+        >
           <div className="user-menu-identity">
             <Avatar email={email} avatarUrl={avatarUrl} size={40} />
             <div>
-              <p className="user-menu-name">{email ?? "Signed in"}</p>
+              <p className="user-menu-name">{email ?? t("signedIn")}</p>
               <span className={`tier-badge is-${tier ?? "free"}`}>
-                {tierLabel(tier)}
+                {tierLabel}
               </span>
             </div>
           </div>
@@ -144,10 +149,10 @@ export function UserMenu({ email, avatarUrl, tier }: Props) {
             role="menuitem"
             onClick={() => setOpen(false)}
           >
-            Billing
+            {t("billing")}
           </Link>
           <Link href="/account" role="menuitem" onClick={() => setOpen(false)}>
-            My history
+            {t("history")}
           </Link>
           <button
             type="button"
@@ -156,7 +161,7 @@ export function UserMenu({ email, avatarUrl, tier }: Props) {
             onClick={() => void signOut()}
             disabled={signingOut}
           >
-            {signingOut ? "Signing out…" : "Sign out"}
+            {signingOut ? t("signingOut") : t("signOut")}
           </button>
         </div>
       )}

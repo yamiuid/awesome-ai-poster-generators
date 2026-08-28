@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { loginRedirectPath } from "@/lib/domain/navigation";
 import { createSupabaseBrowserClient } from "@/lib/server/supabase/browser";
@@ -48,6 +49,7 @@ function errorMessage(
 }
 
 export function LoginForm({ next, initialError, onSuccess }: Props) {
+  const t = useTranslations("auth");
   const router = useRouter();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
@@ -102,9 +104,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
     } catch (error) {
       setGooglePending(false);
       showError(
-        error instanceof Error
-          ? "Google sign-in is temporarily unavailable. Check the Supabase configuration."
-          : "Google sign-in is temporarily unavailable.",
+        error instanceof Error ? t("googleUnavailable") : t("sendFailed"),
       );
       setLoading(false);
     }
@@ -125,19 +125,14 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
         },
       });
       if (result.error) {
-        showError(
-          errorMessage(
-            result,
-            "The sign-in code could not be sent. Please try again.",
-          ),
-        );
+        showError(errorMessage(result, t("sendFailed")));
       } else {
         setStep("code");
         setCountdown(RESEND_COOLDOWN_SECONDS);
-        showSuccess(`We emailed a 6-digit sign-in code to ${email}.`);
+        showSuccess(t("codeSentTo", { email }));
       }
     } catch {
-      showError("The sign-in code could not be sent. Please try again.");
+      showError(t("sendFailed"));
     } finally {
       setLoading(false);
     }
@@ -155,18 +150,13 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
         },
       });
       if (result.error) {
-        showError(
-          errorMessage(
-            result,
-            "The sign-in code could not be sent. Please try again.",
-          ),
-        );
+        showError(errorMessage(result, t("sendFailed")));
       } else {
         setCountdown(RESEND_COOLDOWN_SECONDS);
-        showSuccess("A new 6-digit code is on its way.");
+        showSuccess(t("newCodeSent"));
       }
     } catch {
-      showError("The sign-in code could not be sent. Please try again.");
+      showError(t("sendFailed"));
     } finally {
       setLoading(false);
     }
@@ -178,7 +168,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
     event.preventDefault();
     const token = code.trim();
     if (token.length !== 6) {
-      showError("Enter the 6-digit code from the email.");
+      showError(t("enterCode"));
       return;
     }
     setLoading(true);
@@ -190,19 +180,14 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
         type: "email",
       });
       if (result.error) {
-        showError(
-          errorMessage(
-            result,
-            "That code is not valid. Check the email or request a new code.",
-          ),
-        );
+        showError(errorMessage(result, t("invalidCode")));
         return;
       }
       onSuccess?.();
       router.push(loginRedirectPath(next));
       router.refresh();
     } catch {
-      showError("We could not verify that code. Please try again.");
+      showError(t("verifyFailed"));
     } finally {
       setLoading(false);
     }
@@ -212,7 +197,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
     return (
       <div className="login-form">
         <p className="code-hint">
-          Enter the code sent to <strong>{email}</strong>.{" "}
+          {t("codeSentInstruction", { email })}{" "}
           <button
             type="button"
             className="link-button"
@@ -223,12 +208,12 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
               setCountdown(0);
             }}
           >
-            Change email
+            {t("changeEmail")}
           </button>
         </p>
         <form onSubmit={(event) => void verify(event)}>
           <label className="field-label" htmlFor="login-code">
-            6-digit sign-in code
+            {t("sixDigitCode")}
           </label>
           <div className="code-field">
             <input
@@ -250,7 +235,9 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
               onClick={() => void resendCode()}
               disabled={countdown > 0}
             >
-              {countdown > 0 ? `Resend in ${countdown}s` : "Resend code"}
+              {countdown > 0
+                ? t("resendIn", { seconds: countdown })
+                : t("resendCode")}
             </button>
           </div>
           <button
@@ -258,7 +245,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
             type="submit"
             disabled={loading}
           >
-            {loading ? "Verifying..." : "Verify and continue"}
+            {loading ? t("verifying") : t("verifyAndContinue")}
           </button>
         </form>
         {message && (
@@ -299,14 +286,14 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
           />
         </svg>
-        Continue with Google
+        {t("continueWithGoogle")}
       </button>
       <div className="auth-divider">
-        <span>or use email</span>
+        <span>{t("orUseEmail")}</span>
       </div>
       <form onSubmit={(event) => void sendCode(event)}>
         <label className="field-label" htmlFor="login-email">
-          Email address
+          {t("emailAddress")}
         </label>
         <input
           id="login-email"
@@ -314,11 +301,11 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="you@example.com"
+          placeholder={t("emailPlaceholder")}
           required
         />
         <button className="solid-button wide" type="submit" disabled={loading}>
-          {loading ? "Sending..." : "Send me a 6-digit code"}
+          {loading ? t("sending") : t("sendCode")}
         </button>
       </form>
       {message && (
@@ -332,7 +319,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
       {googlePending && (
         <div className="auth-overlay" role="status" aria-live="polite">
           <span className="auth-overlay-spinner spin" aria-hidden="true" />
-          <p className="auth-overlay-label">Signing in with Google...</p>
+          <p className="auth-overlay-label">{t("signingInGoogle")}</p>
         </div>
       )}
     </div>

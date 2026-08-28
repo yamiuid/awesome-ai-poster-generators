@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 
 type TabPane = Readonly<{ id: string; label: string; content: ReactNode }>;
@@ -12,13 +13,14 @@ export function AccountTabs({
   initialTab,
   panes,
 }: Readonly<{ initialTab: string; panes: readonly TabPane[] }>) {
+  const t = useTranslations("account");
   const [active, setActive] = useState(initialTab);
   return (
     <>
       <div
         className="account-tabs"
         role="tablist"
-        aria-label="Account sections"
+        aria-label={t("accountSections")}
       >
         {panes.map((pane) => (
           <button

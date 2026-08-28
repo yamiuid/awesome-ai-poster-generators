@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
 import {
   type ClipboardEvent,
   type JSX,
@@ -46,7 +47,6 @@ import { detectInputType, type InputType } from "@/lib/domain/input-intent";
 import {
   ASPECT_RATIOS,
   type AspectRatio,
-  aspectLabels,
   type GenerationResponse,
   generationAcceptedSchema,
   generationCreatedSchema,
@@ -60,8 +60,8 @@ import {
   type Resolution,
   recentGenerationsSchema,
   STYLES,
-  styleLabels,
 } from "@/lib/domain/poster";
+import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
 import { LoginForm } from "./login-form";
 import { UrlPipelineModal } from "./url-pipeline-modal";
 
@@ -152,6 +152,10 @@ type GenerateOverrides = Readonly<{
   quality?: Quality;
   imageCount?: ImageCount;
 }>;
+
+function promptStudioLocale(rawLocale: string): UiLocale {
+  return isUiLocale(rawLocale) ? rawLocale : "en";
+}
 
 function deriveFieldsFromPrompt(promptText: string): BriefFields {
   const lines = promptText
@@ -401,16 +405,27 @@ type OutputOption = Readonly<{
   selected: boolean;
 }>;
 
-const RESOLUTION_LABELS: Readonly<Record<Resolution, string>> = {
-  "1k": "1K",
-  "2k": "2K / crisp",
-  "4k": "4K / print",
+const RESOLUTION_LABEL_KEYS: Readonly<Record<Resolution, string>> = {
+  "1k": "resolution1k",
+  "2k": "resolution2k",
+  "4k": "resolution4k",
 };
 
-const QUALITY_LABELS: Readonly<Record<Quality, string>> = {
-  low: "Low / fast",
-  medium: "Medium",
-  high: "High / precise",
+const QUALITY_LABEL_KEYS: Readonly<Record<Quality, string>> = {
+  low: "qualityLow",
+  medium: "qualityMedium",
+  high: "qualityHigh",
+};
+
+const ASPECT_LABEL_KEYS: Readonly<Record<AspectRatio, string>> = {
+  "1:1": "aspectSquare",
+  "4:5": "aspectPortrait",
+  "3:4": "aspectEditorial",
+  "2:3": "aspectClassic",
+  "9:16": "aspectStory",
+  "16:9": "aspectWide",
+  "4:3": "aspectSlide",
+  "3:2": "aspectLandscape",
 };
 
 const ASPECT_COUNT = ASPECT_RATIOS.length;
@@ -439,6 +454,7 @@ function OutputSettingsSelect({
   onChangeResolution: (next: Resolution) => void;
   onChangeQuality: (next: Quality) => void;
 }>) {
+  const t = useTranslations("studio");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -448,47 +464,47 @@ function OutputSettingsSelect({
       ...ASPECT_RATIOS.map((option) => ({
         group: "aspect" as const,
         value: option,
-        label: `${aspectLabels[option]} (${option})`,
+        label: `${t(ASPECT_LABEL_KEYS[option])} (${option})`,
         locked: false,
         selected: option === aspectRatio,
       })),
       ...RESOLUTIONS.map((option) => ({
         group: "resolution" as const,
         value: option,
-        label: RESOLUTION_LABELS[option],
+        label: t(RESOLUTION_LABEL_KEYS[option]),
         locked: option !== "1k" && !isPro,
         selected: option === resolution,
       })),
       ...QUALITIES.map((option) => ({
         group: "quality" as const,
         value: option,
-        label: QUALITY_LABELS[option],
+        label: t(QUALITY_LABEL_KEYS[option]),
         locked: option !== "low" && !isPro,
         selected: option === quality,
       })),
     ],
-    [aspectRatio, isPro, quality, resolution],
+    [aspectRatio, isPro, quality, resolution, t],
   );
 
   const sections = useMemo(
     () => [
       {
-        label: "Aspect Ratio",
+        label: t("aspectRatio"),
         startIndex: 0,
         options: options.slice(0, ASPECT_COUNT),
       },
       {
-        label: "Resolution",
+        label: t("resolution"),
         startIndex: ASPECT_COUNT,
         options: options.slice(ASPECT_COUNT, ASPECT_COUNT + RESOLUTION_COUNT),
       },
       {
-        label: "Quality",
+        label: t("quality"),
         startIndex: ASPECT_COUNT + RESOLUTION_COUNT,
         options: options.slice(ASPECT_COUNT + RESOLUTION_COUNT),
       },
     ],
-    [options],
+    [options, t],
   );
 
   const selectedIndex = useMemo(
@@ -610,7 +626,7 @@ function OutputSettingsSelect({
         aria-activedescendant={
           open ? `output-option-${activeIndex}` : undefined
         }
-        aria-label="Output settings"
+        aria-label={t("outputSettings")}
         onClick={() => (open ? setOpen(false) : openMenu())}
         onKeyDown={onKeyDown}
         disabled={disabled}
@@ -618,16 +634,16 @@ function OutputSettingsSelect({
         <span className="option-control-label">
           <span className="option-control-text">
             <span>
-              {aspectLabels[aspectRatio].toLowerCase()}({aspectRatio})
+              {t(ASPECT_LABEL_KEYS[aspectRatio]).toLowerCase()}({aspectRatio})
             </span>
             <span className="output-summary-sep" aria-hidden="true">
               |
             </span>
-            <span>{resolution}</span>
+            <span>{t(RESOLUTION_LABEL_KEYS[resolution])}</span>
             <span className="output-summary-sep" aria-hidden="true">
               |
             </span>
-            <span>{quality}</span>
+            <span>{t(QUALITY_LABEL_KEYS[quality])}</span>
           </span>
           {selectedSummaryLocked && (
             <LockKeyhole size={13} className="option-lock" aria-hidden="true" />
@@ -640,7 +656,7 @@ function OutputSettingsSelect({
           id="output-settings-listbox"
           className="option-menu output-settings-menu"
           role="listbox"
-          aria-label="Output settings"
+          aria-label={t("outputSettings")}
         >
           {sections.map((section) => (
             <fieldset
@@ -746,7 +762,7 @@ function track(name: string): void {
   window.umami?.track(name);
 }
 
-type ApiSubmitError = Readonly<{ code: string; message: string | null }>;
+type ApiSubmitError = Readonly<{ code: string }>;
 
 function readApiSubmitError(error: unknown): ApiSubmitError | null {
   if (!(error instanceof HTTPError)) {
@@ -761,11 +777,7 @@ function readApiSubmitError(error: unknown): ApiSubmitError | null {
   ) {
     return null;
   }
-  return {
-    code: body.code,
-    message:
-      "error" in body && typeof body.error === "string" ? body.error : null,
-  };
+  return { code: body.code };
 }
 
 function generationLimitKind(error: unknown): "guest" | "free" | null {
@@ -783,18 +795,18 @@ function generationLimitKind(error: unknown): "guest" | "free" | null {
   }
 }
 
-function promptSafetyFailureMessage(error: unknown): string | null {
+function isPromptSafetyFailure(error: unknown): boolean {
   const parsed = readApiSubmitError(error);
   if (!parsed) {
-    return null;
+    return false;
   }
   switch (parsed.code) {
     case "PROMPT_SAFETY_BLOCKED":
     case "PROMPT_SAFETY_REVIEW_REQUIRED":
     case "PROMPT_SAFETY_UNAVAILABLE":
-      return parsed.message ?? "The prompt could not pass the safety review.";
+      return true;
     default:
-      return null;
+      return false;
   }
 }
 
@@ -873,8 +885,8 @@ function historyItemDate(item: HistoryItem): string {
     : item.generation.createdAt;
 }
 
-function formatHistoryDate(value: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+function formatHistoryDate(value: string, locale: UiLocale = "en"): string {
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -890,8 +902,9 @@ function StudioTabs({
   activeTab: StudioTab;
   onChange: (tab: StudioTab) => void;
 }>): JSX.Element {
+  const t = useTranslations("studio");
   return (
-    <div className="studio-tabs" role="tablist" aria-label="Poster results">
+    <div className="studio-tabs" role="tablist" aria-label={t("posterResults")}>
       <button
         type="button"
         role="tab"
@@ -901,7 +914,7 @@ function StudioTabs({
         className={`studio-tab ${activeTab === "examples" ? "is-active" : ""}`}
         onClick={() => onChange("examples")}
       >
-        <Images size={18} aria-hidden="true" /> Examples
+        <Images size={18} aria-hidden="true" /> {t("examples")}
       </button>
       <button
         type="button"
@@ -912,7 +925,7 @@ function StudioTabs({
         className={`studio-tab ${activeTab === "history" ? "is-active" : ""}`}
         onClick={() => onChange("history")}
       >
-        <History size={18} aria-hidden="true" /> History
+        <History size={18} aria-hidden="true" /> {t("history")}
       </button>
     </div>
   );
@@ -925,11 +938,12 @@ function MobileStudioTabs({
   activeTab: MobileStudioTab;
   onChange: (tab: MobileStudioTab) => void;
 }>): JSX.Element {
+  const t = useTranslations("studio");
   return (
     <div
       className="studio-mobile-tabs"
       role="tablist"
-      aria-label="Poster studio"
+      aria-label={t("posterStudio")}
     >
       <button
         type="button"
@@ -940,7 +954,7 @@ function MobileStudioTabs({
         className={`studio-tab ${activeTab === "create" ? "is-active" : ""}`}
         onClick={() => onChange("create")}
       >
-        <Sparkles size={18} aria-hidden="true" /> Create
+        <Sparkles size={18} aria-hidden="true" /> {t("create")}
       </button>
       <button
         type="button"
@@ -951,7 +965,7 @@ function MobileStudioTabs({
         className={`studio-tab ${activeTab === "results" ? "is-active" : ""}`}
         onClick={() => onChange("results")}
       >
-        <History size={18} aria-hidden="true" /> Results
+        <History size={18} aria-hidden="true" /> {t("results")}
       </button>
     </div>
   );
@@ -972,10 +986,61 @@ function StudioExamplesPanel({
   panelId?: string;
   labelledById?: string;
 }>): JSX.Element {
+  const t = useTranslations("studio");
   const example = examples[activeIndex] ?? examples[0];
   if (!example) {
-    return <div className="studio-panel-empty">No examples available.</div>;
+    return <div className="studio-panel-empty">{t("noExamples")}</div>;
   }
+  const labelFor = (item: PosterStudioExample): string => {
+    switch (item.id) {
+      case "event":
+        return t("exampleEventLabel");
+      case "article":
+        return t("exampleArticleLabel");
+      case "announcement":
+        return t("exampleAnnouncementLabel");
+      case "vintage-romance":
+        return t("exampleVintageRomanceLabel");
+      default:
+        return item.label;
+    }
+  };
+  const altFor = (item: PosterStudioExample): string => {
+    switch (item.id) {
+      case "event":
+        return t("exampleEventAlt");
+      case "article":
+        return t("exampleArticleAlt");
+      case "announcement":
+        return t("exampleAnnouncementAlt");
+      case "vintage-romance":
+        return t("exampleVintageRomanceAlt");
+      default:
+        return item.alt;
+    }
+  };
+  const promptFor = (item: PosterStudioExample): string => {
+    switch (item.id) {
+      case "event":
+        return t("exampleEventPrompt");
+      case "article":
+        return t("exampleArticlePrompt");
+      case "announcement":
+        return t("exampleAnnouncementPrompt");
+      case "vintage-romance":
+        return t("exampleVintageRomancePrompt");
+      default:
+        return item.prompt;
+    }
+  };
+  const copyFor = (item: PosterStudioExample): PosterStudioExample => ({
+    ...item,
+    label: labelFor(item),
+    prompt: promptFor(item),
+    alt: altFor(item),
+  });
+  const displayExample = copyFor(example);
+  const exampleLabel = displayExample.label;
   const nextIndex = (activeIndex + 1) % examples.length;
   const previousIndex = (activeIndex - 1 + examples.length) % examples.length;
   const changeIndex = (index: number): void => {
@@ -992,16 +1057,19 @@ function StudioExamplesPanel({
       role="tabpanel"
       {...(labelledById
         ? { "aria-labelledby": labelledById }
-        : { "aria-label": "Poster examples" })}
+        : { "aria-label": t("examples") })}
     >
       <section
         className="studio-example-carousel"
-        aria-label={`Example ${activeIndex + 1} of ${examples.length}`}
+        aria-label={t("examplePosition", {
+          current: activeIndex + 1,
+          total: examples.length,
+        })}
       >
         <button
           type="button"
           className="studio-example-image-button"
-          onClick={() => onUseExample(example)}
+          onClick={() => onUseExample(displayExample)}
           onKeyDown={(event) => {
             if (event.key === "ArrowLeft") {
               event.preventDefault();
@@ -1011,11 +1079,11 @@ function StudioExamplesPanel({
               move(1);
             }
           }}
-          aria-label={`Use the ${example.label} example prompt`}
+          aria-label={t("useExample", { label: exampleLabel })}
         >
           <Image
             src={example.image}
-            alt={example.alt}
+            alt={displayExample.alt}
             width={example.width ?? 1024}
             height={example.height ?? 1280}
             sizes="(max-width: 800px) 100vw, 52vw"
@@ -1028,7 +1096,9 @@ function StudioExamplesPanel({
               type="button"
               className="studio-carousel-arrow studio-carousel-arrow-left"
               onClick={() => move(-1)}
-              aria-label={`Previous example: ${examples[previousIndex]?.label ?? ""}`}
+              aria-label={t("previousExample", {
+                label: labelFor(examples[previousIndex] ?? example),
+              })}
             >
               <ChevronLeft size={22} aria-hidden="true" />
             </button>
@@ -1036,21 +1106,29 @@ function StudioExamplesPanel({
               type="button"
               className="studio-carousel-arrow studio-carousel-arrow-right"
               onClick={() => move(1)}
-              aria-label={`Next example: ${examples[nextIndex]?.label ?? ""}`}
+              aria-label={t("nextExample", {
+                label: labelFor(examples[nextIndex] ?? example),
+              })}
             >
               <ChevronRight size={22} aria-hidden="true" />
             </button>
           </>
         )}
       </section>
-      <fieldset className="studio-carousel-dots" aria-label="Choose an example">
+      <fieldset
+        className="studio-carousel-dots"
+        aria-label={t("chooseExample")}
+      >
         {examples.map((item, index) => (
           <button
             type="button"
             className={`studio-carousel-dot ${index === activeIndex ? "is-active" : ""}`}
             key={item.image}
             onClick={() => changeIndex(index)}
-            aria-label={`Show example ${index + 1}: ${item.label}`}
+            aria-label={t("showExample", {
+              index: index + 1,
+              label: labelFor(item),
+            })}
             aria-current={index === activeIndex ? "true" : undefined}
           />
         ))}
@@ -1058,11 +1136,13 @@ function StudioExamplesPanel({
       <button
         type="button"
         className="studio-example-prompt"
-        onClick={() => onUseExample(example)}
-        title={example.prompt}
+        onClick={() => onUseExample(displayExample)}
+        title={displayExample.prompt}
       >
-        <span className="studio-example-label">{example.label}</span>
-        <span className="studio-example-prompt-text">{example.prompt}</span>
+        <span className="studio-example-label">{exampleLabel}</span>
+        <span className="studio-example-prompt-text">
+          {displayExample.prompt}
+        </span>
       </button>
     </div>
   );
@@ -1075,6 +1155,7 @@ function StudioHistoryProgress({
   generation: GenerationResponse;
   onDismiss?: () => void;
 }>): JSX.Element {
+  const t = useTranslations("studio");
   const isSubmitted = generation.status === "submitted";
   const isFailure =
     generation.status === "failed" || generation.status === "timed_out";
@@ -1089,21 +1170,19 @@ function StudioHistoryProgress({
             <CircleAlert size={18} aria-hidden="true" />
             <strong>
               {generation.status === "timed_out"
-                ? "Generation timed out"
-                : "Generation failed"}
+                ? t("generationTimedOut")
+                : t("generationFailed")}
             </strong>
             <p>{generationFailureMessage(generation)}</p>
-            {generation.error && <span>Nothing was charged for this run.</span>}
+            {generation.error && <span>{t("noCharge")}</span>}
             {onDismiss && (
               <button type="button" onClick={onDismiss}>
-                Dismiss
+                {t("dismiss")}
               </button>
             )}
           </div>
         ) : (
-          <span>
-            {isSubmitted ? "Preparing poster…" : "Generating poster…"}
-          </span>
+          <span>{isSubmitted ? t("preparing") : t("generating")}</span>
         )}
       </div>
     </div>
@@ -1121,16 +1200,14 @@ function StudioHistoryThumbnails({
   onSelect: (key: string) => void;
   isGenerating?: boolean;
 }>): JSX.Element {
+  const t = useTranslations("studio");
   return (
-    <fieldset
-      className="studio-history-thumbnails"
-      aria-label="Generation history"
-    >
+    <fieldset className="studio-history-thumbnails" aria-label={t("history")}>
       {isGenerating && (
         <div
           className="studio-history-thumbnail is-pending"
           role="status"
-          aria-label="Generation in progress"
+          aria-label={t("generating")}
         >
           <LoaderCircle size={22} aria-hidden="true" />
         </div>
@@ -1143,8 +1220,8 @@ function StudioHistoryThumbnails({
           onClick={() => onSelect(item.key)}
           aria-label={
             item.kind === "failure"
-              ? `View failed generation ${index + 1}, generated ${formatHistoryDate(item.generation.createdAt)}`
-              : `View poster ${index + 1}, generated ${formatHistoryDate(item.poster.createdAt)}`
+              ? `${t("generationFailed")} ${index + 1}`
+              : `${t("posterPreview")} ${index + 1}`
           }
           aria-current={item.key === selectedKey ? "true" : undefined}
         >
@@ -1190,6 +1267,8 @@ function StudioHistoryPanel({
   dismissibleFailureIds: ReadonlySet<string>;
   onDismissFailure: (generationId: string) => void;
 }>): JSX.Element {
+  const t = useTranslations("studio");
+  const locale = promptStudioLocale(useLocale());
   const selected = items.find((item) => item.key === selectedKey);
   const [loadError, setLoadError] = useState(false);
 
@@ -1217,8 +1296,10 @@ function StudioHistoryPanel({
         />
         {isGuest && (
           <p className="studio-history-note">
-            Only this browser · saved for 24 hours ·{" "}
-            <a href="/login?next=/%23studio">Sign in to keep 7 days</a>
+            {t("guestHistory")} ·{" "}
+            <a href={localizedPath("/login?next=/%23studio", locale)}>
+              {t("signInToKeep")}
+            </a>
           </p>
         )}
       </div>
@@ -1233,11 +1314,9 @@ function StudioHistoryPanel({
         role="tabpanel"
         aria-labelledby="studio-history-tab"
       >
-        <p className="eyebrow">No saved posters yet</p>
-        <p>Generate a poster and it will appear here for quick comparison.</p>
-        {isGuest && (
-          <span>Guest posters stay in this browser for 24 hours.</span>
-        )}
+        <p className="eyebrow">{t("noSavedPosters")}</p>
+        <p>{t("noSavedPostersBody")}</p>
+        {isGuest && <span>{t("guestHistory")}</span>}
       </div>
     );
   }
@@ -1273,14 +1352,14 @@ function StudioHistoryPanel({
                 onRetry(selectedPoster.generationId);
               }}
             >
-              Couldn’t load poster. Retry
+              {t("retryPoster")}
             </button>
           ) : (
             <button
               type="button"
               className="studio-history-image-button"
               onClick={() => onZoom(selectedPoster.image.url)}
-              aria-label={`View ${selectedPoster.image.alt} full size`}
+              aria-label={t("fullSizePreview")}
               style={{
                 aspectRatio: selectedPoster.aspectRatio.replace(":", " / "),
               }}
@@ -1303,6 +1382,7 @@ function StudioHistoryPanel({
         >
           {formatHistoryDate(
             selectedPoster?.createdAt ?? selectedFailure?.createdAt ?? "",
+            locale,
           )}
         </time>
         {selectedPoster && (
@@ -1313,14 +1393,14 @@ function StudioHistoryPanel({
               onClick={() => onDownload(selectedPoster.image.url, filename)}
               disabled={loadError}
             >
-              <ArrowDownToLine size={14} aria-hidden="true" /> Download
+              <ArrowDownToLine size={14} aria-hidden="true" /> {t("download")}
             </button>
             <button
               type="button"
               className="result-action-button"
               onClick={() => onEdit(selectedPoster.generationId)}
             >
-              <Pencil size={13} aria-hidden="true" /> Edit again
+              <Pencil size={13} aria-hidden="true" /> {t("editAgain")}
             </button>
           </div>
         )}
@@ -1332,8 +1412,10 @@ function StudioHistoryPanel({
       />
       {isGuest && (
         <p className="studio-history-note">
-          Only this browser · saved for 24 hours ·{" "}
-          <a href="/login?next=/%23studio">Sign in to keep 7 days</a>
+          {t("guestHistory")} ·{" "}
+          <a href={localizedPath("/login?next=/%23studio", locale)}>
+            {t("signInToKeep")}
+          </a>
         </p>
       )}
     </div>
@@ -1346,6 +1428,10 @@ export function PosterStudio({
   initialStyle,
   examples: providedExamples,
 }: Props) {
+  const t = useTranslations("studio");
+  const styles = useTranslations("styles");
+  const commonT = useTranslations("common");
+  const locale = promptStudioLocale(useLocale());
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState<PosterStyle>(initialStyle ?? "auto");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("2:3");
@@ -1584,7 +1670,7 @@ export function PosterStudio({
         prev.map((generation) => (generation.id === id ? next : generation)),
       );
     } catch {
-      setError("Couldn’t refresh that poster. Try again shortly.");
+      setError(t("refreshFailed"));
     }
   }
 
@@ -1885,7 +1971,7 @@ export function PosterStudio({
       if (error instanceof HTTPError || error instanceof TimeoutError) {
         return;
       }
-      setError("We could not restore recent generations.");
+      setError(t("restoreFailed"));
     }
   }
 
@@ -1976,9 +2062,7 @@ export function PosterStudio({
     const generationImageCount = overrides?.imageCount ?? imageCount;
     // 按钮默认启用（对爬虫友好：HTML 中不显示 disabled），无输入时在提交前校验提示
     if (generationPrompt.length < 3) {
-      setError(
-        "Describe the poster you want — a subject, mood, or line of copy.",
-      );
+      setError(t("describeBrief"));
       return;
     }
     // 免费用户选了 Pro 档位：不发起请求，引导开通会员
@@ -1992,7 +2076,7 @@ export function PosterStudio({
       return;
     }
     if (!isPro && anyWorking) {
-      setError("Wait for the current run to finish before starting another.");
+      setError(t("waitForCurrent"));
       return;
     }
     setActiveTab("history");
@@ -2043,6 +2127,7 @@ export function PosterStudio({
             resolution: generationResolution,
             quality: generationQuality,
             imageCount: generationImageCount,
+            siteLocale: locale,
             ...(generationReferenceImage
               ? { referenceImageUrl: generationReferenceImage }
               : {}),
@@ -2093,14 +2178,14 @@ export function PosterStudio({
       revealGeneration(id);
     } catch (submitError) {
       setPendingSubmission(null);
-      const safetyFailure = promptSafetyFailureMessage(submitError);
+      const safetyFailure = isPromptSafetyFailure(submitError);
       const limitKind = generationLimitKind(submitError);
       if (safetyFailure) {
         applyGeneration({
           ...submission,
           status: "failed",
           progress: 100,
-          error: safetyFailure,
+          error: t("safetyReviewFailed"),
         });
       } else if (limitKind === "guest") {
         guestLimitPreviousFocus.current = generateButtonRef.current;
@@ -2110,19 +2195,11 @@ export function PosterStudio({
         setUpgradePromptReason("daily");
         setUpgradePrompt(true);
       } else if (submitError instanceof HTTPError) {
-        const body: unknown = submitError.data;
-        const message =
-          typeof body === "object" &&
-          body !== null &&
-          "error" in body &&
-          typeof body.error === "string"
-            ? body.error
-            : "We could not start this generation.";
-        setError(message);
+        setError(t("startFailed"));
       } else if (submitError instanceof Error) {
-        setError(submitError.message);
+        setError(t("startFailed"));
       } else {
-        setError("We could not start this generation.");
+        setError(t("startFailed"));
       }
       track("generation_failed");
     } finally {
@@ -2143,6 +2220,14 @@ export function PosterStudio({
       quality !== FREE_QUALITY ||
       imageCount > maxFreeImages);
   const action = generationAction(isPro, isSubmitting, anyWorking);
+  const actionLabel =
+    action.label === "Sending..."
+      ? t("sending")
+      : action.label === "Create another"
+        ? t("createAnother")
+        : action.label === "Current poster is generating"
+          ? t("currentGenerating")
+          : t("generate");
   const visibleGenerations = pendingSubmission
     ? [pendingSubmission, ...generations]
     : generations;
@@ -2230,10 +2315,10 @@ export function PosterStudio({
     >
       <div className="studio-header">
         <div>
-          <p className="eyebrow">AI poster generator from text</p>
-          <h2 id="studio-heading">Describe your poster.</h2>
+          <p className="eyebrow">{t("eyebrow")}</p>
+          <h2 id="studio-heading">{t("heading")}</h2>
         </div>
-        <span className="studio-count">One brief / multiple directions</span>
+        <span className="studio-count">{t("count")}</span>
       </div>
 
       <MobileStudioTabs
@@ -2254,7 +2339,7 @@ export function PosterStudio({
           aria-labelledby="studio-mobile-create-tab"
         >
           <label className="field-label" htmlFor="poster-prompt">
-            Describe your poster idea
+            {t("describeIdea")}
           </label>
           <textarea
             ref={promptFieldRef}
@@ -2263,21 +2348,21 @@ export function PosterStudio({
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             onPaste={handlePaste}
-            placeholder="Describe an idea, paste text, or drop a URL…"
+            placeholder={t("promptPlaceholder")}
             maxLength={1500}
             rows={5}
             disabled={isSubmitting}
           />
           <div className="field-hint">
-            <span>Works with Idea · Text · URL</span>
+            <span>{t("inputTypes")}</span>
             <span>{prompt.length}/1500</span>
           </div>
 
           <fieldset className="control-block">
-            <legend className="field-label">Output settings</legend>
+            <legend className="field-label">{t("outputSettings")}</legend>
             <div className="studio-options">
               <div className="option-select option-select--wide">
-                <span>Output</span>
+                <span>{t("output")}</span>
                 <OutputSettingsSelect
                   aspectRatio={aspectRatio}
                   resolution={resolution}
@@ -2299,9 +2384,9 @@ export function PosterStudio({
                 />
               </div>
               <div className="option-select">
-                <span>Art direction</span>
+                <span>{t("artDirection")}</span>
                 <TierSelect
-                  label="Art direction"
+                  label={t("artDirection")}
                   value={style}
                   menuClassName="art-direction-menu"
                   gridColumns={4}
@@ -2314,15 +2399,15 @@ export function PosterStudio({
                   disabled={isSubmitting}
                   options={STYLES.slice(0, -1).map((option) => ({
                     value: option,
-                    label: styleLabels[option],
+                    label: styles(option),
                     locked: false,
                   }))}
                 />
               </div>
               <div className="option-select">
-                <span>Images</span>
+                <span>{t("images")}</span>
                 <TierSelect
-                  label="Images"
+                  label={t("images")}
                   value={String(imageCount)}
                   onChange={(next) => {
                     const count = Number(next);
@@ -2334,7 +2419,7 @@ export function PosterStudio({
                   disabled={isSubmitting}
                   options={IMAGE_COUNTS.map((count) => ({
                     value: String(count),
-                    label: `${count} ${count === 1 ? "poster" : "posters"}`,
+                    label: t("imageCount", { count }),
                     locked: isGuest
                       ? count !== GUEST_MAX_IMAGES
                       : !isPro && count > FREE_MAX_IMAGES,
@@ -2345,19 +2430,20 @@ export function PosterStudio({
           </fieldset>
           {isPro && (
             <p className="credit-estimate">
-              This run uses{" "}
-              <strong>
-                {batchCreditCost(resolution, quality, aspectRatio, imageCount)}
-              </strong>{" "}
-              credits
+              {t("creditEstimate", {
+                credits: batchCreditCost(
+                  resolution,
+                  quality,
+                  aspectRatio,
+                  imageCount,
+                ),
+              })}
             </p>
           )}
           {!isPro && (
             <p className="pro-note">
               <LockKeyhole size={14} />
-              {isGuest
-                ? " Guests can make 1 generation per UTC day. Sign in for 4 free poster images each day."
-                : " Free accounts can make up to 4 poster images per UTC day: four one-poster runs or two two-poster runs. Runs are 1K and watermarked. Pro unlocks full quality and 4 posters."}
+              {isGuest ? ` ${t("guestsQuota")}` : ` ${t("freeQuota")}`}
             </p>
           )}
 
@@ -2384,11 +2470,11 @@ export function PosterStudio({
             }}
             disabled={action.disabled}
           >
-            <Sparkles size={18} /> {action.label}
+            <Sparkles size={18} /> {actionLabel}
           </button>
           <p className="ai-disclosure">
-            AI-generated with GPT Image 2.{" "}
-            <a href="/ai-policy">Read the AI use policy.</a>
+            {t("aiDisclosure")}{" "}
+            <a href={localizedPath("/ai-policy", locale)}>{t("readPolicy")}</a>
           </p>
           {error && (
             <p className="error-message" role="alert">
@@ -2438,7 +2524,7 @@ export function PosterStudio({
                   type="button"
                   onClick={resetStudio}
                 >
-                  Start a new brief
+                  {t("startNewBrief")}
                 </button>
               )}
             </>
@@ -2479,20 +2565,18 @@ export function PosterStudio({
             ref={guestLimitCloseRef}
             type="button"
             className="modal-close"
-            aria-label="Close sign-in prompt"
+            aria-label={t("closePreview")}
             onClick={() => setGuestLimitPrompt(false)}
           >
             <X size={18} />
           </button>
-          <p className="eyebrow">Free account</p>
-          <h3 id="guest-limit-title">Get 4 free poster images every day.</h3>
+          <p className="eyebrow">{t("freeAccount")}</p>
+          <h3 id="guest-limit-title">{t("guestLimitTitle")}</h3>
           <p className="modal-note" id="guest-limit-note">
-            You&apos;ve used today&apos;s guest generation. Sign in or create a
-            free account to keep generating today. Failed generations do not
-            count.
+            {t("guestLimitBody")}
           </p>
           <LoginForm
-            next="/#studio"
+            next={localizedPath("/#studio", locale)}
             onSuccess={() => setGuestLimitPrompt(false)}
           />
         </div>
@@ -2522,21 +2606,21 @@ export function PosterStudio({
             ref={upgradeCloseRef}
             type="button"
             className="modal-close"
-            aria-label="Close upgrade prompt"
+            aria-label={t("closePreview")}
             onClick={() => setUpgradePrompt(false)}
           >
             <X size={18} />
           </button>
-          <p className="eyebrow">Pro feature</p>
+          <p className="eyebrow">{t("proFeature")}</p>
           <h3 id="upgrade-title">
             {upgradePromptReason === "daily"
-              ? "Today\u2019s free poster images are used up."
-              : "These options are Pro only."}
+              ? t("freeImagesUsed")
+              : t("proOptions")}
           </h3>
           <p className="modal-note" id="upgrade-note">
             {upgradePromptReason === "daily"
-              ? "You\u2019ve used today\u2019s 4 free poster images. Upgrade to Pro to keep creating today, or come back tomorrow after the quota resets at 00:00 UTC."
-              : "You picked a higher resolution, finish, or more posters. Upgrade to Pro to generate with these options."}
+              ? t("freeImagesUsedBody")
+              : t("proOptionsBody")}
           </p>
           <div className="modal-actions">
             <button
@@ -2544,10 +2628,13 @@ export function PosterStudio({
               type="button"
               onClick={() => setUpgradePrompt(false)}
             >
-              Maybe later
+              {t("maybeLater")}
             </button>
-            <a className="solid-button" href="/pricing">
-              Upgrade to Pro
+            <a
+              className="solid-button"
+              href={localizedPath("/pricing", locale)}
+            >
+              {t("upgradeToPro")}
             </a>
           </div>
         </div>
@@ -2555,7 +2642,7 @@ export function PosterStudio({
       <dialog
         ref={lightboxDialogRef}
         className="lightbox"
-        aria-label="Full size preview"
+        aria-label={t("fullSizePreview")}
         onCancel={(event) => {
           event.preventDefault();
           setLightbox(null);
@@ -2577,14 +2664,14 @@ export function PosterStudio({
               ref={lightboxCloseRef}
               type="button"
               className="lightbox-close"
-              aria-label="Close preview"
+              aria-label={t("closePreview")}
               onClick={() => setLightbox(null)}
             >
               <X size={20} />
             </button>
             <Image
               src={lightbox}
-              alt="Poster preview"
+              alt={t("posterPreview")}
               width={1024}
               height={1280}
               className="lightbox-image"
@@ -2615,16 +2702,16 @@ export function PosterStudio({
           <button
             type="button"
             className="modal-close"
-            aria-label="Close edit content"
+            aria-label={t("closeEditContent")}
             onClick={() => setEditContentId(null)}
           >
             <X size={18} />
           </button>
-          <p className="eyebrow">Edit content</p>
-          <h3 id="edit-content-title">Update the poster copy</h3>
+          <p className="eyebrow">{t("editContent")}</p>
+          <h3 id="edit-content-title">{t("updatePosterCopy")}</h3>
           <div className="brief-form">
             <label>
-              <span>Headline</span>
+              <span>{t("headline")}</span>
               <input
                 type="text"
                 value={editContentFields.headline}
@@ -2638,7 +2725,7 @@ export function PosterStudio({
               />
             </label>
             <label>
-              <span>Subtitle</span>
+              <span>{t("subtitle")}</span>
               <input
                 type="text"
                 value={editContentFields.subtitle}
@@ -2652,7 +2739,7 @@ export function PosterStudio({
               />
             </label>
             <fieldset className="brief-points-field">
-              <legend>Key points</legend>
+              <legend>{t("keyPoints")}</legend>
               <BriefPointInput
                 value={editContentFields.points[0] ?? ""}
                 onChange={(value) =>
@@ -2694,7 +2781,7 @@ export function PosterStudio({
               />
             </fieldset>
             <label>
-              <span>CTA (optional)</span>
+              <span>{t("optionalCta")}</span>
               <input
                 type="text"
                 value={editContentFields.cta}
@@ -2714,14 +2801,14 @@ export function PosterStudio({
               className="outline-button"
               onClick={() => setEditContentId(null)}
             >
-              Cancel
+              {commonT("cancel")}
             </button>
             <button
               type="button"
               className="solid-button"
               onClick={updateEditedContent}
             >
-              Update poster
+              {t("updatePoster")}
             </button>
           </div>
         </div>

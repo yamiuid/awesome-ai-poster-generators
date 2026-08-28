@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { STYLE_LANDINGS } from "@/lib/domain/style-landing";
+import { localizedPath, UI_LOCALES } from "@/lib/i18n/locale";
 import { siteUrl } from "@/lib/seo";
 
 type SitemapEntry = { path: string; priority: number };
@@ -23,11 +24,16 @@ const legalEntries: SitemapEntry[] = [
 ].map((path) => ({ path, priority: 0.4 }));
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [...coreEntries, ...styleEntries, ...legalEntries].map(
-    ({ path, priority }) => ({
-      url: `${siteUrl}${path}`,
-      changeFrequency: "monthly",
-      priority,
-    }),
+  const localizedEntries = [...coreEntries, ...styleEntries].flatMap(
+    ({ path, priority }) =>
+      UI_LOCALES.map((locale) => ({
+        path: localizedPath(path, locale),
+        priority,
+      })),
   );
+  return [...localizedEntries, ...legalEntries].map(({ path, priority }) => ({
+    url: `${siteUrl}${path}`,
+    changeFrequency: "monthly",
+    priority,
+  }));
 }

@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { normalizeCheckoutPlan } from "@/lib/domain/plans";
+import { localizedPath, UI_LOCALES, waffoLocaleFor } from "@/lib/i18n/locale";
 import { requireUser } from "@/lib/server/auth";
 import { getServerEnv } from "@/lib/server/env";
 import { AppError, responseForError } from "@/lib/server/errors";
 import { getWaffoClient } from "@/lib/server/waffo";
 import { checkoutBlockFor } from "@/lib/server/waffo-subscription";
 
-const checkoutSchema = z.object({ plan: z.string().min(1) });
+const checkoutSchema = z.object({
+  plan: z.string().min(1),
+  locale: z.enum(UI_LOCALES).default("en"),
+});
 
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -20,7 +24,7 @@ export async function POST(request: Request): Promise<Response> {
     const selection = normalizeCheckoutPlan(input.plan);
     if (!selection) {
       return NextResponse.json(
-        { error: "Choose a valid subscription plan." },
+        { error: "Choose a valid subscription plan.", code: "INVALID_PLAN" },
         { status: 400 },
       );
     }
@@ -45,7 +49,8 @@ export async function POST(request: Request): Promise<Response> {
       currency: "USD",
       buyerIdentity: user.userId,
       ...(user.email ? { buyerEmail: user.email } : {}),
-      successUrl: `${env.NEXT_PUBLIC_APP_URL}/checkout/success`,
+      language: waffoLocaleFor(input.locale),
+      successUrl: `${env.NEXT_PUBLIC_APP_URL}${localizedPath("/checkout/success", input.locale)}`,
       orderMerchantExternalId: `texttoposter:${user.userId}:${selection.checkoutPlan}`,
       metadata: {
         userId: user.userId,
@@ -58,7 +63,7 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Choose a valid subscription plan." },
+        { error: "Choose a valid subscription plan.", code: "INVALID_PLAN" },
         { status: 400 },
       );
     }
@@ -66,7 +71,10 @@ export async function POST(request: Request): Promise<Response> {
       return responseForError(error);
     }
     return NextResponse.json(
-      { error: "Checkout is temporarily unavailable." },
+      {
+        error: "Checkout is temporarily unavailable.",
+        code: "CHECKOUT_UNAVAILABLE",
+      },
       { status: 503 },
     );
   }

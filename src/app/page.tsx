@@ -1,53 +1,29 @@
 import { ArrowUpRight, MoveDown } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { PosterStudio } from "@/components/poster-studio";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { Link } from "@/i18n/navigation";
 import { isPosterStyle } from "@/lib/domain/poster";
 import { POSTER_EXAMPLES } from "@/lib/domain/poster-examples";
 import { STYLE_LANDINGS } from "@/lib/domain/style-landing";
+import { isUiLocale, localizedPath } from "@/lib/i18n/locale";
 import { pageMeta, siteUrl } from "@/lib/seo";
 import { getAuthContext } from "@/lib/server/auth";
 
-export const metadata = pageMeta({
-  title: "Free AI Poster Generator from Text | Text to Poster",
-  description:
-    "Create posters from text with AI. Describe a brief, generate multiple artwork and layout directions, and download your favorite. Free to try, no login.",
-  path: "/",
-});
-
-const faqs = [
-  [
-    "Is this really free?",
-    "Yes. Guests can make one generation per UTC day, with one watermarked 1K poster per run. Free accounts can create four poster images per UTC day: four one-poster runs or two two-poster runs. Failed generations do not count.",
-  ],
-  [
-    "What is an AI poster generator from text?",
-    "It turns a written brief into finished visual directions. Describe the subject, mood, audience, or words you want to see, and the studio turns that brief into multiple compositions.",
-  ],
-  [
-    "Which poster styles are available?",
-    "Movie, Minimal, Anime, Business, Vintage, and Neon. Pick a direction, then let the same brief branch into multiple distinct readings.",
-  ],
-  [
-    "Can I use the posters commercially?",
-    "Your generated assets are private to your account. Commercial use remains subject to the image provider terms and any rights attached to material you include in your prompt.",
-  ],
-  [
-    "How long are my images kept?",
-    "Guest images stay available for 24 hours, free account images for 7 days, and Pro images while your subscription is active plus a 30-day grace period after cancellation.",
-  ],
-  [
-    "Can I make a poster from a short text prompt?",
-    "Yes. Start with one clear sentence and add only the details that change the result: the subject, mood, audience, format, or words that must appear. You can begin with a rough idea, compare the generated directions, and refine the prompt after you see what the first round suggests.",
-  ],
-  [
-    "What should I include in an AI poster prompt?",
-    "A useful prompt usually names the subject, visual mood, audience, important copy, and practical format. For example, mention whether the poster is for a film night, product launch, class, or social post. Specific context helps the AI poster generator make stronger choices about hierarchy, color, and composition.",
-  ],
-] as const;
+export async function generateMetadata() {
+  const rawLocale = await getLocale();
+  const locale = isUiLocale(rawLocale) ? rawLocale : "en";
+  const t = await getTranslations("home");
+  return pageMeta({
+    title: `${t("heroTitle")} | Text to Poster`,
+    description: t("heroBody"),
+    path: "/",
+    locale,
+  });
+}
 
 const howToSteps = [
   {
@@ -91,18 +67,80 @@ export default async function Home({
 }) {
   // Supabase 的 site_url 错误兜底跳转到根路径（?error=...），转发到登录页显示原因
   const params = await searchParams;
+  const rawLocale = await getLocale();
+  const locale = isUiLocale(rawLocale) ? rawLocale : "en";
+  const t = await getTranslations("home");
+  const styles = await getTranslations("styles");
   const authError = params.error_description ?? params.error;
   if (authError) {
-    redirect(`/login?error=${encodeURIComponent(authError)}`);
+    redirect(
+      localizedPath(`/login?error=${encodeURIComponent(authError)}`, locale),
+    );
   }
   const initialStyle =
     params.style && isPosterStyle(params.style) ? params.style : undefined;
   const auth = await getAuthContext();
+  const localizedFaqs = [
+    [t("faq1Question"), t("faq1Answer")],
+    [t("faq2Question"), t("faq2Answer")],
+    [t("faq3Question"), t("faq3Answer")],
+    [t("faq4Question"), t("faq4Answer")],
+    [t("faq5Question"), t("faq5Answer")],
+    [t("faq6Question"), t("faq6Answer")],
+    [t("faq7Question"), t("faq7Answer")],
+  ] as const;
+  const localizedHowToSteps = [
+    {
+      ...howToSteps[0],
+      label: t("howBriefLabel"),
+      title: t("howBriefTitle"),
+      body: t("howBriefBody"),
+      alt: t("howBriefAlt"),
+    },
+    {
+      ...howToSteps[1],
+      label: t("howStyleLabel"),
+      title: t("howStyleTitle"),
+      body: t("howStyleBody"),
+      alt: t("howStyleAlt"),
+    },
+    {
+      ...howToSteps[2],
+      label: t("howGenerateLabel"),
+      title: t("howGenerateTitle"),
+      body: t("howGenerateBody"),
+      alt: t("howGenerateAlt"),
+    },
+    {
+      ...howToSteps[3],
+      label: t("howKeepLabel"),
+      title: t("howKeepTitle"),
+      body: t("howKeepBody"),
+      alt: t("howKeepAlt"),
+    },
+  ] as const;
+  const exampleCopyKeys: Readonly<
+    { movie: Readonly<{ prompt: string; alt: string }> } & Record<
+      string,
+      Readonly<{ prompt: string; alt: string }>
+    >
+  > = {
+    movie: { prompt: "exampleMoviePrompt", alt: "exampleMovieAlt" },
+    minimal: { prompt: "exampleMinimalPrompt", alt: "exampleMinimalAlt" },
+    anime: { prompt: "exampleAnimePrompt", alt: "exampleAnimeAlt" },
+    business: { prompt: "exampleBusinessPrompt", alt: "exampleBusinessAlt" },
+    vintage: { prompt: "exampleVintagePrompt", alt: "exampleVintageAlt" },
+    neon: { prompt: "exampleNeonPrompt", alt: "exampleNeonAlt" },
+  } as const;
+  const exampleCopy = (
+    style: string,
+  ): Readonly<{ prompt: string; alt: string }> =>
+    exampleCopyKeys[style] ?? exampleCopyKeys["movie"];
   const applicationJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     name: "Text to Poster",
-    url: siteUrl,
+    url: `${siteUrl}${localizedPath("/", locale)}`,
     applicationCategory: "DesignApplication",
     operatingSystem: "Web",
     offers: {
@@ -116,7 +154,7 @@ export default async function Home({
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: faqs.map(([question, answer]) => ({
+    mainEntity: localizedFaqs.map(([question, answer]) => ({
       "@type": "Question",
       name: question,
       acceptedAnswer: { "@type": "Answer", text: answer },
@@ -138,23 +176,14 @@ export default async function Home({
       <section className="hero" aria-labelledby="hero-heading">
         <div className="hero-grid">
           <div>
-            <p className="eyebrow">Free AI poster generator from text</p>
-            <h1 id="hero-heading">
-              AI Poster Generator — Create Posters from Text
-            </h1>
+            <p className="eyebrow">{t("heroEyebrow")}</p>
+            <h1 id="hero-heading">{t("heroTitle")}</h1>
           </div>
           <div className="hero-copy">
-            <p>
-              Describe your poster. AI creates the artwork, layout, and
-              typography in seconds, then gives you{" "}
-              <strong>multiple directions to compare</strong>.
-            </p>
+            <p>{t("heroBody")}</p>
             <div className="hero-note">
               <span>01</span>
-              <p>
-                Free to try, no sign-up required. Start with a sentence and
-                refine the direction that lands.
-              </p>
+              <p>{t("heroNote")}</p>
             </div>
             <div className="hero-actions">
               <a
@@ -162,15 +191,13 @@ export default async function Home({
                 href="#studio"
                 data-umami-event="hero_generate_click"
               >
-                Generate a poster <MoveDown size={15} />
+                {t("generate")} <MoveDown size={15} />
               </a>
               <a className="pricing-link" href="#examples">
-                See examples <ArrowUpRight size={15} />
+                {t("seeExamples")} <ArrowUpRight size={15} />
               </a>
             </div>
-            <p className="hero-types">
-              Movie / Event / Product / Business / Concert / Social
-            </p>
+            <p className="hero-types">{t("heroTypes")}</p>
           </div>
         </div>
       </section>
@@ -186,57 +213,39 @@ export default async function Home({
         id="use-cases"
         aria-labelledby="use-cases-heading"
       >
-        <p className="eyebrow">Popular poster use cases</p>
-        <h2 id="use-cases-heading">
-          Create Posters for Movies, Events, Products, and More
-        </h2>
-        <p className="section-intro">
-          Start with the job the poster needs to do, then compare several visual
-          directions from the same brief. Use Text to Poster for movie
-          screenings, event announcements, product launches, business updates,
-          concert nights, and social content.
-        </p>
+        <p className="eyebrow">{t("useCasesEyebrow")}</p>
+        <h2 id="use-cases-heading">{t("useCasesTitle")}</h2>
+        <p className="section-intro">{t("useCasesIntro")}</p>
         <div className="comparison-grid use-cases-grid">
           <Link className="use-case-card" href="/movie-poster-maker">
             <article>
-              <span className="eyebrow">Movie posters</span>
-              <h3>Turn a logline into a film poster.</h3>
-              <p>
-                Set the genre, scene, and mood before you commit to a final
-                composition.
-              </p>
+              <span className="eyebrow">{t("movieEyebrow")}</span>
+              <h3>{t("movieTitle")}</h3>
+              <p>{t("movieBody")}</p>
               <span className="solid-button use-case-action">
-                Create a movie poster <ArrowUpRight size={15} />
+                {t("movieAction")} <ArrowUpRight size={15} />
               </span>
             </article>
           </Link>
           <article>
-            <span className="eyebrow">Events and concerts</span>
-            <h3>Make the date and feeling impossible to miss.</h3>
-            <p>
-              Name the event, audience, venue, and one idea people should
-              remember.
-            </p>
+            <span className="eyebrow">{t("eventsEyebrow")}</span>
+            <h3>{t("eventsTitle")}</h3>
+            <p>{t("eventsBody")}</p>
           </article>
           <Link className="use-case-card" href="/business-poster-generator">
             <article>
-              <span className="eyebrow">Products and business</span>
-              <h3>Give a launch or update a clear visual direction.</h3>
-              <p>
-                Describe the offer, audience, tone, and copy that must appear.
-              </p>
+              <span className="eyebrow">{t("businessEyebrow")}</span>
+              <h3>{t("businessTitle")}</h3>
+              <p>{t("businessBody")}</p>
               <span className="solid-button use-case-action">
-                Create a business poster <ArrowUpRight size={15} />
+                {t("businessAction")} <ArrowUpRight size={15} />
               </span>
             </article>
           </Link>
           <article>
-            <span className="eyebrow">Social content</span>
-            <h3>Give a post, video, or campaign a strong first frame.</h3>
-            <p>
-              Compare cover directions before the rest of the content takes
-              shape.
-            </p>
+            <span className="eyebrow">{t("socialEyebrow")}</span>
+            <h3>{t("socialTitle")}</h3>
+            <p>{t("socialBody")}</p>
           </article>
         </div>
       </section>
@@ -246,51 +255,37 @@ export default async function Home({
         id="url-poster"
         aria-labelledby="url-poster-heading"
       >
-        <p className="eyebrow">A second input mode</p>
+        <p className="eyebrow">{t("urlEyebrow")}</p>
         <div className="split-heading">
-          <h2 id="url-poster-heading">Turn a link into a poster.</h2>
-          <p>
-            Paste an article, event page, or announcement URL. Text to Poster
-            reads the page, pulls out the title, the key message, and the points
-            that matter, then turns them into a poster brief you can edit before
-            generating.
-          </p>
+          <h2 id="url-poster-heading">{t("urlTitle")}</h2>
+          <p>{t("urlBody")}</p>
         </div>
         <ol className="content-grid url-poster-steps">
           <li>
             <article>
-              <span className="eyebrow">01 / PASTE</span>
-              <h3>Drop in a link.</h3>
-              <p>
-                Paste an article, event page, or announcement URL into the
-                studio.
-              </p>
+              <span className="eyebrow">{t("urlStep1Label")}</span>
+              <h3>{t("urlStep1Title")}</h3>
+              <p>{t("urlStep1Body")}</p>
             </article>
           </li>
           <li>
             <article>
-              <span className="eyebrow">02 / READ</span>
-              <h3>AI extracts the brief.</h3>
-              <p>
-                Text to Poster reads the page and pulls out the title, the key
-                message, and the points that matter.
-              </p>
+              <span className="eyebrow">{t("urlStep2Label")}</span>
+              <h3>{t("urlStep2Title")}</h3>
+              <p>{t("urlStep2Body")}</p>
             </article>
           </li>
           <li>
             <article>
-              <span className="eyebrow">03 / EDIT &amp; GENERATE</span>
-              <h3>Shape it, then generate.</h3>
-              <p>
-                Review and edit the brief before turning the link into poster
-                directions you can compare and download.
-              </p>
+              <span className="eyebrow">{t("urlStep3Label")}</span>
+              <h3>{t("urlStep3Title")}</h3>
+              <p>{t("urlStep3Body")}</p>
             </article>
           </li>
         </ol>
         <p className="url-poster-cta">
           <a className="pricing-link" href="#studio">
-            Try it in the studio <ArrowUpRight size={15} />
+            {t("urlAction")} <ArrowUpRight size={15} />
           </a>
         </p>
       </section>
@@ -300,19 +295,10 @@ export default async function Home({
         id="what-is"
         aria-labelledby="what-is-heading"
       >
-        <p className="eyebrow">What is an AI poster generator from text?</p>
+        <p className="eyebrow">{t("whatEyebrow")}</p>
         <div className="split-heading">
-          <h2 id="what-is-heading">
-            What Is an AI Poster Generator from Text?
-          </h2>
-          <p>
-            An AI poster generator from text turns a written brief into a
-            complete visual starting point. Describe the subject, feeling,
-            audience, or words that matter, and Text to Poster creates multiple
-            artwork, layout, and typography directions you can compare, keep,
-            and download. It is useful when you know what you want to say but do
-            not want to build the first layout from scratch.
-          </p>
+          <h2 id="what-is-heading">{t("whatTitle")}</h2>
+          <p>{t("whatBody")}</p>
         </div>
       </section>
 
@@ -321,14 +307,10 @@ export default async function Home({
         id="examples"
         aria-labelledby="examples-heading"
       >
-        <p className="eyebrow">Example outputs</p>
+        <p className="eyebrow">{t("examplesEyebrow")}</p>
         <div className="examples-heading">
-          <h2 id="examples-heading">One Brief, Multiple Poster Directions</h2>
-          <p>
-            These are original sample directions made from short briefs. Compare
-            the mood, hierarchy, and image treatment before you choose the
-            direction to refine in the studio.
-          </p>
+          <h2 id="examples-heading">{t("examplesTitle")}</h2>
+          <p>{t("examplesBody")}</p>
         </div>
         <div className="examples-grid">
           {POSTER_EXAMPLES.map((example, index) => (
@@ -339,14 +321,14 @@ export default async function Home({
               <Image
                 className="example-poster-image"
                 src={example.image}
-                alt={example.alt}
+                alt={styles(exampleCopy(example.style).alt)}
                 width={1024}
                 height={1280}
                 sizes="(max-width: 520px) 100vw, (max-width: 800px) 50vw, 33vw"
               />
               <figcaption>
-                <span className="eyebrow">{example.label}</span>
-                <p>{example.prompt}</p>
+                <span className="eyebrow">{styles(example.style)}</span>
+                <p>{styles(exampleCopy(example.style).prompt)}</p>
               </figcaption>
             </figure>
           ))}
@@ -358,13 +340,13 @@ export default async function Home({
         id="styles"
         aria-labelledby="styles-heading"
       >
-        <p className="eyebrow">Product visual directions</p>
-        <h2 id="styles-heading">Choose a Visual Style</h2>
+        <p className="eyebrow">{t("stylesEyebrow")}</p>
+        <h2 id="styles-heading">{t("stylesTitle")}</h2>
         <p className="section-intro">
           {STYLE_LANDINGS.map((landing, index) => (
             <span key={landing.slug}>
               {index > 0 ? " / " : ""}
-              <Link href={`/${landing.slug}`}>{landing.linkLabel}</Link>
+              <Link href={`/${landing.slug}`}>{styles(landing.style)}</Link>
             </span>
           ))}
         </p>
@@ -375,10 +357,10 @@ export default async function Home({
         id="how-it-works"
         aria-labelledby="how-heading"
       >
-        <p className="eyebrow">A small studio, not a maze</p>
-        <h2 id="how-heading">How to Generate a Poster from Text</h2>
+        <p className="eyebrow">{t("howEyebrow")}</p>
+        <h2 id="how-heading">{t("howTitle")}</h2>
         <ol className="content-grid how-to-grid">
-          {howToSteps.map((step) => (
+          {localizedHowToSteps.map((step) => (
             <li key={step.label}>
               <article>
                 <Image
@@ -403,37 +385,33 @@ export default async function Home({
         id="pricing"
         aria-labelledby="pricing-heading"
       >
-        <p className="eyebrow">Free to try, room to keep going</p>
-        <h2 id="pricing-heading">Choose your generation volume.</h2>
+        <p className="eyebrow">{t("pricingEyebrow")}</p>
+        <h2 id="pricing-heading">{t("pricingTitle")}</h2>
         <div className="pricing-card">
-          <h3>Creator + Studio</h3>
+          <h3>{t("pricingCardTitle")}</h3>
           <p className="pricing-price">
-            $9.90–$19.90 <small>/ month</small>
+            $9.90–$19.90 <small>{t("pricingMonth")}</small>
           </p>
           <ul>
-            <li>Guests get one watermarked generation per UTC day</li>
-            <li>Free accounts get four poster images per UTC day</li>
-            <li>Creator and Studio plans add monthly credits</li>
-            <li>1K, 2K, and 4K exports</li>
-            <li>Medium and High finishes</li>
-            <li>Private history with no watermark</li>
+            <li>{t("pricingFeature1")}</li>
+            <li>{t("pricingFeature2")}</li>
+            <li>{t("pricingFeature3")}</li>
+            <li>{t("pricingFeature4")}</li>
+            <li>{t("pricingFeature5")}</li>
+            <li>{t("pricingFeature6")}</li>
           </ul>
           <Link className="pricing-link" href="/pricing">
-            See plans <ArrowUpRight size={15} />
+            {t("seePlans")} <ArrowUpRight size={15} />
           </Link>
         </div>
       </section>
 
       <section className="content-section" aria-labelledby="faq-heading">
-        <p className="eyebrow">Questions, answered</p>
-        <h2 id="faq-heading">AI Poster Generator FAQs</h2>
-        <p className="section-intro">
-          Start small, learn from the first result, and refine only what needs
-          changing. These answers cover the practical details behind making a
-          poster from text with the free studio.
-        </p>
+        <p className="eyebrow">{t("faqEyebrow")}</p>
+        <h2 id="faq-heading">{t("faqTitle")}</h2>
+        <p className="section-intro">{t("faqIntro")}</p>
         <div className="faq-list">
-          {faqs.map(([question, answer]) => (
+          {localizedFaqs.map(([question, answer]) => (
             <details key={question}>
               <summary>{question}</summary>
               <p>{answer}</p>

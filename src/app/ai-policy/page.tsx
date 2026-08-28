@@ -6,6 +6,7 @@ export const metadata = pageMeta({
   description:
     "How Text to Poster labels AI-generated content, handles rights, and reviews harmful or infringing use.",
   path: "/ai-policy",
+  localizedAlternates: false,
 });
 
 export default function AiPolicyPage() {

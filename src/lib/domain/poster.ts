@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { UI_LOCALES } from "@/lib/i18n/locale";
 import {
   ASPECT_RATIOS,
   type AspectRatio,
@@ -107,6 +108,7 @@ export const aspectLabels: Readonly<Record<AspectRatio, string>> = {
 
 export const generationRequestSchema = z.object({
   prompt: z.string().trim().min(3).max(1500),
+  siteLocale: z.enum(UI_LOCALES).optional(),
   inputType: z.enum(["idea", "url", "text"]).optional(),
   // 页面/素材参考图（图生图）：仅接受 http(s) URL，交给图片模型做视觉参考
   referenceImageUrl: z

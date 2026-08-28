@@ -1,9 +1,13 @@
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { PosterStudio } from "@/components/poster-studio";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { Link } from "@/i18n/navigation";
+import { getStyleLanding } from "@/lib/domain/style-landing";
+import { getStyleLandingCopy } from "@/lib/domain/style-landing-copy";
+import { toUiLocale } from "@/lib/i18n/locale";
 import { pageMeta, siteUrl } from "@/lib/seo";
 import { getAuthContext } from "@/lib/server/auth";
 
@@ -108,19 +112,30 @@ const movieDirections = [
   },
 ] as const;
 
-export const metadata = pageMeta({
-  title: "Free Movie Poster Generator — Create Movie Posters from Text",
-  description:
-    "Create movie posters from titles, loglines, and scenes. Compare multiple directions online with a free movie poster generator, then download your favorite.",
-  path: "/movie-poster-maker",
-});
+export async function generateMetadata() {
+  const locale = toUiLocale(await getLocale());
+  const t = await getTranslations("styles");
+  const style = t("movie");
+  return pageMeta({
+    title: t("metadataTitle", { style }),
+    description: t("metadataDescription", { style }),
+    path: "/movie-poster-maker",
+    locale,
+  });
+}
 
 export default async function MoviePosterMakerPage() {
   const auth = await getAuthContext();
+  const locale = toUiLocale(await getLocale());
+  const styles = await getTranslations("styles");
+  const landing = getStyleLanding("movie-poster-maker");
+  const style = styles(landing.style);
+  const copy = getStyleLandingCopy(locale, style, landing);
+  const faqContent = locale === "en" ? movieFaqs : copy.faqs;
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: movieFaqs.map(([question, answer]) => ({
+    mainEntity: faqContent.map(([question, answer]) => ({
       "@type": "Question",
       name: question,
       acceptedAnswer: { "@type": "Answer", text: answer },
@@ -133,17 +148,96 @@ export default async function MoviePosterMakerPage() {
       {
         "@type": "ListItem",
         position: 1,
-        name: "AI Poster Generator",
+        name: copy.h1,
         item: `${siteUrl}/`,
       },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Movie Poster Generator",
+        name: copy.h1,
         item: `${siteUrl}/movie-poster-maker`,
       },
     ],
   };
+
+  if (locale !== "en") {
+    return (
+      <main className="legal-page movie-page">
+        <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
+        <SiteHeader initialAuth={auth} />
+        <article className="legal-copy movie-landing-copy">
+          <nav className="breadcrumbs" aria-label={styles("moreHeading")}>
+            <Link href="/">Text to Poster</Link>
+            <span aria-hidden="true">/</span>
+            <span>{style}</span>
+          </nav>
+          <section className="movie-hero" aria-labelledby="movie-heading">
+            <p className="eyebrow">{styles("eyebrow", { style })}</p>
+            <h1 id="movie-heading">{copy.h1}</h1>
+            <p className="legal-intro">{copy.intro}</p>
+            <a
+              className="solid-button"
+              href="#studio"
+              data-umami-event="movie_cta_click"
+            >
+              {styles("tryAction", { style })} <ArrowUpRight size={15} />
+            </a>
+          </section>
+          <section
+            className="movie-studio-section"
+            aria-label={styles("tryHeading")}
+          >
+            <div className="movie-studio-intro">
+              <p className="eyebrow">{styles("tryHeading")}</p>
+              <h2 id="movie-studio-heading">
+                {styles("promptHeading", { style })}
+              </h2>
+              <p>{copy.cta}</p>
+            </div>
+            <PosterStudio
+              isPro={auth.isPro}
+              isGuest={!auth.userId}
+              initialStyle="movie"
+            />
+          </section>
+          <section aria-labelledby="movie-prompt-heading">
+            <h2 id="movie-prompt-heading">
+              {styles("promptHeading", { style })}
+            </h2>
+            <p>{copy.promptLead}</p>
+            <ul className="style-landing-list">
+              {copy.promptTips.map((tip) => (
+                <li key={tip}>{tip}</li>
+              ))}
+            </ul>
+          </section>
+          <section aria-labelledby="movie-faq-heading">
+            <h2 id="movie-faq-heading">{styles("faqHeading", { style })}</h2>
+            <div className="faq-list">
+              {faqContent.map(([question, answer]) => (
+                <details key={question}>
+                  <summary>{question}</summary>
+                  <p>{answer}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+          <section aria-labelledby="movie-cta-heading">
+            <h2 id="movie-cta-heading">{styles("tryHeading")}</h2>
+            <p>{copy.cta}</p>
+            <a
+              className="solid-button"
+              href="#studio"
+              data-umami-event="movie_cta_click"
+            >
+              {styles("tryAction", { style })} <ArrowUpRight size={15} />
+            </a>
+          </section>
+        </article>
+        <SiteFooter />
+      </main>
+    );
+  }
 
   return (
     <main className="legal-page movie-page">
@@ -154,46 +248,35 @@ export default async function MoviePosterMakerPage() {
       <SiteHeader initialAuth={auth} />
 
       <article className="legal-copy movie-landing-copy">
-        <nav className="breadcrumbs" aria-label="Breadcrumb">
-          <Link href="/">AI Poster Generator</Link>
+        <nav className="breadcrumbs" aria-label={styles("moreHeading")}>
+          <Link href="/">{copy.h1}</Link>
           <span aria-hidden="true">/</span>
-          <span>Movie Poster Generator</span>
+          <span>{style}</span>
         </nav>
 
         <section className="movie-hero" aria-labelledby="movie-heading">
-          <p className="eyebrow">Movie poster generator / From text</p>
-          <h1 id="movie-heading">
-            Movie Poster Generator: Turn Your Idea into a Movie Poster Instantly
-          </h1>
-          <p className="legal-intro">
-            Turn a film title, logline, or key scene into multiple cinematic
-            poster directions. Compare the mood, hierarchy, and visual language
-            before you commit to a finished movie poster.
-          </p>
+          <p className="eyebrow">{styles("eyebrow", { style })}</p>
+          <h1 id="movie-heading">{copy.h1}</h1>
+          <p className="legal-intro">{copy.intro}</p>
           <a
             className="solid-button"
             href="#studio"
             data-umami-event="movie_cta_click"
           >
-            Create a movie poster <ArrowUpRight size={15} />
+            {styles("tryAction", { style })} <ArrowUpRight size={15} />
           </a>
         </section>
 
         <section
           className="movie-studio-section"
-          aria-label="Movie poster generator studio"
+          aria-label={styles("tryHeading")}
         >
           <div className="movie-studio-intro">
-            <p className="eyebrow">Use the movie poster generator now</p>
+            <p className="eyebrow">{styles("tryHeading")}</p>
             <h2 id="movie-studio-heading">
-              Start with a logline. Leave with directions.
+              {styles("promptHeading", { style })}
             </h2>
-            <p>
-              The full studio is built into this page. Describe the film, choose
-              Movie in Art direction, and compare the first outputs without
-              opening another route. Guests can try one watermarked generation
-              without signing up.
-            </p>
+            <p>{copy.cta}</p>
           </div>
           <PosterStudio
             isPro={auth.isPro}
@@ -450,9 +533,9 @@ export default async function MoviePosterMakerPage() {
 
         <section aria-labelledby="movie-faq-heading">
           <p className="eyebrow">Questions, answered</p>
-          <h2 id="movie-faq-heading">Movie Poster Generator FAQs</h2>
+          <h2 id="movie-faq-heading">{styles("faqHeading", { style })}</h2>
           <div className="faq-list">
-            {movieFaqs.map(([question, answer]) => (
+            {faqContent.map(([question, answer]) => (
               <details key={question}>
                 <summary>{question}</summary>
                 <p>{answer}</p>
@@ -463,24 +546,20 @@ export default async function MoviePosterMakerPage() {
 
         <section aria-labelledby="movie-cta-heading">
           <p className="eyebrow">Ready for a first direction?</p>
-          <h2 id="movie-cta-heading">Turn the logline into a movie poster.</h2>
-          <p>
-            Start with a title, a scene, or a rough idea. The Movie art
-            direction is already selected in the studio above, so you can
-            compare the first directions without rebuilding the brief.
-          </p>
+          <h2 id="movie-cta-heading">{styles("tryHeading")}</h2>
+          <p>{copy.cta}</p>
           <a
             className="solid-button"
             href="#studio"
             data-umami-event="movie_cta_click"
           >
-            Create a movie poster <ArrowUpRight size={15} />
+            {styles("tryAction", { style })} <ArrowUpRight size={15} />
           </a>
         </section>
 
         <section aria-labelledby="related-heading">
           <p className="eyebrow">Keep exploring</p>
-          <h2 id="related-heading">More poster directions</h2>
+          <h2 id="related-heading">{styles("moreHeading")}</h2>
           <p className="style-links">
             <Link href="/">AI poster generator</Link> /{" "}
             <Link href="/minimal-poster-generator">

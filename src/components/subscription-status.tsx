@@ -1,9 +1,10 @@
 "use client";
 
 import ky from "ky";
-import Link from "next/link";
+import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import { Link } from "@/i18n/navigation";
 import { creditsForTier } from "@/lib/domain/plans";
 import { SUBSCRIPTION_LIFECYCLE_STATES } from "@/lib/server/waffo-subscription";
 
@@ -25,6 +26,8 @@ const MAX_CHECKS = 20;
 const POLL_INTERVAL_MS = 3_000;
 
 export function SubscriptionStatus() {
+  const t = useTranslations("checkout");
+  const format = useFormatter();
   const [status, setStatus] = useState<Status | null>(null);
   const [phase, setPhase] = useState<
     "checking" | "error" | "timeout" | "active"
@@ -78,29 +81,29 @@ export function SubscriptionStatus() {
       role={phase === "error" || phase === "timeout" ? "alert" : "status"}
     >
       {phase === "active"
-        ? `Pro is active. Your ${credits.toLocaleString("en-US")}-credit period is ready.`
+        ? t("activeMessage", { credits: format.number(credits) })
         : phase === "timeout"
-          ? "Payment received, but confirmation is taking longer than expected."
+          ? t("paymentTakingLonger")
           : phase === "error"
-            ? "We could not check the payment status right now."
-            : "Waiting for the verified payment event..."}
+            ? t("statusUnavailable")
+            : t("waitingPayment")}
       {phase === "timeout" || phase === "error" ? (
         <>
           <button className="text-button" type="button" onClick={retry}>
-            Try again
+            {t("tryAgain")}
           </button>{" "}
-          <a href="mailto:support@texttoposter.com">Contact support</a>
+          <a href="mailto:support@texttoposter.com">{t("contactSupport")}</a>
         </>
       ) : phase === "active" ? (
         <div className="subscription-status-actions">
           <Link className="solid-button" href="/#studio">
-            Create a poster
+            {t("createPoster")}
           </Link>
           <Link className="pricing-link" href="/account/billing">
-            View billing
+            {t("viewBilling")}
           </Link>
           <Link className="pricing-link" href="/account">
-            View history
+            {t("viewHistory")}
           </Link>
         </div>
       ) : null}

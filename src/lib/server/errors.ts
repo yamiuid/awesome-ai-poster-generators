@@ -22,7 +22,7 @@ export function responseForError(error: unknown): Response {
     console.error(error);
   }
   return Response.json(
-    { error: "Something went wrong. Please try again." },
+    { error: "Something went wrong. Please try again.", code: "UNKNOWN_ERROR" },
     { status: 500 },
   );
 }

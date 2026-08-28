@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { LoginForm } from "@/components/login-form";
 import { SiteHeader } from "@/components/site-header";
 
-export const metadata: Metadata = {
-  title: "Sign in or create an account | Text to Poster",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("auth");
+  return { title: t("metadataTitle"), robots: { index: false, follow: false } };
+}
 
 export default async function LoginPage({
   searchParams,
@@ -13,18 +14,14 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const { next, error } = await searchParams;
+  const t = await getTranslations("auth");
   return (
     <main className="narrow-page">
       <SiteHeader variant="minimal" />
       <section className="auth-card">
-        <p className="eyebrow">Your studio, kept close</p>
-        <h1>Sign in or create a free account.</h1>
-        <p>
-          Use Google or email. We&apos;ll send a 6-digit sign-in code, and your
-          first email sign-in automatically creates a free account. Free
-          accounts get a seven-day history and four poster images per UTC day;
-          Pro removes the watermark and keeps high-definition exports private.
-        </p>
+        <p className="eyebrow">{t("signInHeading")}</p>
+        <h1>{t("signInHeading")}</h1>
+        <p>{t("signInBody")}</p>
         <LoginForm next={next} initialError={error} />
       </section>
     </main>

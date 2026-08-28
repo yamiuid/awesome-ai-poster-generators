@@ -88,7 +88,7 @@ describe("buildPosterPrompt", () => {
     expect(prompt).toContain("Do not use Chinese characters");
   });
 
-  it("forces Simplified Chinese poster text for Chinese core ideas", () => {
+  it("forces Simplified Chinese poster text for Simplified Chinese core ideas", () => {
     const prompt = buildPosterPrompt({
       prompt: "海边夏日音乐节，一晚三组舞台",
       style: "neon",
@@ -105,7 +105,29 @@ describe("buildPosterPrompt", () => {
 
   it("detects the dominant language from CJK ratio", () => {
     expect(detectTextLanguage("A summer music festival by the sea")).toBe("en");
-    expect(detectTextLanguage("海边夏日音乐节，一晚三组舞台")).toBe("zh");
-    expect(detectTextLanguage("AI 人工智能海报设计")).toBe("zh");
+    expect(detectTextLanguage("海边夏日音乐节，一晚三组舞台")).toBe("zh-Hans");
+    expect(detectTextLanguage("AI 人工智能海报设计")).toBe("zh-Hans");
+    expect(detectTextLanguage("海邊夏日音樂節，一晚三組舞台")).toBe("zh-TW");
+    expect(detectTextLanguage("夏の音楽祭、海辺の夜")).toBe("ja");
+    expect(detectTextLanguage("ليلة موسيقية في المدينة")).toBe("ar");
+    expect(detectTextLanguage("Festival de música de verano")).toBe("es-419");
+  });
+
+  it("accepts a UI locale for language detection fallback", () => {
+    expect(detectTextLanguage("A new poster direction", "es")).toBe("es-419");
+    expect(detectTextLanguage("A new poster direction", "zh-TW")).toBe("zh-TW");
+  });
+
+  it("accepts the site locale in a generation request", () => {
+    const request = generationRequestSchema.safeParse({
+      prompt: "A poster brief",
+      style: "auto",
+      aspectRatio: "4:5",
+      resolution: "1k",
+      quality: "low",
+      imageCount: 1,
+      siteLocale: "ja",
+    });
+    expect(request.success).toBe(true);
   });
 });

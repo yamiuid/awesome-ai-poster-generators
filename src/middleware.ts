@@ -1,10 +1,34 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import {
+  isUserPagePath,
+  localeFromPath,
+  stripLocalePrefix,
+} from "@/lib/i18n/locale";
 import { getPublicEnv } from "@/lib/server/supabase/public-env";
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
-  const response = NextResponse.next({ request });
+  const pathname = request.nextUrl.pathname;
+  const locale = localeFromPath(pathname);
+  const hasLocalePrefix = stripLocalePrefix(pathname) !== pathname;
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-site-locale", locale);
+  if (hasLocalePrefix && !isUserPagePath(pathname)) {
+    const unlocalizedUrl = request.nextUrl.clone();
+    unlocalizedUrl.pathname = stripLocalePrefix(pathname);
+    return NextResponse.redirect(unlocalizedUrl);
+  }
+  const response =
+    hasLocalePrefix && isUserPagePath(pathname)
+      ? (() => {
+          const rewrittenUrl = request.nextUrl.clone();
+          rewrittenUrl.pathname = stripLocalePrefix(pathname);
+          return NextResponse.rewrite(rewrittenUrl, {
+            request: { headers: requestHeaders },
+          });
+        })()
+      : NextResponse.next({ request: { headers: requestHeaders } });
   let publicEnv: Readonly<{ url: string; anonKey: string }>;
   try {
     publicEnv = getPublicEnv();

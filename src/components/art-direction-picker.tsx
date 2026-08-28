@@ -1,13 +1,13 @@
 "use client";
 
 import { Check, ChevronDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import {
   FEATURED_STYLES,
   isMoreStyle,
   MORE_STYLE_GROUPS,
   type PosterStyle,
-  styleLabels,
 } from "@/lib/domain/poster";
 
 type Props = Readonly<{
@@ -17,6 +17,8 @@ type Props = Readonly<{
 }>;
 
 export function ArtDirectionPicker({ value, disabled, onChange }: Props) {
+  const t = useTranslations("studio");
+  const styles = useTranslations("styles");
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -69,7 +71,7 @@ export function ArtDirectionPicker({ value, disabled, onChange }: Props) {
           disabled={disabled}
           aria-pressed={value === style}
         >
-          {styleLabels[style]}
+          {styles(style)}
         </button>
       ))}
       <div className="art-direction-more" ref={menuRef}>
@@ -82,15 +84,21 @@ export function ArtDirectionPicker({ value, disabled, onChange }: Props) {
           aria-expanded={open}
           aria-controls="more-styles-menu"
         >
-          <span>More</span>
+          <span>{t("more")}</span>
           <ChevronDown size={14} aria-hidden="true" />
         </button>
         {open && (
           <fieldset id="more-styles-menu" className="more-styles-menu">
-            <legend>More art directions</legend>
+            <legend>{t("moreArtDirections")}</legend>
             {MORE_STYLE_GROUPS.map((group) => (
               <section className="more-styles-group" key={group.label}>
-                <p>{group.label}</p>
+                <p>
+                  {group.label === "Editorial"
+                    ? t("editorial")
+                    : group.label === "Image-led"
+                      ? t("imageLed")
+                      : t("statement")}
+                </p>
                 <div>
                   {group.styles.map((style) => (
                     <button
@@ -103,7 +111,7 @@ export function ArtDirectionPicker({ value, disabled, onChange }: Props) {
                       }}
                       aria-pressed={value === style}
                     >
-                      <span>{styleLabels[style]}</span>
+                      <span>{styles(style)}</span>
                       {value === style && (
                         <Check size={14} aria-hidden="true" />
                       )}
