@@ -6,6 +6,7 @@ import {
   isPrivateAddress,
   keyToPublicUrl,
   uploadPoster,
+  watermarkSvg,
 } from "./storage";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
@@ -64,6 +65,16 @@ describe("provider image address checks", () => {
   it("allows a public address", () => {
     expect(isPrivateAddress("8.8.8.8")).toBe(false);
     expect(isPrivateAddress("2606:4700:4700::1111")).toBe(false);
+  });
+});
+
+describe("production-safe watermark renderer", () => {
+  it("draws the label with vector blocks instead of system-font glyphs", () => {
+    const svg = watermarkSvg(1024, 1280).toString("utf8");
+
+    expect(svg).toContain("TEXTTOPOSTER.COM");
+    expect(svg).toContain("<rect");
+    expect(svg).not.toContain("<text");
   });
 });
 
