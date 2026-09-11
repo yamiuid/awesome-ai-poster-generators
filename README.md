@@ -4,7 +4,7 @@
 
 ## The list
 
-- [**Text to Poster**](https://texttoposter.com) — Describe a subject, mood, or words, and get **four poster directions in seconds**. Free to try without login (watermarked 1K previews); Pro unlocks 4K resolution, quality presets, and private history. Built with Next.js, Supabase, and GPT-image. **Our project.**
+- [**Text to Poster**](https://texttoposter.com) — Describe a subject, mood, or words (or paste a URL / drop a reference image), and get **up to four poster directions in seconds**. Free to try without login (watermarked previews); Pro unlocks full resolution, quality presets, and private history. Built with Next.js, Supabase, Cloudflare R2, and GPT Image 2. **Our project.**
 - [Canva](https://www.canva.com/ai-image-generator/) — All-in-one design platform with AI image generation and poster templates.
 - [Ideogram](https://ideogram.ai) — AI image generator known for reliable text rendering, popular for posters and typography.
 - [Recraft](https://www.recraft.ai) — AI generation focused on text, brand styles, and vector-style posters.
@@ -14,66 +14,84 @@
 
 ## Text to Poster
 
-> **AI Poster Maker — Generate Posters from Text in Seconds**
+> **AI Poster Maker — Generate Posters from Text, URL, or Reference Image in Seconds**
 
 [**texttoposter.com**](https://texttoposter.com)
 
-Turn a written brief into four private poster directions in seconds. Describe the subject, mood, audience, or the words you want to see, and the studio generates four distinct compositions you can compare, keep, and download — no design skills needed.
+Turn a written brief — or any web page — into up to four private poster directions in seconds. Describe the subject, mood, audience, or the words you want to see, paste a URL to analyze, or attach a reference image; the studio generates distinct compositions you can compare, keep, and download — no design skills needed.
 
-A paid English-language MVP built with Next.js, Supabase, and GPT-image. Guests can try it free (watermarked 1K previews), while Creator and Studio plans unlock full resolution, high quality, and private history.
+A paid English-language MVP built with Next.js, Supabase, Cloudflare R2, and GPT Image 2 (via APIMart). Guests can try it free (watermarked previews, daily quota), while Creator and Studio plans unlock full resolution, high quality, and private history.
 
----
+### What's inside
 
-## Features
+- **Three input modes** — write an idea, paste a URL, or attach a reference image (image-to-image).
+- **AI Brief assistant** — drop raw text or a link and the assistant extracts a structured brief (headline, subtitle, 3 points, CTA) ready to generate.
+- **URL-to-poster pipeline** — paste any page; the server fetches, extracts, understands, and streams a poster brief in six steps.
+- **Up to 4 poster directions per run** — pick 1–4 images; free accounts get 1–2, Pro unlocks up to 4.
+- **17 visual styles** — Auto, Movie, Minimal, Anime, Business, Vintage, Neon (featured) plus Swiss, Typography, Collage, Photography, Illustration, Surreal, Fashion, Brutalist, Art Deco, Y2K.
+- **Flexible formats** — 8 aspect ratios (1:1 → 9:16) and 1K–4K resolutions with Low/Medium/High quality.
+- **Free tier with daily quota** — generate without an account; watermarked previews, salted & hashed guest key (no raw IP/browser tracking).
+- **Magic-link & Google sign-in** — email verification-code login with resend countdown.
+- **Private history** — every generation saved to your account with large previews, full-size lightbox, one-click download.
+- **Paid plans** — Creator $9.90/mo and Studio $19.90/mo (annual options), billed through Waffo (merchant of record).
+- **Credits system** — monthly credit windows with atomic batch charging and a transaction ledger.
+- **Prompt safety** — inputs are screened before generation.
 
-- **Text → 4 poster directions** — one brief, four visual readings (movie, minimal, anime, business, vintage, neon)
-- **Free tier** — generate without an account, watermarked 1K previews
-- **Magic-link & Google sign-in** — email verification-code login with a resend countdown
-- **1–4 images per run** — free accounts pick 1–2, Pro unlocks up to 4
-- **Quality ladder** — Low / Medium / High (precise) with 1K–4K resolutions
-- **Private history** — every generation saved to your account with large previews, full-size lightbox, and one-click download
-- **Paid plans** — Creator $9.90/mo and Studio $19.90/mo (annual options), billed through Waffo
-- **Credits system** — monthly credit windows with atomic batch charging
-
-## Tech stack
+### Tech stack
 
 | Layer | Choice |
 |-------|--------|
-| Framework | Next.js 16 (App Router, Server Components) + React 19 |
-| Styling | Custom CSS design system (light theme, paper-like palette) |
-| Database & Auth | Supabase (Postgres + RLS, GoTrue PKCE auth, Storage with signed URLs) |
-| Image generation | APIMart (`gpt-image`), watermarked via Sharp |
-| Payments | Waffo (checkout, webhooks, subscription lifecycle) |
+| Framework | Next.js 16 (App Router, Server Components, Turbopack) + React 19 |
+| Styling | Custom design tokens + Tailwind CSS v4 |
+| Database & Auth | Supabase (Postgres + RLS, GoTrue PKCE auth) |
+| Image storage | Supabase Storage **or** Cloudflare R2 (S3-compatible) via `STORAGE_PROVIDER` |
+| Image generation | APIMart `gpt-image-2-official` (GPT Image 2); text model for brief/URL analysis |
+| Payments | Waffo (`@waffo/pancake-ts` SDK): checkout, webhooks, subscription lifecycle |
+| Watermarking | Sharp (composite + PNG) |
 | Language | TypeScript, validated with Zod |
 | Quality gates | Biome, Vitest, `tsc --noEmit` |
+| Ops | `robots.ts` / `sitemap.ts` SEO, cron maintenance route, SSE progress streaming |
 
-## Repository layout
+### Repository layout
 
 ```text
-src/app/           pages + API routes (auth, generations, checkout, webhooks, cron)
-src/components/    studio, history gallery, auth forms, user menu
-src/lib/server/    providers (APIMart, Waffo, Supabase), generation pipeline, auth
-src/lib/domain/    shared schemas, pricing/credit rules
-supabase/migrations/  SQL schema + RPCs (run in filename order)
+src/app/                 pages + API routes
+  page.tsx               studio (idea / url / reference image)
+  account/               billing, history
+  about/ privacy/ terms/ refunds/ ai-policy/   legal + transparency pages
+  movie|minimal|anime|business|vintage|neon-poster-maker/   style landing pages
+  api/
+    brief/               AI brief from text or URL
+    url/analyze/         streamed URL → poster brief pipeline
+    url-preview/         page fetch + extract (cheerio)
+    generations/         create / poll / recent / [id] advance / give-up
+    checkout/ subscription/cancel/ webhooks/waffo/   billing
+    account/status/ cron/maintenance/ diag/sharp/
+src/components/          studio, history gallery, auth forms, url pipeline modal
+src/lib/server/          providers (APIMart, Waffo, Supabase, R2 storage), generation pipeline, auth, rate-limit, prompt-safety
+src/lib/domain/          schemas, pricing/credit rules, styles, brief, url-analyze
+supabase/migrations/     19 SQL migrations (run in filename order)
+scripts/                 migrate-posters-to-r2.mjs
 ```
 
 ## Local setup
 
-1. Copy `.env.example` to `.env.local` and fill Supabase, APIMart, Waffo, and Umami values.
-2. Run the SQL migrations in filename order through `supabase/migrations/003_security_hardening.sql`. Enable Google OAuth and email Magic Link in Supabase Auth. Add `http://localhost:3000/**`, `http://127.0.0.1:3000/**`, and each preview domain's `/**` path to Supabase Auth redirect URLs; OAuth and email sign-in return to the origin where they were requested, including the `next` query.
-3. In Waffo Test Mode, create the Creator products (`$9.90/month` and `$79/year`) and the Studio products (`$19.90/month` and `$169/year`). Put their Product IDs in `WAFFO_MONTHLY_PRODUCT_ID`, `WAFFO_YEARLY_PRODUCT_ID`, `WAFFO_STUDIO_MONTHLY_PRODUCT_ID`, and `WAFFO_STUDIO_YEARLY_PRODUCT_ID`. Set `WAFFO_ENVIRONMENT=test` for local or preview deployments. The Store ID is used when configuring products and webhooks in Waffo; checkout only needs the Product IDs.
-4. Configure the Test Webhook URL as `https://<your-preview-domain>/api/webhooks/waffo` and the Production Webhook URL as `https://texttoposter.com/api/webhooks/waffo`. Use separate Waffo API keys for test and production.
-5. Test with Waffo card `4576750000000110`, then confirm the webhook delivery is accepted and the account shows Pro.
+1. Copy `.env.example` to `.env.local` and fill Supabase, APIMart, Waffo, R2 (optional), and Umami values.
+2. Run **all 19** SQL migrations in `supabase/migrations/` in filename order. Enable Google OAuth and email Magic Link in Supabase Auth; add your local and preview origins' `/**` paths to Supabase Auth redirect URLs.
+3. Choose storage: set `STORAGE_PROVIDER=supabase` (bucket `posters` public or signed) or `STORAGE_PROVIDER=r2` with `R2_*` credentials and `R2_PUBLIC_BASE_URL`.
+4. In Waffo Test Mode create the Creator (`$9.90/month`, `$79/year`) and Studio (`$19.90/month`, `$169/year`) products; put their Product IDs in `WAFFO_*_PRODUCT_ID`. Configure test/production webhook URLs to `/api/webhooks/waffo`. Use separate API keys for test and production. In the Waffo dashboard **Webhook settings, enable `subscription.renewed` and `subscription.recovered`** for both environments — renewed is opt-in, and without it a renewal cannot roll the billing period forward.
+5. Test with Waffo card `4576750000000110`, confirm webhook delivery and Pro access.
 6. Run `pnpm dev`.
 
-The server never trusts checkout redirects or browser-provided prices. Waffo webhooks are verified from the raw request body, and generated images stay in private Supabase Storage behind short-lived signed URLs.
+The server never trusts checkout redirects or browser-provided prices. Waffo webhooks are verified from the raw request body, and generated images stay in private storage behind short-lived signed URLs (Supabase) or immutable public URLs (R2).
 
 ### Subscription lifecycle
 
 - Canceling keeps Pro access until `period_end`; a second cancellation request is safe and does not call Waffo again.
 - After the period ends, Billing links back to Pricing so the customer can choose any new plan. A still-canceling subscription cannot create a second checkout.
 - `past_due` and stale billing states pause new purchases and route the customer to support to prevent duplicate charges.
-- In Waffo Test Mode, verify this sequence: activate a plan, cancel it, confirm the `canceling` message and end date, drive the end/canceled state, start a different plan, then deliver an old-order cancellation event and confirm the new subscription remains active.
+- Since the 2026-09-06 Waffo change, `subscription.payment_succeeded` is a pure payment event: it carries no billing period or order status. Periods arrive on the subscription events (`subscription.activated`, `subscription.renewed`, `subscription.recovered`); when a renewal payment lands without one, the webhook derives the next period from `paymentDate` + the product's billing term so paid access is never left stale.
+- In Waffo Test Mode, verify: activate → cancel → confirm `canceling` + end date → drive end/canceled → start a different plan → deliver an old-order cancellation event and confirm the new subscription stays active.
 
 ## Verification
 
