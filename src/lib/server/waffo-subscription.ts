@@ -257,8 +257,8 @@ export function statusFor(
     case "past_due":
       return "past_due";
     default:
+      // 不含 `order.completed`：那是一次性订单的付款事件，不是订阅激活。
       return [
-        "order.completed",
         "subscription.activated",
         "subscription.payment_succeeded",
         "subscription.renewed",

@@ -37,12 +37,18 @@ export async function POST(): Promise<Response> {
         409,
       );
     }
-    await getWaffoClient().orders.cancelSubscription({
+    // pending 的订单会被立刻关闭（canceled）；已生效的订阅排到本期末（canceling）。
+    // 以 Waffo 的返回为准，别把两种结果都写成 canceling。
+    const canceled = await getWaffoClient().orders.cancelSubscription({
       orderId: subscription.waffo_order_id,
     });
+    const status = canceled.status === "canceled" ? "canceled" : "canceling";
     const { error: updateError } = await admin
       .from("subscriptions")
-      .update({ status: "canceling", cancel_at_period_end: true })
+      .update({
+        status,
+        cancel_at_period_end: status === "canceling",
+      })
       .eq("user_id", user.userId);
     if (updateError) {
       throw new AppError(
@@ -51,7 +57,7 @@ export async function POST(): Promise<Response> {
         503,
       );
     }
-    return NextResponse.json({ status: "canceling" });
+    return NextResponse.json({ status });
   } catch (error) {
     if (error instanceof AppError) {
       return responseForError(error);

@@ -155,8 +155,8 @@ describe("statusFor", () => {
     expect(statusFor("subscription.past_due")).toBe("past_due");
   });
 
-  it("treats order.completed as active", () => {
-    expect(statusFor("order.completed")).toBe("active");
+  it("never treats a one-time order.completed as a subscription activation", () => {
+    expect(statusFor("order.completed")).toBeNull();
   });
 
   it("treats subscription.activated as active", () => {

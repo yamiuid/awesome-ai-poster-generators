@@ -3,6 +3,11 @@ import { getServerEnv } from "@/lib/server/env";
 import { recoverGeneration } from "@/lib/server/generation-poll";
 import { deletePoster } from "@/lib/server/storage";
 import { createSupabaseAdminClient } from "@/lib/server/supabase/admin";
+import { getWaffoClient } from "@/lib/server/waffo";
+import {
+  reconcileExpiredSubscriptions,
+  replayUnprocessedPaymentEvents,
+} from "@/lib/server/waffo-recovery";
 
 export async function GET(request: Request): Promise<Response> {
   const env = getServerEnv();
@@ -55,6 +60,25 @@ export async function GET(request: Request): Promise<Response> {
     }
   }
 
+  // 支付对账：先重放投递失败/处理中断的结算事件，再用 Waffo 侧订单自愈过期订阅。
+  // 任一步失败都不能影响下面的资产清理与生成恢复。
+  let paymentEvents = { replayed: 0, unresolved: 0, failed: 0 };
+  let subscriptions = { checked: 0, extended: 0, failed: 0 };
+  try {
+    paymentEvents = await replayUnprocessedPaymentEvents(admin, now);
+  } catch (error) {
+    console.error("Payment event replay failed", error);
+  }
+  try {
+    subscriptions = await reconcileExpiredSubscriptions(
+      admin,
+      getWaffoClient(),
+      now,
+    );
+  } catch (error) {
+    console.error("Subscription reconciliation failed", error);
+  }
+
   const { data: pendingGenerations, error: pendingError } = await admin
     .from("generations")
     .select("id")
@@ -87,5 +111,7 @@ export async function GET(request: Request): Promise<Response> {
     deletedAssets: expiredAssets?.length ?? 0,
     recoveredGenerations,
     failedRecoveries,
+    paymentEvents,
+    subscriptions,
   });
 }
