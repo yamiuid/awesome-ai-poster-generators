@@ -73,7 +73,6 @@ export async function createGeneration(
       ? batchCreditCost(
           request.resolution,
           request.quality,
-          request.aspectRatio,
           providerInput.imageCount,
         )
       : 0;

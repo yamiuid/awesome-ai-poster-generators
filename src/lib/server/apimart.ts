@@ -121,7 +121,7 @@ export async function submitGeneration(
     const response = await client()
       .post("images/generations", {
         json: {
-          model: "gpt-image-2-official",
+          model: "gpt-image-2.5-flare",
           prompt,
           size: request.aspectRatio,
           resolution: request.resolution,

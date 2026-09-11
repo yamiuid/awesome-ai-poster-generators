@@ -1,9 +1,4 @@
-import {
-  creditCost,
-  isAspectRatio,
-  isQuality,
-  isResolution,
-} from "@/lib/domain/credits";
+import { creditCost, isQuality, isResolution } from "@/lib/domain/credits";
 import {
   FINALIZING_PROGRESS,
   monotonicWorkingProgress,
@@ -153,17 +148,12 @@ async function finalizeCompleted(
   if (
     generation.mode === "pro" &&
     isResolution(generation.resolution) &&
-    isQuality(generation.quality) &&
-    isAspectRatio(generation.aspect_ratio)
+    isQuality(generation.quality)
   ) {
     await settleGenerationCredits(
       generation.id,
       stored,
-      creditCost(
-        generation.resolution,
-        generation.quality,
-        generation.aspect_ratio,
-      ),
+      creditCost(generation.resolution, generation.quality),
     );
   }
   const { data, error } = await admin

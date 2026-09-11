@@ -415,6 +415,8 @@ const QUALITY_LABEL_KEYS: Readonly<Record<Quality, string>> = {
   low: "qualityLow",
   medium: "qualityMedium",
   high: "qualityHigh",
+  xhigh: "qualityXHigh",
+  max: "qualityMax",
 };
 
 const ASPECT_LABEL_KEYS: Readonly<Record<AspectRatio, string>> = {
@@ -2431,12 +2433,7 @@ export function PosterStudio({
           {isPro && (
             <p className="credit-estimate">
               {t("creditEstimate", {
-                credits: batchCreditCost(
-                  resolution,
-                  quality,
-                  aspectRatio,
-                  imageCount,
-                ),
+                credits: batchCreditCost(resolution, quality, imageCount),
               })}
             </p>
           )}

@@ -77,6 +77,8 @@ const englishMessages = {
     qualityLow: "Low / fast",
     qualityMedium: "Medium",
     qualityHigh: "High / precise",
+    qualityXHigh: "Extra high",
+    qualityMax: "Max",
     editorial: "Editorial",
     imageLed: "Image-led",
     statement: "Statement",
@@ -117,7 +119,7 @@ const englishMessages = {
       "Wait for the current run to finish before starting another.",
     generate: "Generate poster",
     generatingAction: "Generating…",
-    aiDisclosure: "AI-generated with GPT Image 2.",
+    aiDisclosure: "AI-generated with GPT Image 2.5.",
     outputPolicy: "Read the AI use policy.",
     readPolicy: "Read the AI use policy.",
     freeAccount: "Free account",
@@ -203,7 +205,7 @@ const englishMessages = {
     intro:
       "Paid plans return up to four posters per generation. Free accounts get up to four poster images per UTC day. Guests can try one watermarked 1K generation per UTC day without signing in; annual plans still refresh credits monthly.",
     footnote:
-      "Image engine: GPT Image 2 via APIMart. Outputs are AI-generated and should be reviewed before publication.",
+      "Image engine: GPT Image 2.5 via APIMart. Outputs are AI-generated and should be reviewed before publication.",
     readRefundPolicy: "Read the policy.",
     billingPeriod: "Billing period",
     monthly: "Monthly",
@@ -251,7 +253,7 @@ const englishMessages = {
     monthlyCredits: "{credits} credits every month",
     monthlyWindowCredits: "{credits} credits in each monthly window",
     outputOptions: "1K / 2K / 4K output",
-    mediumHighFinish: "Medium and High finish",
+    mediumHighFinish: "Medium, High, and Max finish",
     highFinish: "High finish for final exports",
     noWatermarkHistory: "No watermark, private history",
     fullCreatorAccess: "Same full Creator studio access",
@@ -271,7 +273,7 @@ const englishMessages = {
       "Early concepts are fragile. A brief that lives only in your head is hard to share with a client, a team, or your own taste. We wanted a tool that makes a first draft cheap: type a sentence, get one to four directions, and only then decide which one deserves real design time. That is the whole product.",
     howTitle: "How it works",
     howBody:
-      "Your brief is turned into a structured prompt and sent to GPT Image 2 through APIMart, our image-generation provider. The studio renders up to four compositions per run, stores them privately in your account, and keeps free runs watermarked so anyone can try it before paying. Creator and Studio plans unlock full resolution, quality presets, and up to four posters per run.",
+      "Your brief is turned into a structured prompt and sent to GPT Image 2.5 through APIMart, our image-generation provider. The studio renders up to four compositions per run, stores them privately in your account, and keeps free runs watermarked so anyone can try it before paying. Creator and Studio plans unlock full resolution, quality presets, and up to four posters per run.",
     careTitle: "What we care about",
     careBody:
       "Generated images stay private by default — there is no public gallery. Free limits are enforced with a salted, hashed guest key rather than raw IP or browser data, prompts and outputs are never sold or used for advertising profiles, and every paid charge is processed by Waffo as the merchant of record. We publish our privacy policy, terms, refund rule, and AI-use policy in the footer so you can read exactly what happens to your material.",
@@ -280,7 +282,7 @@ const englishMessages = {
       "A one-person studio that spends too much time on poster layouts. If you have feedback, a use case, or a bug to report, email support@texttoposter.com — real people read it.",
     transparencyTitle: "Transparency",
     transparencyBody:
-      "Text to Poster does not claim to own or represent the underlying image model. Generation is provided through APIMart’s gpt-image-2-official endpoint; review the AI use policy before publishing output where disclosure is required.",
+      "Text to Poster does not claim to own or represent the underlying image model. Generation is provided through APIMart’s gpt-image-2.5-flare endpoint; review the AI use policy before publishing output where disclosure is required.",
   },
   home: {
     heroEyebrow: "Free AI poster generator from text",
@@ -328,6 +330,80 @@ const englishMessages = {
     seePlans: "See plans",
     faqEyebrow: "Questions, answered",
     faqTitle: "AI Poster Generator FAQs",
+    heroTypes: "Movie / Event / Product / Business / Concert / Social",
+    urlBody:
+      "Paste an article, event page, or announcement URL. Text to Poster reads the page, pulls out the title, the key message, and the points that matter, then turns them into a poster brief you can edit before generating.",
+    urlStep1Label: "01 / PASTE",
+    urlStep1Title: "Drop in a link.",
+    urlStep1Body:
+      "Paste an article, event page, or announcement URL into the studio.",
+    urlStep2Label: "02 / READ",
+    urlStep2Title: "AI extracts the brief.",
+    urlStep2Body:
+      "Text to Poster reads the page and pulls out the title, the key message, and the points that matter.",
+    urlStep3Label: "03 / EDIT & GENERATE",
+    urlStep3Title: "Shape it, then generate.",
+    urlStep3Body:
+      "Review and edit the brief before turning the link into poster directions you can compare and download.",
+    urlAction: "Try it in the studio",
+    whatBody:
+      "An AI poster generator from text turns a written brief into a complete visual starting point. Describe the subject, feeling, audience, or words that matter, and Text to Poster creates multiple artwork, layout, and typography directions you can compare, keep, and download. It is useful when you know what you want to say but do not want to build the first layout from scratch.",
+    examplesBody:
+      "These are original sample directions made from short briefs. Compare the mood, hierarchy, and image treatment before you choose the direction to refine in the studio.",
+    howBriefLabel: "01 / BRIEF",
+    howBriefTitle: "Describe a clear poster brief.",
+    howBriefBody:
+      "Name the subject, audience, feeling, and any words that matter. A short brief gives the AI poster generator enough direction to build a useful first layout.",
+    howBriefAlt:
+      "A poster brief with fields for subject, audience, mood, and headline.",
+    howStyleLabel: "02 / STYLE",
+    howStyleTitle: "Choose a style and format.",
+    howStyleBody:
+      "Choose the art direction and format that fit the message, from minimal to neon. Match the ratio to its final home: feed, screen, print, or story.",
+    howStyleAlt:
+      "Poster style cards and format controls arranged beside a creative brief.",
+    howGenerateLabel: "03 / GENERATE",
+    howGenerateTitle: "Generate multiple directions.",
+    howGenerateBody:
+      "Generate a range of compositions from the same brief. Compare the clearest subject, strongest hierarchy, and best balance of image and words.",
+    howGenerateAlt:
+      "Multiple generated poster directions shown as a comparison grid.",
+    howKeepLabel: "04 / KEEP",
+    howKeepTitle: "Download your favorite direction.",
+    howKeepBody:
+      "Keep the direction that lands, refine the brief, and download. Free previews are watermarked; Pro adds private history and clean high-definition exports.",
+    howKeepAlt: "A finished poster being downloaded from the poster studio.",
+    pricingCardTitle: "Creator + Studio",
+    pricingMonth: "/ month",
+    pricingFeature1: "Guests get one watermarked generation per UTC day",
+    pricingFeature2: "Free accounts get four poster images per UTC day",
+    pricingFeature3: "Creator and Studio plans add monthly credits",
+    pricingFeature4: "1K, 2K, and 4K exports",
+    pricingFeature5: "Medium, High, and Max finishes",
+    pricingFeature6: "Private history with no watermark",
+    faqIntro:
+      "Start small, learn from the first result, and refine only what needs changing. These answers cover the practical details behind making a poster from text with the free studio.",
+    faq1Question: "Is this really free?",
+    faq1Answer:
+      "Yes. Guests can make one generation per UTC day, with one watermarked 1K poster per run. Free accounts can create four poster images per UTC day: four one-poster runs or two two-poster runs. Failed generations do not count.",
+    faq2Question: "What is an AI poster generator from text?",
+    faq2Answer:
+      "It turns a written brief into finished visual directions. Describe the subject, mood, audience, or words you want to see, and the studio turns that brief into multiple compositions.",
+    faq3Question: "Which poster styles are available?",
+    faq3Answer:
+      "Movie, Minimal, Anime, Business, Vintage, and Neon. Pick a direction, then let the same brief branch into multiple distinct readings.",
+    faq4Question: "Can I use the posters commercially?",
+    faq4Answer:
+      "Your generated assets are private to your account. Commercial use remains subject to the image provider terms and any rights attached to material you include in your prompt.",
+    faq5Question: "How long are my images kept?",
+    faq5Answer:
+      "Guest images stay available for 24 hours, free account images for 7 days, and Pro images while your subscription is active plus a 30-day grace period after cancellation.",
+    faq6Question: "Can I make a poster from a short text prompt?",
+    faq6Answer:
+      "Yes. Start with one clear sentence and add only the details that change the result: the subject, mood, audience, format, or words that must appear. You can begin with a rough idea, compare the generated directions, and refine the prompt after you see what the first round suggests.",
+    faq7Question: "What should I include in an AI poster prompt?",
+    faq7Answer:
+      "A useful prompt usually names the subject, visual mood, audience, important copy, and practical format. For example, mention whether the poster is for a film night, product launch, class, or social post. Specific context helps the AI poster generator make stronger choices about hierarchy, color, and composition.",
   },
   styles: {
     auto: "Auto",
@@ -402,12 +478,15 @@ const englishMessages = {
     sendFailed: "We could not send a code. Please try again.",
     verifyFailed: "We could not verify that code. Please try again.",
     codeSentTo: "We emailed a 6-digit sign-in code to {email}.",
+    codeSentInstruction: "Enter the code sent to {email}.",
+    emailPlaceholder: "you@example.com",
     newCodeSent: "A new 6-digit code is on its way.",
     enterCode: "Enter the 6-digit code from the email.",
     invalidCode:
       "That code is not valid. Check the email or request a new code.",
     googleUnavailable:
       "Google sign-in is temporarily unavailable. Check the Supabase configuration.",
+    metadataTitle: "Sign in or create an account | Text to Poster",
   },
   account: {
     billing: "Billing",
@@ -416,6 +495,11 @@ const englishMessages = {
     signingOut: "Signing out…",
     accountMenu: "Account menu",
     accountSections: "Account sections",
+    free: "Free",
+    creator: "Creator",
+    studio: "Studio",
+    signedIn: "Signed in",
+    accountForEmail: "Account menu for {email}",
     privateHistory: "Private history",
     yourDirections: "Your directions.",
     proStudio: "Pro studio / no watermark",
@@ -457,6 +541,7 @@ const englishMessages = {
     metadataTitle: "History | Text to Poster",
   },
   billing: {
+    billing: "Billing",
     studio: "Studio",
     creator: "Creator",
     monthly: "monthly",
@@ -503,6 +588,8 @@ const englishMessages = {
       "Payment received, but confirmation is taking longer than expected.",
     statusUnavailable: "We could not check the payment status right now.",
     waitingPayment: "Waiting for the verified payment event…",
+    contactSupport: "Contact support",
+    metadataTitle: "Payment received | Text to Poster",
     createPoster: "Create a poster",
     viewBilling: "View billing",
     viewHistory: "View history",
@@ -580,7 +667,7 @@ const translated = {
         "早期概念很脆弱。只存在腦中的簡報，很難和客戶、團隊或自己的品味分享。我們想做一個讓第一稿成本很低的工具：輸入一句話，得到一到四個方向，再決定哪個值得投入真正的設計時間。這就是整個產品。",
       howTitle: "如何運作",
       howBody:
-        "你的簡報會被整理成結構化提示詞，透過 APIMart 傳送給 GPT Image 2。工作室每次生成最多四種構圖，私下儲存到你的帳戶；免費生成會帶浮水印，讓任何人都能先試用再付款。Creator 與 Studio 方案解鎖完整解析度、品質預設與每次最多四張海報。",
+        "你的簡報會被整理成結構化提示詞，透過 APIMart 傳送給 GPT Image 2.5。工作室每次生成最多四種構圖，私下儲存到你的帳戶；免費生成會帶浮水印，讓任何人都能先試用再付款。Creator 與 Studio 方案解鎖完整解析度、品質預設與每次最多四張海報。",
       careTitle: "我們重視的事",
       careBody:
         "生成圖片預設為私人，不設公開圖庫。免費限制使用加鹽雜湊的訪客識別碼，而不是原始 IP 或瀏覽器資料；提示詞與輸出不會被出售或用於廣告輪廓；所有付款由 Waffo 作為記錄商處理。頁尾提供隱私權政策、條款、退款規則與 AI 使用政策，讓你清楚了解素材如何被處理。",
@@ -589,7 +676,7 @@ const translated = {
         "一個花太多時間研究海報版面的單人工作室。如果你有回饋、使用情境或錯誤要回報，請寄信至 support@texttoposter.com，我們會親自閱讀。",
       transparencyTitle: "透明度",
       transparencyBody:
-        "Text to Poster 不宣稱擁有或代表底層圖像模型。生成由 APIMart 的 gpt-image-2-official 端點提供；若發布內容需要揭露，請先閱讀 AI 使用政策。",
+        "Text to Poster 不宣稱擁有或代表底層圖像模型。生成由 APIMart 的 gpt-image-2.5-flare 端點提供；若發布內容需要揭露，請先閱讀 AI 使用政策。",
     },
     home: {
       ...englishMessages.home,
@@ -670,7 +757,7 @@ const translated = {
       restoreFailed: "無法還原最近的生成紀錄。",
       safetyReviewFailed: "提示詞未通過安全審查。",
       startFailed: "無法開始這次生成。",
-      aiDisclosure: "使用 GPT Image 2 生成 AI 圖像。",
+      aiDisclosure: "使用 GPT Image 2.5 生成 AI 圖像。",
       readPolicy: "閱讀 AI 使用政策。",
       freeAccount: "免費帳戶",
       proFeature: "Pro 功能",
@@ -707,7 +794,7 @@ const translated = {
       intro:
         "付費方案每次最多回傳四張海報。免費帳戶每天最多四張海報圖片；訪客無需登入，每天可免費生成一張帶浮水印的 1K 海報。年繳方案仍會每月更新點數。",
       footnote:
-        "圖像引擎：透過 APIMart 使用 GPT Image 2。AI 生成內容請在發布前審閱。",
+        "圖像引擎：透過 APIMart 使用 GPT Image 2.5。AI 生成內容請在發布前審閱。",
       readRefundPolicy: "查看政策。",
       billingPeriod: "付款週期",
       monthly: "每月",
@@ -747,7 +834,7 @@ const translated = {
       monthlyCredits: "每月 {credits} 點",
       monthlyWindowCredits: "每月週期 {credits} 點",
       outputOptions: "1K／2K／4K 輸出",
-      mediumHighFinish: "中等與高品質",
+      mediumHighFinish: "中等、高與最高品質",
       highFinish: "最終匯出的高品質",
       noWatermarkHistory: "無浮水印、私人紀錄",
       fullCreatorAccess: "完整 Creator 工作室功能",
@@ -902,7 +989,7 @@ const translated = {
         "初期のアイデアは繊細です。頭の中だけにあるブリーフは、クライアントやチーム、自分の感覚と共有しにくいもの。1文を入力して1〜4案を得てから、本当にデザイン時間をかける案を選べるツールを目指しました。それがこのプロダクトのすべてです。",
       howTitle: "仕組み",
       howBody:
-        "ブリーフを構造化したプロンプトに変換し、画像生成プロバイダーのAPIMartを通してGPT Image 2へ送ります。1回につき最大4つの構図を生成し、アカウントに非公開で保存します。無料生成には透かしが入り、CreatorとStudioではフル解像度や品質設定、最大4枚生成が使えます。",
+        "ブリーフを構造化したプロンプトに変換し、画像生成プロバイダーのAPIMartを通してGPT Image 2.5へ送ります。1回につき最大4つの構図を生成し、アカウントに非公開で保存します。無料生成には透かしが入り、CreatorとStudioではフル解像度や品質設定、最大4枚生成が使えます。",
       careTitle: "大切にしていること",
       careBody:
         "生成画像はデフォルトで非公開です。無料制限には生のIPやブラウザ情報ではなく、ソルト付きハッシュのゲストキーを使います。プロンプトや出力を販売したり広告プロフィールに使ったりせず、支払いは記録上の販売者であるWaffoが処理します。プライバシー、規約、返金、AI利用ポリシーを公開しています。",
@@ -911,7 +998,7 @@ const translated = {
         "ポスターのレイアウトに時間をかけすぎる一人のスタジオです。フィードバックや利用例、バグ報告はsupport@texttoposter.comまでお送りください。",
       transparencyTitle: "透明性",
       transparencyBody:
-        "Text to Posterは基盤となる画像モデルの所有や代表を主張しません。生成はAPIMartのgpt-image-2-officialエンドポイントを通じて提供されます。公開前にAI利用ポリシーをご確認ください。",
+        "Text to Posterは基盤となる画像モデルの所有や代表を主張しません。生成はAPIMartのgpt-image-2.5-flareエンドポイントを通じて提供されます。公開前にAI利用ポリシーをご確認ください。",
     },
     home: {
       ...englishMessages.home,
@@ -979,7 +1066,7 @@ const translated = {
       restoreFailed: "最近の生成履歴を復元できませんでした。",
       safetyReviewFailed: "プロンプトが安全審査を通過しませんでした。",
       startFailed: "生成を開始できませんでした。",
-      aiDisclosure: "GPT Image 2で生成したAI画像です。",
+      aiDisclosure: "GPT Image 2.5で生成したAI画像です。",
       readPolicy: "AI利用ポリシーを読む",
       freeAccount: "無料アカウント",
       proFeature: "Pro機能",
@@ -1017,7 +1104,7 @@ const translated = {
       intro:
         "有料プランでは1回の生成で最大4枚のポスターを作成できます。無料アカウントではUTC日付ごとに最大4枚、ゲストはログインなしで透かし付き1Kポスターを1枚作成できます。年額プランもクレジットは毎月更新されます。",
       footnote:
-        "画像エンジン：APIMart経由のGPT Image 2。AI生成物は公開前に確認してください。",
+        "画像エンジン：APIMart経由のGPT Image 2.5。AI生成物は公開前に確認してください。",
       readRefundPolicy: "ポリシーを読む",
       billingPeriod: "請求期間",
       monthly: "月額",
@@ -1060,7 +1147,7 @@ const translated = {
       monthlyCredits: "毎月{credits}クレジット",
       monthlyWindowCredits: "毎月の期間に{credits}クレジット",
       outputOptions: "1K／2K／4K出力",
-      mediumHighFinish: "Medium／High品質",
+      mediumHighFinish: "Medium／High／Max品質",
       highFinish: "最終出力向けHigh品質",
       noWatermarkHistory: "透かしなし、非公開履歴",
       fullCreatorAccess: "Creatorの全機能",
@@ -1115,6 +1202,7 @@ const translated = {
     },
     billing: {
       ...englishMessages.billing,
+      billing: "請求",
       keepIdeasMoving: "良いアイデアを前に進めましょう。",
       cancellationScheduled: "解約を予約しました",
       active: "有効",
@@ -1212,7 +1300,7 @@ const translated = {
         "Los primeros conceptos son frágiles. Un brief que solo vive en tu cabeza cuesta compartirlo con un cliente, un equipo o incluso con tu propio criterio. Queríamos abaratar el primer borrador: escribe una frase, recibe de una a cuatro direcciones y decide después cuál merece tiempo de diseño real. Ese es todo el producto.",
       howTitle: "Cómo funciona",
       howBody:
-        "Tu brief se convierte en un prompt estructurado y se envía a GPT Image 2 mediante APIMart. El estudio genera hasta cuatro composiciones por ejecución y las guarda de forma privada en tu cuenta. Las ejecuciones gratuitas llevan marca de agua; Creator y Studio desbloquean resolución completa, ajustes de calidad y hasta cuatro pósters por ejecución.",
+        "Tu brief se convierte en un prompt estructurado y se envía a GPT Image 2.5 mediante APIMart. El estudio genera hasta cuatro composiciones por ejecución y las guarda de forma privada en tu cuenta. Las ejecuciones gratuitas llevan marca de agua; Creator y Studio desbloquean resolución completa, ajustes de calidad y hasta cuatro pósters por ejecución.",
       careTitle: "Lo que nos importa",
       careBody:
         "Las imágenes generadas son privadas por defecto. Los límites gratuitos usan una clave de invitado cifrada con salt, no la IP ni datos directos del navegador; los prompts y resultados no se venden ni se usan para perfiles publicitarios; Waffo procesa cada cobro como vendedor registrado. Publicamos nuestras políticas para que sepas qué ocurre con tu material.",
@@ -1221,7 +1309,7 @@ const translated = {
         "Un estudio de una persona que pasa demasiado tiempo con los diseños de póster. Para comentarios, casos de uso o errores, escribe a support@texttoposter.com; personas reales lo leen.",
       transparencyTitle: "Transparencia",
       transparencyBody:
-        "Text to Poster no afirma ser propietario ni representar el modelo de imagen subyacente. La generación se ofrece mediante el endpoint gpt-image-2-official de APIMart; revisa la política de uso de IA antes de publicar cuando sea necesario declararlo.",
+        "Text to Poster no afirma ser propietario ni representar el modelo de imagen subyacente. La generación se ofrece mediante el endpoint gpt-image-2.5-flare de APIMart; revisa la política de uso de IA antes de publicar cuando sea necesario declararlo.",
     },
     home: {
       ...englishMessages.home,
@@ -1290,7 +1378,7 @@ const translated = {
       restoreFailed: "No se pudieron restaurar las generaciones recientes.",
       safetyReviewFailed: "El prompt no superó la revisión de seguridad.",
       startFailed: "No se pudo iniciar esta generación.",
-      aiDisclosure: "Generado con IA mediante GPT Image 2.",
+      aiDisclosure: "Generado con IA mediante GPT Image 2.5.",
       readPolicy: "Leer la política de uso de IA",
       freeAccount: "Cuenta gratuita",
       proFeature: "Función Pro",
@@ -1364,7 +1452,7 @@ const translated = {
       monthlyCredits: "{credits} créditos cada mes",
       monthlyWindowCredits: "{credits} créditos en cada periodo mensual",
       outputOptions: "Salida 1K / 2K / 4K",
-      mediumHighFinish: "Acabados Medium y High",
+      mediumHighFinish: "Acabados Medium, High y Max",
       highFinish: "Acabado High para exportaciones finales",
       noWatermarkHistory: "Sin marca de agua, historial privado",
       fullCreatorAccess: "Acceso completo al estudio Creator",
@@ -1419,6 +1507,7 @@ const translated = {
     },
     billing: {
       ...englishMessages.billing,
+      billing: "Facturación",
       keepIdeasMoving: "Sigue avanzando con las buenas ideas.",
       cancellationScheduled: "Cancelación programada",
       active: "Activa",
@@ -1518,7 +1607,7 @@ const translated = {
         "الأفكار الأولى حساسة. من الصعب مشاركة وصف لا يعيش إلا في ذهنك مع عميل أو فريق أو حتى ذوقك الخاص. أردنا أداة تجعل المسودة الأولى منخفضة التكلفة: اكتب جملة، واحصل على اتجاه إلى أربعة اتجاهات، ثم قرر ما يستحق وقت التصميم الحقيقي. هذا هو المنتج كله.",
       howTitle: "كيف تعمل",
       howBody:
-        "يُحوّل وصفك إلى طلب منظم ويُرسل إلى GPT Image 2 عبر APIMart. ينشئ الاستوديو ما يصل إلى أربع تركيبات في كل عملية ويحفظها بشكل خاص في حسابك. تحمل العمليات المجانية علامة مائية، بينما تفتح خطتا Creator وStudio الدقة الكاملة وإعدادات الجودة وإنشاء ما يصل إلى أربعة ملصقات.",
+        "يُحوّل وصفك إلى طلب منظم ويُرسل إلى GPT Image 2.5 عبر APIMart. ينشئ الاستوديو ما يصل إلى أربع تركيبات في كل عملية ويحفظها بشكل خاص في حسابك. تحمل العمليات المجانية علامة مائية، بينما تفتح خطتا Creator وStudio الدقة الكاملة وإعدادات الجودة وإنشاء ما يصل إلى أربعة ملصقات.",
       careTitle: "ما نهتم به",
       careBody:
         "تبقى الصور المُنشأة خاصة افتراضيًا. تُفرض الحدود المجانية باستخدام مفتاح زائر مجزأ مع إضافة salt بدلًا من عنوان IP أو بيانات المتصفح الخام؛ ولا تُباع الطلبات والنتائج أو تُستخدم لملفات إعلانية؛ وتعالج Waffo كل دفعة بصفتها التاجر المسجل. ننشر سياسات الخصوصية والشروط والاسترداد واستخدام الذكاء الاصطناعي بوضوح.",
@@ -1527,7 +1616,7 @@ const translated = {
         "استوديو يديره شخص واحد يقضي وقتًا طويلًا في تخطيطات الملصقات. للملاحظات أو حالات الاستخدام أو الإبلاغ عن خطأ، راسل support@texttoposter.com وسيقرأها أشخاص حقيقيون.",
       transparencyTitle: "الشفافية",
       transparencyBody:
-        "لا تدّعي Text to Poster امتلاك نموذج الصور الأساسي أو تمثيله. يتم التوليد عبر نقطة gpt-image-2-official من APIMart؛ راجع سياسة استخدام الذكاء الاصطناعي قبل النشر عندما يلزم الإفصاح.",
+        "لا تدّعي Text to Poster امتلاك نموذج الصور الأساسي أو تمثيله. يتم التوليد عبر نقطة gpt-image-2.5-flare من APIMart؛ راجع سياسة استخدام الذكاء الاصطناعي قبل النشر عندما يلزم الإفصاح.",
     },
     home: {
       ...englishMessages.home,
@@ -1593,7 +1682,7 @@ const translated = {
       restoreFailed: "تعذّرت استعادة عمليات الإنشاء الأخيرة.",
       safetyReviewFailed: "لم يجتز الوصف مراجعة السلامة.",
       startFailed: "تعذّر بدء عملية الإنشاء.",
-      aiDisclosure: "تم الإنشاء بالذكاء الاصطناعي باستخدام GPT Image 2.",
+      aiDisclosure: "تم الإنشاء بالذكاء الاصطناعي باستخدام GPT Image 2.5.",
       readPolicy: "قراءة سياسة استخدام الذكاء الاصطناعي",
       freeAccount: "حساب مجاني",
       proFeature: "ميزة Pro",
@@ -1667,7 +1756,7 @@ const translated = {
       monthlyCredits: "{credits} رصيد كل شهر",
       monthlyWindowCredits: "{credits} رصيد في كل فترة شهرية",
       outputOptions: "إخراج 1K / 2K / 4K",
-      mediumHighFinish: "جودة متوسطة وعالية",
+      mediumHighFinish: "جودة متوسطة وعالية وقصوى",
       highFinish: "جودة عالية للتصدير النهائي",
       noWatermarkHistory: "من دون علامة مائية، سجل خاص",
       fullCreatorAccess: "الوصول الكامل إلى استوديو Creator",
@@ -1723,6 +1812,7 @@ const translated = {
     },
     billing: {
       ...englishMessages.billing,
+      billing: "الفوترة",
       keepIdeasMoving: "واصل تطوير الأفكار الجيدة.",
       cancellationScheduled: "تمت جدولة الإلغاء",
       active: "نشط",
@@ -1794,6 +1884,8 @@ const coverageTranslations = {
       qualityLow: "低／快速",
       qualityMedium: "中",
       qualityHigh: "高／精準",
+      qualityXHigh: "超高",
+      qualityMax: "最高",
       editorial: "編輯風格",
       imageLed: "圖像主導",
       statement: "主張風格",
@@ -1935,7 +2027,7 @@ const coverageTranslations = {
       pricingFeature2: "免費帳戶每天可生成 4 張海報圖片",
       pricingFeature3: "Creator 與 Studio 方案提供每月點數",
       pricingFeature4: "1K、2K 與 4K 匯出",
-      pricingFeature5: "中等與高完成度",
+      pricingFeature5: "中等、高與最高完成度",
       pricingFeature6: "無浮水印的私人紀錄",
       faqIntro:
         "從小處開始，從第一個結果學習，只調整真正需要改變的地方。以下回答文字製作海報與免費工作室的實際問題。",
@@ -2081,6 +2173,8 @@ const coverageTranslations = {
       qualityLow: "低／高速",
       qualityMedium: "中",
       qualityHigh: "高／精密",
+      qualityXHigh: "超高",
+      qualityMax: "最高",
       editorial: "エディトリアル",
       imageLed: "画像中心",
       statement: "ステートメント",
@@ -2229,7 +2323,7 @@ const coverageTranslations = {
       pricingFeature2: "無料アカウントは毎日4枚のポスター画像を作成可能",
       pricingFeature3: "Creator と Studio は毎月クレジットを付与",
       pricingFeature4: "1K、2K、4K の書き出し",
-      pricingFeature5: "Medium と High の仕上がり",
+      pricingFeature5: "Medium・High・Max の仕上がり",
       pricingFeature6: "透かしなしの非公開履歴",
       faqIntro:
         "まず小さく始め、最初の結果から学び、変えるべき部分だけを整えます。以下では無料スタジオでテキストからポスターを作る際の実用的な疑問に答えます。",
@@ -2403,6 +2497,8 @@ const coverageTranslations = {
       qualityLow: "Baja / rápida",
       qualityMedium: "Media",
       qualityHigh: "Alta / precisa",
+      qualityXHigh: "Extra alta",
+      qualityMax: "Máxima",
       editorial: "Editorial",
       imageLed: "Centrada en imagen",
       statement: "Expresiva",
@@ -2486,7 +2582,7 @@ const coverageTranslations = {
       intro:
         "Los planes de pago devuelven hasta cuatro pósteres por generación. Las cuentas gratuitas obtienen hasta cuatro imágenes por día UTC. Los invitados pueden probar una generación 1K con marca de agua por día UTC sin registrarse; los planes anuales también renuevan los créditos cada mes.",
       footnote:
-        "Motor de imágenes: GPT Image 2 mediante APIMart. Los resultados son generados por IA y deben revisarse antes de publicarse.",
+        "Motor de imágenes: GPT Image 2.5 mediante APIMart. Los resultados son generados por IA y deben revisarse antes de publicarse.",
       readRefundPolicy: "Leer la política.",
       saveUpTo: "Ahorra hasta {amount}",
       startCreatorMonthly: "Empezar Creator mensual",
@@ -2573,7 +2669,7 @@ const coverageTranslations = {
         "Las cuentas gratuitas obtienen cuatro imágenes de póster por día UTC",
       pricingFeature3: "Los planes Creator y Studio añaden créditos mensuales",
       pricingFeature4: "Exportaciones 1K, 2K y 4K",
-      pricingFeature5: "Acabados Medium y High",
+      pricingFeature5: "Acabados Medium, High y Max",
       pricingFeature6: "Historial privado sin marca de agua",
       faqIntro:
         "Empieza con algo pequeño, aprende del primer resultado y ajusta solo lo que necesite cambiar. Estas respuestas cubren los detalles prácticos de crear un póster desde texto con el estudio gratuito.",
@@ -2749,6 +2845,8 @@ const coverageTranslations = {
       qualityLow: "منخفض / سريع",
       qualityMedium: "متوسط",
       qualityHigh: "عالٍ / دقيق",
+      qualityXHigh: "عالي جدًا",
+      qualityMax: "الأقصى",
       editorial: "تحريري",
       imageLed: "متمحور حول الصورة",
       statement: "تعبيري",
@@ -2824,7 +2922,7 @@ const coverageTranslations = {
       intro:
         "تعيد الخطط المدفوعة ما يصل إلى أربعة ملصقات في كل عملية إنشاء. تحصل الحسابات المجانية على ما يصل إلى أربع صور ملصقات يوميًا حسب UTC. ويمكن للزوار تجربة عملية إنشاء واحدة بدقة 1K مع علامة مائية يوميًا دون تسجيل الدخول؛ كما تُحدّث الخطط السنوية الأرصدة شهريًا.",
       footnote:
-        "محرك الصور: GPT Image 2 عبر APIMart. الصور مولّدة بالذكاء الاصطناعي ويجب مراجعتها قبل النشر.",
+        "محرك الصور: GPT Image 2.5 عبر APIMart. الصور مولّدة بالذكاء الاصطناعي ويجب مراجعتها قبل النشر.",
       readRefundPolicy: "اقرأ السياسة.",
       saveUpTo: "وفّر حتى {amount}",
       startCreatorMonthly: "بدء Creator الشهري",
@@ -2904,7 +3002,7 @@ const coverageTranslations = {
         "تحصل الحسابات المجانية على أربع صور ملصقات يوميًا حسب UTC",
       pricingFeature3: "تضيف خطتا Creator وStudio أرصدة شهرية",
       pricingFeature4: "تصدير بدقة 1K و2K و4K",
-      pricingFeature5: "تشطيبات Medium وHigh",
+      pricingFeature5: "تشطيبات Medium وHigh وMax",
       pricingFeature6: "سجل خاص بلا علامة مائية",
       faqIntro:
         "ابدأ بخطوة صغيرة، وتعلّم من النتيجة الأولى، ونقّح ما يحتاج إلى تغيير فقط. تغطي هذه الإجابات التفاصيل العملية لإنشاء ملصق من النص باستخدام الاستوديو المجاني.",

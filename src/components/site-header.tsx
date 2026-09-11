@@ -2,8 +2,8 @@
 
 import ky from "ky";
 import { ArrowUpRight, Menu, X } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { HeaderLoginDialog } from "@/components/header-login-dialog";

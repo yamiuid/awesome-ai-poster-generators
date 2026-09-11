@@ -4,7 +4,7 @@
 
 ## The list
 
-- [**Text to Poster**](https://texttoposter.com) — Describe a subject, mood, or words (or paste a URL / drop a reference image), and get **up to four poster directions in seconds**. Free to try without login (watermarked previews); Pro unlocks full resolution, quality presets, and private history. Built with Next.js, Supabase, Cloudflare R2, and GPT Image 2. **Our project.**
+- [**Text to Poster**](https://texttoposter.com) — Describe a subject, mood, or words (or paste a URL / drop a reference image), and get **up to four poster directions in seconds**. Free to try without login (watermarked previews); Pro unlocks full resolution, quality presets, and private history. Built with Next.js, Supabase, Cloudflare R2, and GPT Image 2.5. **Our project.**
 - [Canva](https://www.canva.com/ai-image-generator/) — All-in-one design platform with AI image generation and poster templates.
 - [Ideogram](https://ideogram.ai) — AI image generator known for reliable text rendering, popular for posters and typography.
 - [Recraft](https://www.recraft.ai) — AI generation focused on text, brand styles, and vector-style posters.
@@ -20,7 +20,7 @@
 
 Turn a written brief — or any web page — into up to four private poster directions in seconds. Describe the subject, mood, audience, or the words you want to see, paste a URL to analyze, or attach a reference image; the studio generates distinct compositions you can compare, keep, and download — no design skills needed.
 
-A paid English-language MVP built with Next.js, Supabase, Cloudflare R2, and GPT Image 2 (via APIMart). Guests can try it free (watermarked previews, daily quota), while Creator and Studio plans unlock full resolution, high quality, and private history.
+A paid English-language MVP built with Next.js, Supabase, Cloudflare R2, and GPT Image 2.5 (via APIMart). Guests can try it free (watermarked previews, daily quota), while Creator and Studio plans unlock full resolution, high quality, and private history.
 
 ### What's inside
 
@@ -45,7 +45,7 @@ A paid English-language MVP built with Next.js, Supabase, Cloudflare R2, and GPT
 | Styling | Custom design tokens + Tailwind CSS v4 |
 | Database & Auth | Supabase (Postgres + RLS, GoTrue PKCE auth) |
 | Image storage | Supabase Storage **or** Cloudflare R2 (S3-compatible) via `STORAGE_PROVIDER` |
-| Image generation | APIMart `gpt-image-2-official` (GPT Image 2); text model for brief/URL analysis |
+| Image generation | APIMart `gpt-image-2.5-flare` (GPT Image 2.5); text model for brief/URL analysis |
 | Payments | Waffo (`@waffo/pancake-ts` SDK): checkout, webhooks, subscription lifecycle |
 | Watermarking | Sharp (composite + PNG) |
 | Language | TypeScript, validated with Zod |
