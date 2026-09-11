@@ -3,8 +3,8 @@ import { AppError, responseForError } from "@/lib/server/errors";
 import { createSupabaseAdminClient } from "@/lib/server/supabase/admin";
 import { verifyWaffoWebhook } from "@/lib/server/waffo";
 import {
-  periodEnd,
   planFor,
+  resolvePeriod,
   shouldApplySubscriptionEvent,
   shouldProcessPaymentEvent,
   statusFor,
@@ -62,7 +62,8 @@ export async function POST(request: Request): Promise<Response> {
       "order.completed",
       "subscription.activated",
       "subscription.payment_succeeded",
-      "subscription.updated",
+      "subscription.renewed",
+      "subscription.recovered",
       "subscription.canceling",
       "subscription.uncanceled",
       "subscription.canceled",
@@ -80,6 +81,9 @@ export async function POST(request: Request): Promise<Response> {
       const plan = planFor(data, existing?.plan ?? null);
       const tier = tierFor(data, existing?.tier ?? "creator");
       const status = statusFor(event.eventType, data.orderStatus);
+      const carriesPeriod = Boolean(
+        data.currentPeriodStart || data.currentPeriodEnd,
+      );
       const shouldApply =
         status !== null &&
         shouldApplySubscriptionEvent(
@@ -91,18 +95,23 @@ export async function POST(request: Request): Promise<Response> {
                 lastEventAt: existing.last_event_at,
               }
             : null,
-          { orderId: data.orderId, status, timestamp: event.timestamp },
+          {
+            orderId: data.orderId,
+            status,
+            timestamp: event.timestamp,
+            carriesPeriod,
+          },
         );
       if (plan && status && shouldApply) {
         const isCurrentOrder = existing?.waffo_order_id === data.orderId;
-        const start =
-          data.currentPeriodStart ??
-          (isCurrentOrder ? existing?.period_start : undefined) ??
-          event.timestamp;
-        const end =
-          data.currentPeriodEnd ??
-          (isCurrentOrder ? existing?.period_end : undefined) ??
-          periodEnd(start, plan);
+        const { start, end } = resolvePeriod(
+          data,
+          plan,
+          isCurrentOrder
+            ? { start: existing?.period_start, end: existing?.period_end }
+            : {},
+          event.timestamp,
+        );
         const { error: subscriptionError } = await admin
           .from("subscriptions")
           .upsert(

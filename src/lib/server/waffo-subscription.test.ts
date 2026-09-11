@@ -4,6 +4,7 @@ import {
   lifecycleState,
   periodEnd,
   planFor,
+  resolvePeriod,
   shouldApplySubscriptionEvent,
   shouldProcessPaymentEvent,
   statusFor,
@@ -44,6 +45,52 @@ describe("periodEnd", () => {
     expect(periodEnd("2026-01-31T00:00:00Z", "monthly")).toBe(
       "2026-02-28T00:00:00.000Z",
     );
+  });
+});
+
+describe("resolvePeriod", () => {
+  const stored = {
+    start: "2026-08-08T00:00:00.000Z",
+    end: "2026-09-08T00:00:00.000Z",
+  };
+  const PAID_AT = "2026-09-08T04:20:43.300Z";
+
+  it("prefers the authoritative period carried by subscription events", () => {
+    expect(
+      resolvePeriod(
+        {
+          currentPeriodStart: "2026-09-08",
+          currentPeriodEnd: "2026-10-08",
+          paymentDate: "2026-09-08",
+        },
+        "monthly",
+        stored,
+        PAID_AT,
+      ),
+    ).toEqual({ start: "2026-09-08", end: "2026-10-08" });
+  });
+
+  it("derives the next period from paymentDate once payment_succeeded drops the fields", () => {
+    expect(
+      resolvePeriod({ paymentDate: "2026-09-08" }, "monthly", stored, PAID_AT),
+    ).toEqual({ start: "2026-09-08", end: "2026-10-08T00:00:00.000Z" });
+  });
+
+  it("rolls a yearly renewal forward twelve months", () => {
+    expect(
+      resolvePeriod({ paymentDate: "2026-09-08" }, "yearly", {}, PAID_AT),
+    ).toEqual({ start: "2026-09-08", end: "2027-09-08T00:00:00.000Z" });
+  });
+
+  it("keeps the stored period for events without any period signal", () => {
+    expect(resolvePeriod({}, "monthly", stored, PAID_AT)).toEqual(stored);
+  });
+
+  it("falls back to the event timestamp for an order with nothing stored", () => {
+    expect(resolvePeriod({}, "monthly", {}, PAID_AT)).toEqual({
+      start: PAID_AT,
+      end: "2026-10-08T04:20:43.300Z",
+    });
   });
 });
 
@@ -118,6 +165,18 @@ describe("statusFor", () => {
 
   it("treats subscription.payment_succeeded as active", () => {
     expect(statusFor("subscription.payment_succeeded")).toBe("active");
+  });
+
+  it("treats subscription.renewed as active", () => {
+    expect(statusFor("subscription.renewed")).toBe("active");
+  });
+
+  it("treats subscription.recovered as active", () => {
+    expect(statusFor("subscription.recovered")).toBe("active");
+  });
+
+  it("no longer maps the retired subscription.updated event", () => {
+    expect(statusFor("subscription.updated")).toBeNull();
   });
 
   it("treats subscription.uncanceled as active", () => {
@@ -219,5 +278,61 @@ describe("shouldApplySubscriptionEvent", () => {
         new Date("2026-08-10T00:00:00.000Z"),
       ),
     ).toBe(true);
+  });
+
+  it("applies a period-bearing event delivered at the same instant as the payment event", () => {
+    expect(
+      shouldApplySubscriptionEvent(
+        {
+          orderId: "ORD_1",
+          status: "active",
+          periodEnd: "2026-09-08T00:00:00.000Z",
+          lastEventAt: "2026-09-08T04:20:43.300Z",
+        },
+        {
+          orderId: "ORD_1",
+          status: "active",
+          timestamp: "2026-09-08T04:20:43.300Z",
+          carriesPeriod: true,
+        },
+      ),
+    ).toBe(true);
+  });
+
+  it("skips a period-less payment event that lands after renewed at the same instant", () => {
+    expect(
+      shouldApplySubscriptionEvent(
+        {
+          orderId: "ORD_1",
+          status: "active",
+          periodEnd: "2026-09-08T00:00:00.000Z",
+          lastEventAt: "2026-09-08T04:20:43.300Z",
+        },
+        {
+          orderId: "ORD_1",
+          status: "active",
+          timestamp: "2026-09-08T04:20:43.300Z",
+        },
+      ),
+    ).toBe(false);
+  });
+
+  it("still ignores a period-bearing event with an older timestamp", () => {
+    expect(
+      shouldApplySubscriptionEvent(
+        {
+          orderId: "ORD_1",
+          status: "active",
+          periodEnd: "2026-09-08T00:00:00.000Z",
+          lastEventAt: "2026-09-08T04:20:43.300Z",
+        },
+        {
+          orderId: "ORD_1",
+          status: "active",
+          timestamp: "2026-09-08T04:20:43.000Z",
+          carriesPeriod: true,
+        },
+      ),
+    ).toBe(false);
   });
 });

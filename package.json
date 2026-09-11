@@ -34,7 +34,7 @@
     "@img/sharp-linux-x64": "0.34.5",
     "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "2.111.0",
-    "@waffo/pancake-ts": "0.16.1",
+    "@waffo/pancake-ts": "^0.21.0",
     "cheerio": "^1.2.0",
     "ky": "2.0.2",
     "lucide-react": "1.28.0",

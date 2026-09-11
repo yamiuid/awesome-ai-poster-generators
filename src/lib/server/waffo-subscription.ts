@@ -29,6 +29,11 @@ export type SubscriptionEventCursor = Readonly<{
   orderId: string;
   status: SubscriptionStatus;
   timestamp: string;
+  /**
+   * 该事件是否携带权威的订阅周期字段（currentPeriodStart / currentPeriodEnd）。
+   * 订阅域事件携带，subscription.payment_succeeded 自 2026-09-06 起不再携带。
+   */
+  carriesPeriod?: boolean;
 }>;
 
 export type CurrentSubscriptionCursor = Readonly<{
@@ -125,11 +130,18 @@ export function shouldApplySubscriptionEvent(
       )
     );
   }
-  return (
-    existing.lastEventAt === null ||
-    new Date(incoming.timestamp).getTime() >
-      new Date(existing.lastEventAt).getTime()
-  );
+  if (existing.lastEventAt === null) {
+    return true;
+  }
+  const incomingAt = new Date(incoming.timestamp).getTime();
+  const existingAt = new Date(existing.lastEventAt).getTime();
+  if (incomingAt > existingAt) {
+    return true;
+  }
+  // subscription.payment_succeeded 与 subscription.renewed 在同一时刻分别投递、
+  // 顺序不保证，且周期字段只存在于订阅域事件上。同刻投递时让携带周期的事件胜出，
+  // 否则先到的付款事件会占住 last_event_at，把 renewal 的周期更新丢弃。
+  return incomingAt === existingAt && incoming.carriesPeriod === true;
 }
 
 export function shouldProcessPaymentEvent(
@@ -149,6 +161,55 @@ export function periodEnd(start: string, plan: SubscriptionPlan): string {
   ).getUTCDate();
   date.setUTCDate(Math.min(day, lastDay));
   return date.toISOString();
+}
+
+function nonEmpty(value: string | null | undefined): string | undefined {
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : undefined;
+}
+
+export type SubscriptionPeriodSource = Readonly<{
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  paymentDate?: string;
+}>;
+
+export type SubscriptionPeriodFallback = Readonly<{
+  start?: string | null;
+  end?: string | null;
+}>;
+
+/**
+ * 解析一笔事件对应的计费周期。
+ *
+ * 订阅域事件（activated / renewed / recovered / canceling …）携带权威周期字段；
+ * subscription.payment_succeeded 自 2026-09-06 起是纯支付事件，不再携带这些字段。
+ * 此时按公告口径用 paymentDate + 商品计费周期推断新周期，避免续费后订阅停留在旧
+ * 周期、被 lifecycleState 判为 stale 而失去权益。没有新周期信号的事件（如
+ * refund.succeeded）沿用已存周期，不做推进。
+ */
+export function resolvePeriod(
+  data: SubscriptionPeriodSource,
+  plan: SubscriptionPlan,
+  fallback: SubscriptionPeriodFallback,
+  timestamp: string,
+): Readonly<{ start: string; end: string }> {
+  const startFromEvent = nonEmpty(data.currentPeriodStart);
+  const endFromEvent = nonEmpty(data.currentPeriodEnd);
+  const paidOn = nonEmpty(data.paymentDate);
+  const start =
+    startFromEvent ?? paidOn ?? nonEmpty(fallback.start) ?? timestamp;
+  const hasFreshPeriod =
+    startFromEvent !== undefined ||
+    endFromEvent !== undefined ||
+    paidOn !== undefined;
+  const end =
+    endFromEvent ??
+    (hasFreshPeriod
+      ? periodEnd(start, plan)
+      : (nonEmpty(fallback.end) ?? periodEnd(start, plan)));
+  return { start, end };
 }
 
 export function planFor(
@@ -200,7 +261,8 @@ export function statusFor(
         "order.completed",
         "subscription.activated",
         "subscription.payment_succeeded",
-        "subscription.updated",
+        "subscription.renewed",
+        "subscription.recovered",
         "subscription.uncanceled",
       ].includes(eventType)
         ? "active"
