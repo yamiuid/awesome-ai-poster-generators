@@ -19,7 +19,8 @@ vi.mock("@/lib/server/waffo", () => ({
 
 import { POST } from "./route";
 
-const FUTURE = "2026-09-10T00:00:00.000Z";
+// 固定为远期日期：夹具一旦过期，lifecycleState 会把活跃订阅判成 stale，用例随之失败。
+const FUTURE = "2099-01-01T00:00:00.000Z";
 
 function configureSubscription(status: "active" | "canceling"): void {
   const query = {
