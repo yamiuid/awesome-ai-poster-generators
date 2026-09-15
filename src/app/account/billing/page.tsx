@@ -49,7 +49,11 @@ export default async function BillingPage() {
             <div className="billing-top">
               <div>
                 <p className="eyebrow">
-                  {subscription.tier === "studio" ? t("studio") : t("creator")}{" "}
+                  {subscription.tier === "studio"
+                    ? t("studio")
+                    : subscription.tier === "scale"
+                      ? t("scale")
+                      : t("creator")}{" "}
                   /{" "}
                   {subscription.plan === "yearly" ? t("yearly") : t("monthly")}
                 </p>

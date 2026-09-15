@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { WebhookEvent, WebhookEventData } from "@waffo/pancake-ts";
+import { creditPackFor, isCreditPackPlan } from "@/lib/domain/plans";
 import { AppError } from "./errors";
 import type { Database } from "./supabase/types";
 import {
@@ -175,6 +176,78 @@ export async function applySubscriptionEvent(
     throw new AppError(
       "SUBSCRIPTION_WRITE_FAILED",
       "The subscription could not be updated.",
+      503,
+    );
+  }
+  return "applied";
+}
+
+/** 该事件是否属于积分包订单（checkout metadata 由 /api/checkout 写入）。 */
+export function isCreditPackOrder(
+  data: Pick<WebhookEventData, "orderMetadata">,
+): boolean {
+  const kind = data.orderMetadata?.["kind"];
+  if (kind === "credit_pack") {
+    return true;
+  }
+  const plan = data.orderMetadata?.["checkoutPlan"];
+  return typeof plan === "string" && isCreditPackPlan(plan);
+}
+
+/**
+ * 一次性积分包事件处理（独立于订阅白名单，防止把一次性订单当订阅激活）。
+ *
+ * - `order.completed`：一次性订单首付款成功 → 按服务端 CREDIT_PACKS 常量表
+ *   入账积分（RPC 幂等，幂等键绑定 orderId）。
+ * - `refund.succeeded`：V1 不自动扣回积分，只记日志转人工处理。
+ */
+export async function applyCreditPackEvent(
+  admin: SupabaseClient<Database>,
+  event: WaffoEventPayload,
+): Promise<SubscriptionEventOutcome> {
+  if (!isCreditPackOrder(event.data)) {
+    return "skipped";
+  }
+  if (event.eventType === "refund.succeeded") {
+    console.error("Credit pack refund requires manual credit adjustment", {
+      orderId: event.data.orderId,
+      eventType: event.eventType,
+    });
+    return "skipped";
+  }
+  if (event.eventType !== "order.completed") {
+    return "skipped";
+  }
+
+  const data = event.data;
+  const userId = resolveEventUserId(data);
+  if (!userId) {
+    console.error("Waffo credit pack event without a mappable account", {
+      eventType: event.eventType,
+      orderId: data.orderId,
+    });
+    return "skipped";
+  }
+
+  const planName = data.orderMetadata?.["checkoutPlan"];
+  const pack = typeof planName === "string" ? creditPackFor(planName) : null;
+  if (!pack) {
+    console.error("Waffo credit pack event with an unknown plan", {
+      orderId: data.orderId,
+      plan: planName,
+    });
+    return "skipped";
+  }
+
+  const { data: granted, error } = await admin.rpc("apply_credit_pack_grant", {
+    p_user_id: userId,
+    p_order_id: data.orderId,
+    p_amount: pack.credits,
+  });
+  if (error || granted === null) {
+    throw new AppError(
+      "CREDIT_PACK_GRANT_FAILED",
+      "The credit pack could not be applied.",
       503,
     );
   }

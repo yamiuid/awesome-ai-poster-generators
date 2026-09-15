@@ -438,13 +438,6 @@ export function UrlPipelineModal({
                         <p className="brief-cta">{briefFields.cta}</p>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      className="brief-edit-button"
-                      onClick={() => setEditingBrief(true)}
-                    >
-                      {t("edit")}
-                    </button>
                   </div>
                 ) : (
                   <div className="brief-form">
@@ -532,22 +525,24 @@ export function UrlPipelineModal({
                         }
                       />
                     </label>
-                    <button
-                      type="button"
-                      className="brief-edit-button"
-                      onClick={() => setEditingBrief(false)}
-                    >
-                      {t("doneEditing")}
-                    </button>
                   </div>
                 )}
-                <button
-                  type="button"
-                  className="generate-button"
-                  onClick={handleGenerate}
-                >
-                  <Sparkles size={18} /> {t("generate")}
-                </button>
+                <div className="pipeline-actions">
+                  <button
+                    type="button"
+                    className="outline-button pipeline-edit-button"
+                    onClick={() => setEditingBrief((value) => !value)}
+                  >
+                    {editingBrief ? t("doneEditing") : t("edit")}
+                  </button>
+                  <button
+                    type="button"
+                    className="generate-button"
+                    onClick={handleGenerate}
+                  >
+                    <Sparkles size={18} /> {t("generate")}
+                  </button>
+                </div>
                 {step1Data?.ogImage && (
                   <p className="pipeline-meta">{t("pageImageReference")}</p>
                 )}
@@ -640,7 +635,7 @@ export function UrlPipelineModal({
                 <span>{streamError}</span>
                 <button
                   type="button"
-                  className="brief-edit-button"
+                  className="text-button"
                   onClick={startPipeline}
                 >
                   {t("retry")}

@@ -16,6 +16,14 @@ const serverEnvSchema = z
     WAFFO_YEARLY_PRODUCT_ID: z.string().min(1),
     WAFFO_STUDIO_MONTHLY_PRODUCT_ID: z.string().min(1).optional(),
     WAFFO_STUDIO_YEARLY_PRODUCT_ID: z.string().min(1).optional(),
+    // Scale 档位（3000 积分/月）
+    WAFFO_SCALE_MONTHLY_PRODUCT_ID: z.string().min(1).optional(),
+    WAFFO_SCALE_YEARLY_PRODUCT_ID: z.string().min(1).optional(),
+    // 一次性积分包商品（未配置时定价页 pack 卡片置灰）
+    WAFFO_PACK_STARTER_PRODUCT_ID: z.string().min(1).optional(),
+    WAFFO_PACK_STANDARD_PRODUCT_ID: z.string().min(1).optional(),
+    WAFFO_PACK_PRO_PRODUCT_ID: z.string().min(1).optional(),
+    WAFFO_PACK_MAX_PRODUCT_ID: z.string().min(1).optional(),
     SUPPORT_EMAIL: z.string().email().default("support@texttoposter.com"),
     CRON_SECRET: z.string().min(32),
     RATE_LIMIT_PEPPER: z.string().min(32),
@@ -77,4 +85,22 @@ export function isStudioPlanConfigured(): boolean {
     process.env["WAFFO_STUDIO_MONTHLY_PRODUCT_ID"] &&
       process.env["WAFFO_STUDIO_YEARLY_PRODUCT_ID"],
   );
+}
+
+export function isScalePlanConfigured(): boolean {
+  return Boolean(
+    process.env["WAFFO_SCALE_MONTHLY_PRODUCT_ID"] &&
+      process.env["WAFFO_SCALE_YEARLY_PRODUCT_ID"],
+  );
+}
+
+export function isCreditPackConfigured(plan: string): boolean {
+  const productIds: Record<string, string> = {
+    pack_starter: "WAFFO_PACK_STARTER_PRODUCT_ID",
+    pack_standard: "WAFFO_PACK_STANDARD_PRODUCT_ID",
+    pack_pro: "WAFFO_PACK_PRO_PRODUCT_ID",
+    pack_max: "WAFFO_PACK_MAX_PRODUCT_ID",
+  };
+  const key = productIds[plan];
+  return Boolean(key && process.env[key]);
 }

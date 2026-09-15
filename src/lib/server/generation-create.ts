@@ -38,21 +38,32 @@ function providerRequest(
   actor: GenerationActor,
 ): ProviderGenerationRequest {
   const { siteLocale: _siteLocale, ...providerBase } = request;
-  const quality: ProviderQuality =
-    actor.mode === "pro" ? request.quality : "low";
-  return {
-    ...providerBase,
-    resolution: actor.mode === "pro" ? request.resolution : "1k",
-    quality,
-    imageCount:
-      actor.mode === "pro"
-        ? request.imageCount
-        : actor.mode === "guest"
-          ? 1
-          : request.imageCount > 2
-            ? 2
-            : request.imageCount,
-  };
+  if (actor.mode === "guest") {
+    return {
+      ...providerBase,
+      resolution: "1k",
+      quality: "low" as ProviderQuality,
+      imageCount: 1,
+    };
+  }
+  if (actor.mode === "free") {
+    // 免费档位：1K + low/medium。UI 已锁定，这里兜底防止直接调 API 绕过，
+    // 超出部分静默降级，积分按降级后的实际档位扣减。
+    const quality: ProviderQuality =
+      request.quality === "high" ||
+      request.quality === "xhigh" ||
+      request.quality === "max"
+        ? "medium"
+        : request.quality;
+    return {
+      ...providerBase,
+      resolution: "1k",
+      quality,
+      imageCount: request.imageCount,
+    };
+  }
+  // pro 订阅用户按用户选择的档位生成，费用由积分承担。
+  return { ...providerBase, imageCount: request.imageCount };
 }
 
 export async function createGeneration(
@@ -68,14 +79,15 @@ export async function createGeneration(
     );
   }
   const providerInput = providerRequest(request, actor);
+  // 积分按实际生成档位（free 模式可能被降级）计算
   const credits =
-    actor.mode === "pro"
-      ? batchCreditCost(
-          request.resolution,
-          request.quality,
+    actor.mode === "guest"
+      ? 0
+      : batchCreditCost(
+          providerInput.resolution,
+          providerInput.quality,
           providerInput.imageCount,
-        )
-      : 0;
+        );
   const guestClaim = actor.mode !== "pro";
 
   let inserted: GenerationRow;
@@ -117,13 +129,12 @@ export async function createGeneration(
       );
     }
     if (parsed.data.outcome === "quota_exhausted") {
+      // free 模式已无每日配额，quota_exhausted 只会发生在 guest 终身 2 次用完时。
       throw new AppError(
+        actor.mode === "guest" ? "GUEST_LIMIT_REACHED" : "INSUFFICIENT_CREDITS",
         actor.mode === "guest"
-          ? "GUEST_LIMIT_REACHED"
-          : "FREE_DAILY_LIMIT_REACHED",
-        actor.mode === "guest"
-          ? "You have used your 1 free generation for today. Sign in or create an account for 4 free poster images each day."
-          : "You have used all 4 free poster images for today. Upgrade to Pro or come back tomorrow.",
+          ? "You have used your 2 free guest generations. Sign in or create an account to claim 30 welcome credits."
+          : "You do not have enough credits for this generation.",
         429,
       );
     }

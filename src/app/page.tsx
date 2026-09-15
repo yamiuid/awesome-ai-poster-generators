@@ -148,7 +148,7 @@ export default async function Home({
       lowPrice: "0",
       highPrice: "19.90",
       priceCurrency: "USD",
-      offerCount: 5,
+      offerCount: 8,
     },
   };
   const faqJsonLd = {
@@ -204,6 +204,7 @@ export default async function Home({
 
       <PosterStudio
         isPro={auth.isPro}
+        hasPack={auth.hasPack}
         isGuest={!auth.userId}
         {...(initialStyle ? { initialStyle } : {})}
       />
@@ -390,7 +391,7 @@ export default async function Home({
         <div className="pricing-card">
           <h3>{t("pricingCardTitle")}</h3>
           <p className="pricing-price">
-            $9.90–$19.90 <small>{t("pricingMonth")}</small>
+            $2.90–$19.90 <small>{t("pricingMonth")}</small>
           </p>
           <ul>
             <li>{t("pricingFeature1")}</li>

@@ -77,6 +77,8 @@ export type PosterStudioExample = Readonly<{
 
 type Props = Readonly<{
   isPro: boolean;
+  /** 用户是否购买过积分包（解锁全档位 + 无水印） */
+  hasPack: boolean;
   isGuest: boolean;
   initialStyle?: PosterStyle;
   examples?: readonly PosterStudioExample[];
@@ -118,12 +120,23 @@ const STUDIO_JOB_EXAMPLES: readonly PosterStudioExample[] = [
   },
 ];
 
-// 免费档位：1K / low / 最多 2 张；免费用户选了更高档位才显示锁，
-// 点击 Generate 时提示升级，不发起请求
-const FREE_RESOLUTION: Resolution = "1k";
-const FREE_QUALITY: Quality = "low";
-const FREE_MAX_IMAGES = 2;
+// 游客体验：1K / low / 每次 1 张，终身共 2 次（服务端 guest_usage 计数）；
+// 登录的积分用户解锁全部档位，按积分扣费，余额由 /api/account/status 返回
 const GUEST_MAX_IMAGES = 1;
+
+type AccountStatusPayload = Readonly<{
+  signedIn: boolean;
+  isPro: boolean;
+  balance?: {
+    available: number;
+    bucket: string;
+    grants: ReadonlyArray<{
+      source: string;
+      amount: number;
+      createdAt: string;
+    }>;
+  } | null;
+}>;
 
 const EMPTY_BRIEF_FIELDS: BriefFields = {
   headline: "",
@@ -155,6 +168,16 @@ type GenerateOverrides = Readonly<{
 
 function promptStudioLocale(rawLocale: string): UiLocale {
   return isUiLocale(rawLocale) ? rawLocale : "en";
+}
+
+async function fetchAccountStatus(): Promise<AccountStatusPayload | null> {
+  try {
+    return await ky
+      .get("/api/account/status", { timeout: 15_000 })
+      .json<AccountStatusPayload>();
+  } catch {
+    return null;
+  }
 }
 
 function deriveFieldsFromPrompt(promptText: string): BriefFields {
@@ -441,7 +464,7 @@ function OutputSettingsSelect({
   aspectRatio,
   resolution,
   quality,
-  isPro,
+  tier,
   disabled = false,
   onChangeAspect,
   onChangeResolution,
@@ -450,7 +473,8 @@ function OutputSettingsSelect({
   aspectRatio: AspectRatio;
   resolution: Resolution;
   quality: Quality;
-  isPro: boolean;
+  /** pro 全解锁；free 可用 1k + low/medium；guest 锁定 1k/low */
+  tier: "pro" | "free" | "guest";
   disabled?: boolean;
   onChangeAspect: (next: AspectRatio) => void;
   onChangeResolution: (next: Resolution) => void;
@@ -474,18 +498,23 @@ function OutputSettingsSelect({
         group: "resolution" as const,
         value: option,
         label: t(RESOLUTION_LABEL_KEYS[option]),
-        locked: option !== "1k" && !isPro,
+        locked: option !== "1k" && tier !== "pro",
         selected: option === resolution,
       })),
       ...QUALITIES.map((option) => ({
         group: "quality" as const,
         value: option,
         label: t(QUALITY_LABEL_KEYS[option]),
-        locked: option !== "low" && !isPro,
+        locked:
+          tier === "pro"
+            ? false
+            : tier === "guest"
+              ? option !== "low"
+              : option === "high" || option === "xhigh" || option === "max",
         selected: option === quality,
       })),
     ],
-    [aspectRatio, isPro, quality, resolution, t],
+    [aspectRatio, tier, quality, resolution, t],
   );
 
   const sections = useMemo(
@@ -782,7 +811,7 @@ function readApiSubmitError(error: unknown): ApiSubmitError | null {
   return { code: body.code };
 }
 
-function generationLimitKind(error: unknown): "guest" | "free" | null {
+function generationLimitKind(error: unknown): "guest" | "credits" | null {
   const parsed = readApiSubmitError(error);
   if (!parsed) {
     return null;
@@ -790,8 +819,8 @@ function generationLimitKind(error: unknown): "guest" | "free" | null {
   switch (parsed.code) {
     case "GUEST_LIMIT_REACHED":
       return "guest";
-    case "FREE_DAILY_LIMIT_REACHED":
-      return "free";
+    case "INSUFFICIENT_CREDITS":
+      return "credits";
     default:
       return null;
   }
@@ -1426,10 +1455,13 @@ function StudioHistoryPanel({
 
 export function PosterStudio({
   isPro,
+  hasPack,
   isGuest,
   initialStyle,
   examples: providedExamples,
 }: Props) {
+  // 积分包用户与订阅用户同享全档位 / 无水印 / 长保留期
+  const paid = isPro || hasPack;
   const t = useTranslations("studio");
   const styles = useTranslations("styles");
   const commonT = useTranslations("common");
@@ -1446,12 +1478,19 @@ export function PosterStudio({
     GenerationResponse[]
   >([]);
   const [error, setError] = useState<string | null>(null);
-  // 免费用户选了 Pro 档位后点击 Generate 的升级提示
+  // 积分不足时点击 Generate 的提示（订阅用户余额充足时不触发）
   const [upgradePrompt, setUpgradePrompt] = useState(false);
   const [upgradePromptReason, setUpgradePromptReason] = useState<
-    "options" | "daily"
-  >("options");
+    "credits" | "options"
+  >("credits");
   const [guestLimitPrompt, setGuestLimitPrompt] = useState(false);
+  // 登录用户的积分余额（null = 未加载/加载失败，此时放行由服务端 402 兜底）
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [welcomeGrant, setWelcomeGrant] = useState<{
+    amount: number;
+    createdAt: string;
+  } | null>(null);
+  const [welcomeBannerVisible, setWelcomeBannerVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingSubmission, setPendingSubmission] =
     useState<GenerationResponse | null>(null);
@@ -1495,6 +1534,67 @@ export function PosterStudio({
   const paramsByGeneration = useRef(new Map<string, GenerationParams>());
   const inputTypeByGeneration = useRef(new Map<string, InputType>());
   const examples = providedExamples ?? STUDIO_JOB_EXAMPLES;
+
+  useEffect(() => {
+    if (isGuest) {
+      return;
+    }
+    void fetchAccountStatus().then((data) => {
+      if (!data?.signedIn || !data.balance) {
+        return;
+      }
+      setCreditBalance(data.balance.available);
+      const welcome = data.balance.grants.find(
+        (grant) => grant.source === "welcome",
+      );
+      if (welcome) {
+        setWelcomeGrant({
+          amount: welcome.amount,
+          createdAt: welcome.createdAt,
+        });
+      }
+    });
+  }, [isGuest]);
+
+  useEffect(() => {
+    if (!welcomeGrant || isPro) {
+      return;
+    }
+    const fresh =
+      Date.now() - new Date(welcomeGrant.createdAt).getTime() <
+      24 * 60 * 60 * 1000;
+    if (!fresh) {
+      return;
+    }
+    let dismissed = false;
+    try {
+      dismissed =
+        window.localStorage.getItem("welcome-credits-banner") === "dismissed";
+    } catch {
+      dismissed = false;
+    }
+    setWelcomeBannerVisible(!dismissed);
+  }, [isPro, welcomeGrant]);
+
+  function refreshCreditBalance(): void {
+    if (isGuest) {
+      return;
+    }
+    void fetchAccountStatus().then((data) => {
+      if (data?.signedIn && data.balance) {
+        setCreditBalance(data.balance.available);
+      }
+    });
+  }
+
+  function dismissWelcomeBanner(): void {
+    setWelcomeBannerVisible(false);
+    try {
+      window.localStorage.setItem("welcome-credits-banner", "dismissed");
+    } catch {
+      // localStorage 不可用时仅本次会话隐藏
+    }
+  }
 
   function openEditContent(generation: GenerationResponse): void {
     setEditContentFields(deriveFieldsFromPrompt(generation.prompt));
@@ -2067,17 +2167,24 @@ export function PosterStudio({
       setError(t("describeBrief"));
       return;
     }
-    // 免费用户选了 Pro 档位：不发起请求，引导开通会员
-    if (!isPro && needsPro) {
+    // 免费用户选了锁定档位：不发起请求，引导开通会员
+    if (!paid && needsPro) {
       upgradePreviousFocus.current = generateButtonRef.current;
       setUpgradePromptReason("options");
+      setUpgradePrompt(true);
+      return;
+    }
+    // 积分不足：不发起请求，引导购买积分包（余额未加载时放行，服务端 402 兜底）
+    if (insufficientCredits) {
+      upgradePreviousFocus.current = generateButtonRef.current;
+      setUpgradePromptReason("credits");
       setUpgradePrompt(true);
       return;
     }
     if (isSubmitting) {
       return;
     }
-    if (!isPro && anyWorking) {
+    if (!paid && anyWorking) {
       setError(t("waitForCurrent"));
       return;
     }
@@ -2178,6 +2285,22 @@ export function PosterStudio({
       setPendingSubmission(null);
       startPolling(id);
       revealGeneration(id);
+      // 乐观扣减本地余额展示；下次 status 拉取会校正
+      if (paid && !isGuest) {
+        setCreditBalance((current) =>
+          current === null
+            ? null
+            : Math.max(
+                0,
+                current -
+                  batchCreditCost(
+                    generationResolution,
+                    generationQuality,
+                    generationImageCount,
+                  ),
+              ),
+        );
+      }
     } catch (submitError) {
       setPendingSubmission(null);
       const safetyFailure = isPromptSafetyFailure(submitError);
@@ -2192,10 +2315,11 @@ export function PosterStudio({
       } else if (limitKind === "guest") {
         guestLimitPreviousFocus.current = generateButtonRef.current;
         setGuestLimitPrompt(true);
-      } else if (limitKind === "free") {
+      } else if (limitKind === "credits") {
         upgradePreviousFocus.current = generateButtonRef.current;
-        setUpgradePromptReason("daily");
+        setUpgradePromptReason("credits");
         setUpgradePrompt(true);
+        refreshCreditBalance();
       } else if (submitError instanceof HTTPError) {
         setError(t("startFailed"));
       } else if (submitError instanceof Error) {
@@ -2214,14 +2338,24 @@ export function PosterStudio({
     generations.some(
       (g) => g.status === "submitted" || g.status === "processing",
     ) || pendingSubmission !== null;
-  const maxFreeImages = isGuest ? GUEST_MAX_IMAGES : FREE_MAX_IMAGES;
-  // 免费用户选了 Pro 档位（非 1K / 非 low / 超过 2 张）时，点击 Generate 提示升级
+  // 免费积分用户：1K + low/medium 可用；选了 2K/4K 或 high 及以上质量时提示升级。
+  // 积分包用户（paid）与订阅用户解锁全部档位。
+  // 余额未加载（null）时放行，由服务端 INSUFFICIENT_CREDITS 402 兜底。
+  const creditCost = batchCreditCost(resolution, quality, imageCount);
   const needsPro =
-    !isPro &&
-    (resolution !== FREE_RESOLUTION ||
-      quality !== FREE_QUALITY ||
-      imageCount > maxFreeImages);
-  const action = generationAction(isPro, isSubmitting, anyWorking);
+    !paid &&
+    !isGuest &&
+    (resolution !== "1k" ||
+      quality === "high" ||
+      quality === "xhigh" ||
+      quality === "max");
+  const insufficientCredits =
+    !paid &&
+    !isGuest &&
+    !needsPro &&
+    creditBalance !== null &&
+    creditCost > creditBalance;
+  const action = generationAction(paid, isSubmitting, anyWorking);
   const actionLabel =
     action.label === "Sending..."
       ? t("sending")
@@ -2323,6 +2457,20 @@ export function PosterStudio({
         <span className="studio-count">{t("count")}</span>
       </div>
 
+      {welcomeBannerVisible && (
+        <div className="welcome-credits-banner" role="status">
+          <Sparkles size={16} />
+          <p>{t("welcomeBanner", { credits: welcomeGrant?.amount ?? 30 })}</p>
+          <button
+            type="button"
+            className="text-button"
+            onClick={dismissWelcomeBanner}
+          >
+            {t("dismissBanner")}
+          </button>
+        </div>
+      )}
+
       <MobileStudioTabs
         activeTab={mobileStudioTab}
         onChange={(tab) => {
@@ -2369,7 +2517,7 @@ export function PosterStudio({
                   aspectRatio={aspectRatio}
                   resolution={resolution}
                   quality={quality}
-                  isPro={isPro}
+                  tier={paid ? "pro" : isGuest ? "guest" : "free"}
                   disabled={isSubmitting}
                   onChangeAspect={(next) => {
                     setAspectRatio(next);
@@ -2422,25 +2570,21 @@ export function PosterStudio({
                   options={IMAGE_COUNTS.map((count) => ({
                     value: String(count),
                     label: t("imageCount", { count }),
-                    locked: isGuest
-                      ? count !== GUEST_MAX_IMAGES
-                      : !isPro && count > FREE_MAX_IMAGES,
+                    locked: isGuest ? count !== GUEST_MAX_IMAGES : false,
                   }))}
                 />
               </div>
             </div>
           </fieldset>
-          {isPro && (
+          {!isGuest && (
             <p className="credit-estimate">
-              {t("creditEstimate", {
-                credits: batchCreditCost(resolution, quality, imageCount),
-              })}
+              {t("creditEstimate", { credits: creditCost })}
             </p>
           )}
-          {!isPro && (
+          {isGuest && (
             <p className="pro-note">
               <LockKeyhole size={14} />
-              {isGuest ? ` ${t("guestsQuota")}` : ` ${t("freeQuota")}`}
+              {` ${t("guestsQuota")}`}
             </p>
           )}
 
@@ -2449,10 +2593,14 @@ export function PosterStudio({
             className="generate-button"
             type="button"
             onClick={() => {
-              // 免费用户选了 Pro 档位时，先弹升级提示，不做任何后续动作
+              // 免费用户选了锁定档位，或积分不足：先弹提示，不做任何后续动作
               if (needsPro) {
                 upgradePreviousFocus.current = generateButtonRef.current;
                 setUpgradePromptReason("options");
+                setUpgradePrompt(true);
+              } else if (insufficientCredits) {
+                upgradePreviousFocus.current = generateButtonRef.current;
+                setUpgradePromptReason("credits");
                 setUpgradePrompt(true);
               } else if (
                 // 粘贴后立刻点击的场景下，300ms debounce 可能还没更新 detectedType，
@@ -2610,13 +2758,13 @@ export function PosterStudio({
           </button>
           <p className="eyebrow">{t("proFeature")}</p>
           <h3 id="upgrade-title">
-            {upgradePromptReason === "daily"
-              ? t("freeImagesUsed")
+            {upgradePromptReason === "credits"
+              ? t("insufficientCreditsTitle")
               : t("proOptions")}
           </h3>
           <p className="modal-note" id="upgrade-note">
-            {upgradePromptReason === "daily"
-              ? t("freeImagesUsedBody")
+            {upgradePromptReason === "credits"
+              ? t("insufficientCreditsBody")
               : t("proOptionsBody")}
           </p>
           <div className="modal-actions">
@@ -2629,9 +2777,15 @@ export function PosterStudio({
             </button>
             <a
               className="solid-button"
-              href={localizedPath("/pricing", locale)}
+              href={
+                upgradePromptReason === "credits"
+                  ? `${localizedPath("/pricing", locale)}#credit-packs`
+                  : localizedPath("/pricing", locale)
+              }
             >
-              {t("upgradeToPro")}
+              {upgradePromptReason === "credits"
+                ? t("getCredits")
+                : t("upgradeToPro")}
             </a>
           </div>
         </div>

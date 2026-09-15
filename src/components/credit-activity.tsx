@@ -11,29 +11,17 @@ export function CreditActivity({
 }>) {
   const locale = useLocale();
   const t = useTranslations("account");
-  if (!isPro) {
-    return (
-      <div className="empty-history">
-        <p className="eyebrow">{t("creditActivity")}</p>
-        <h2>{t("trackEveryRun")}</h2>
-        <p className="empty-history-copy">
-          Credit activity is available on Pro. Upgrade to see exactly how many
-          credits each generation used.
-        </p>
-        <Link className="solid-button" href="/pricing">
-          {t("upgradeToPro")}
-        </Link>
-      </div>
-    );
-  }
   if (transactions.length === 0) {
     return (
       <div className="empty-history">
         <p className="eyebrow">{t("creditActivity")}</p>
         <h2>{t("noCreditsSpent")}</h2>
-        <p className="empty-history-copy">
-          Your first Pro run will appear here with its exact credit cost.
-        </p>
+        <p className="empty-history-copy">{t("creditActivityEmpty")}</p>
+        {!isPro && (
+          <Link className="solid-button" href="/pricing">
+            {t("seePlans")}
+          </Link>
+        )}
       </div>
     );
   }

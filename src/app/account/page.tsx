@@ -161,10 +161,20 @@ export default async function AccountPage({ searchParams }: PageProps) {
         <div className="account-balance">
           <p className="eyebrow">{t("availableCredits")}</p>
           <p className="account-balance-number">{balance.available}</p>
-          <p className="account-balance-meta">
-            {balance.tier} · {balance.periodStart} → {balance.periodEnd} ·{" "}
-            {balance.granted} granted
-          </p>
+          {balance.bucket === "permanent" ? (
+            <p className="account-balance-meta">
+              {t("permanentBalanceMeta", { credits: balance.granted })}
+            </p>
+          ) : (
+            <p className="account-balance-meta">
+              {t("subscriptionBalanceMeta", {
+                tier: balance.tier,
+                credits: balance.granted,
+                periodStart: balance.periodStart ?? "",
+                periodEnd: balance.periodEnd ?? "",
+              })}
+            </p>
+          )}
         </div>
       )}
       <AccountTabs

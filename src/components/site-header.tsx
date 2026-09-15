@@ -1,7 +1,7 @@
 "use client";
 
 import ky from "ky";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { ArrowUpRight, Menu, Sparkles, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -16,7 +16,10 @@ import type { AuthContext } from "@/lib/server/auth";
 import { createSupabaseBrowserClient } from "@/lib/server/supabase/browser";
 
 export type HeaderAccount = Readonly<
-  Pick<AuthContext, "userId" | "email" | "avatarUrl" | "tier">
+  Pick<AuthContext, "userId" | "email" | "avatarUrl" | "tier"> & {
+    /** 服务端初始渲染时未知，客户端加载 status 后填充 */
+    credits?: number | null;
+  }
 >;
 
 type SiteHeaderProps = Readonly<{
@@ -30,6 +33,13 @@ const headerStatusSchema = z.object({
     .object({ tier: z.enum(["creator", "studio"]).nullable() })
     .nullable()
     .optional(),
+  balance: z
+    .object({
+      available: z.number(),
+      bucket: z.enum(["subscription", "permanent"]),
+    })
+    .nullable()
+    .optional(),
 });
 
 const EMPTY_HEADER_ACCOUNT: HeaderAccount = {
@@ -37,6 +47,7 @@ const EMPTY_HEADER_ACCOUNT: HeaderAccount = {
   email: null,
   avatarUrl: null,
   tier: null,
+  credits: null,
 };
 
 function accountFromUser(user: {
@@ -50,6 +61,7 @@ function accountFromUser(user: {
     email: user.email ?? null,
     avatarUrl: typeof rawAvatar === "string" ? rawAvatar : null,
     tier: null,
+    credits: null,
   };
 }
 
@@ -62,54 +74,54 @@ function useHeaderAccount(
 
   useEffect(() => {
     let active = true;
-    if (initialAuth) {
-      setAccount(initialAuth);
-      return () => {
-        active = false;
-      };
-    }
 
     async function loadAccount(): Promise<void> {
-      let fallback = EMPTY_HEADER_ACCOUNT;
-      try {
-        const {
-          data: { session },
-        } = await createSupabaseBrowserClient().auth.getSession();
-        if (!active) {
-          return;
-        }
-        if (!session?.user) {
-          setAccount(EMPTY_HEADER_ACCOUNT);
-          return;
-        }
-
-        fallback = accountFromUser(session.user);
+      let base = EMPTY_HEADER_ACCOUNT;
+      if (initialAuth) {
+        // 服务端已给出登录态：先渲染，再异步补全积分余额
+        base = initialAuth;
+        setAccount(initialAuth);
+      } else {
         try {
-          const rawStatus = await ky.get("/api/account/status").json<unknown>();
-          const status = headerStatusSchema.parse(rawStatus);
-          if (active) {
-            setAccount({
-              ...fallback,
-              tier: status.signedIn
-                ? (status.subscription?.tier ?? null)
-                : null,
-            });
+          const {
+            data: { session },
+          } = await createSupabaseBrowserClient().auth.getSession();
+          if (!active) {
+            return;
           }
+          if (!session?.user) {
+            setAccount(EMPTY_HEADER_ACCOUNT);
+            return;
+          }
+          base = accountFromUser(session.user);
+          setAccount(base);
         } catch (error) {
           if (!(error instanceof Error)) {
             throw error;
           }
           if (active) {
-            setAccount(fallback);
+            setAccount(EMPTY_HEADER_ACCOUNT);
           }
+          return;
         }
-      } catch (error) {
-        if (!(error instanceof Error)) {
-          throw error;
+      }
+
+      if (!base.userId) {
+        return;
+      }
+      // 已登录：拉取订阅档位与积分余额（欢迎积分惰性领取也在这里触发）
+      try {
+        const rawStatus = await ky.get("/api/account/status").json<unknown>();
+        const status = headerStatusSchema.parse(rawStatus);
+        if (active && status.signedIn) {
+          setAccount({
+            ...base,
+            tier: status.subscription?.tier ?? base.tier,
+            credits: status.balance ? status.balance.available : null,
+          });
         }
-        if (active) {
-          setAccount(fallback);
-        }
+      } catch {
+        // 状态获取失败保持基础登录态，积分 chip 暂不显示
       }
     }
 
@@ -225,6 +237,18 @@ export function SiteHeader({
               </Link>
             ))}
             <LocaleSwitcher />
+            {account?.userId && account.credits !== null && (
+              <Link
+                className="header-credits"
+                href="/account"
+                aria-label={t("creditsBalance", {
+                  credits: account.credits ?? 0,
+                })}
+              >
+                <Sparkles size={15} aria-hidden="true" />
+                <span>{account.credits}</span>
+              </Link>
+            )}
             <HeaderAccount account={account} />
             {account !== null && !account.userId && (
               <button

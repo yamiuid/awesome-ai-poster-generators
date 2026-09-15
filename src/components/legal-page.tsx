@@ -41,7 +41,7 @@ const content: Readonly<
       ],
       [
         "Retention and deletion",
-        "Guest images are kept for 24 hours. Free account images are kept for 7 days. Pro images remain while the subscription is active, then for 30 additional days. Payment and accounting records may be kept longer where required by law. Expired assets are removed by a daily maintenance job. Contact support to request account deletion.",
+        "Guest images are kept for 24 hours. Free account images are kept for 7 days. Credit pack images are kept for 180 days after purchase. Pro images remain while the subscription is active, then for 30 additional days. Payment and accounting records may be kept longer where required by law. Expired assets are removed by a daily maintenance job. Contact support to request account deletion.",
       ],
       [
         "Your choices",

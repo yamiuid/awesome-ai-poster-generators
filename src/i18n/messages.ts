@@ -24,6 +24,7 @@ const englishMessages = {
     pricing: "Pricing",
     about: "About",
     freeToStart: "Free to start",
+    creditsBalance: "{credits} credits available",
     openMenu: "Open menu",
     closeMenu: "Close menu",
     primaryNavigation: "Primary navigation",
@@ -123,18 +124,23 @@ const englishMessages = {
     outputPolicy: "Read the AI use policy.",
     readPolicy: "Read the AI use policy.",
     freeAccount: "Free account",
-    guestLimitTitle: "Get 4 free poster images every day.",
+    guestLimitTitle: "Try 2 free poster generations.",
     guestLimitBody:
-      "You’ve used today’s guest generation. Sign in or create a free account to keep generating today. Failed generations do not count.",
+      "Sign in or create a free account to claim 30 welcome credits — they work on every style and quality. Failed generations do not count.",
     proFeature: "Pro feature",
-    freeImagesUsed: "Today’s free poster images are used up.",
+    insufficientCreditsTitle: "You’re out of credits.",
     proOptions: "These options are Pro only.",
-    freeImagesUsedBody:
-      "You’ve used today’s 4 free poster images. Upgrade to Pro to keep creating today, or come back tomorrow after the quota resets at 00:00 UTC.",
+    insufficientCreditsBody:
+      "Grab a one-time credit pack or subscribe to keep generating. Credits never expire and work on every style and quality.",
     proOptionsBody:
       "You picked a higher resolution, finish, or more posters. Upgrade to Pro to generate with these options.",
     maybeLater: "Maybe later",
     upgradeToPro: "Upgrade to Pro",
+    getCredits: "Get credits",
+    creditBalance: "{credits} credits available",
+    welcomeBanner:
+      "Welcome! {credits} free credits landed in your account — use them on any style or quality.",
+    dismissBanner: "Dismiss",
     fullSizePreview: "Full size preview",
     closePreview: "Close preview",
     editContent: "Edit content",
@@ -156,9 +162,7 @@ const englishMessages = {
     currentGenerating: "Current poster is generating",
     describeIdea: "Describe your poster idea",
     guestsQuota:
-      "Guests can make 1 generation per UTC day. Sign in for 4 free poster images each day.",
-    freeQuota:
-      "Free accounts can make up to 4 poster images per UTC day: four one-poster runs or two two-poster runs. Runs are 1K and watermarked. Pro unlocks full quality and 4 posters.",
+      "Guests can try 2 free generations. Sign in for 30 welcome credits.",
     urlToPoster: "URL to poster",
     createFromLink: "Create a poster from your link",
     readPage: "Read the page",
@@ -203,13 +207,14 @@ const englishMessages = {
     eyebrow: "Simple, weighted credits",
     heading: "Pay for the directions worth keeping.",
     intro:
-      "Paid plans return up to four posters per generation. Free accounts get up to four poster images per UTC day. Guests can try one watermarked 1K generation per UTC day without signing in; annual plans still refresh credits monthly.",
+      "Paid plans return up to four posters per generation. New accounts get 30 welcome credits that never expire, and one-time credit packs top you up without a subscription. Guests can try 2 watermarked generations without signing in; annual plans still refresh credits monthly.",
     footnote:
       "Image engine: GPT Image 2.5 via APIMart. Outputs are AI-generated and should be reviewed before publication.",
     readRefundPolicy: "Read the policy.",
     billingPeriod: "Billing period",
     monthly: "Monthly",
     yearly: "Yearly",
+    packTab: "Credit packs",
     saveUpTo: "Save up to {amount}",
     subscriptionPlans: "Subscription plans",
     openFreeStudio: "Open free studio",
@@ -218,6 +223,20 @@ const englishMessages = {
     chooseCreatorYearly: "Choose Creator yearly",
     startStudioMonthly: "Start Studio monthly",
     chooseStudioYearly: "Choose Studio yearly",
+    buyPackStarter: "Get 100 credits",
+    buyPackStandard: "Get 300 credits",
+    buyPackValue: "Get 600 credits",
+    packsEyebrow: "One-time credit packs",
+    packsHeading: "Need more? Grab a credit pack.",
+    packsIntro:
+      "One-time purchases, no subscription. Pack credits sit in your account and never expire.",
+    packEyebrow: "Credit pack",
+    packCadence: "one-time",
+    packDescription: "A one-time pack of {credits} credits.",
+    packFeatureCredits: "{credits} credits on purchase",
+    packFeatureNoExpiry: "Credits never expire",
+    packFeatureNoWatermark: "No watermark",
+    packFeatureHistory: "180-day history",
     openingCheckout: "Opening checkout…",
     checkoutOpened: "Checkout opened in a new tab.",
     checkoutCouldNotStart: "Checkout could not be started.",
@@ -227,19 +246,43 @@ const englishMessages = {
     signInToStart: "Sign in to start",
     metadataTitle: "Pricing | Text to Poster",
     metadataDescription:
-      "Creator and Studio plans with monthly credits, 1K-4K exports, no watermark, and private history.",
+      "One-time credit packs plus Creator and Studio plans with monthly credits, 1K-4K exports, no watermark, and private history.",
     freeEyebrow: "Free / account",
     freeCadence: "/ forever",
     freeDescription:
-      "Four poster images every UTC day — enough room to try the studio before subscribing.",
-    freeFeature1: "4 poster images every UTC day",
-    freeFeature2: "1K output",
+      "30 welcome credits that never expire — enough room to try the studio before paying.",
+    freeFeature1: "30 welcome credits (one-time)",
+    freeFeature2: "1K output · low / medium quality",
     freeFeature3: "Watermarked downloads",
     freeFeature4: "7-day account history",
+    freeAudience: "Try the studio — free credits on signup.",
+    packAudience: "One-time purchase — credits never expire.",
+    welcomeCreditsLine: "30 credits · one-time welcome",
+    packCreditsLine: "{credits} credits on purchase",
+    creditsNoteMonthly: "Up to about {count} 1K images each month.",
+    creditsNoteOnce: "About {count} 1K images in total.",
+    currentPlan: "Current plan",
+    longTermHistory: "Full history kept while subscribed",
+    commercialUse:
+      "Usable for commercial projects, subject to model provider terms",
+    popularBadge: "Most popular",
     creatorMonthlyEyebrow: "Creator / monthly",
     creatorYearlyEyebrow: "Creator / yearly",
     studioMonthlyEyebrow: "Studio / monthly",
     studioYearlyEyebrow: "Studio / yearly",
+    scaleMonthlyEyebrow: "Scale / monthly",
+    scaleYearlyEyebrow: "Scale / yearly",
+    scaleMonthlyDescription:
+      "{credits} credits every month — the heavy-duty tier for agencies and high-volume campaigns.",
+    scaleYearlyDescription:
+      "{credits} credits in each monthly window — maximum headroom at the best yearly rate.",
+    creatorAudience: "A light monthly allowance for solo creators.",
+    studioAudience: "For professional creators shipping campaigns regularly.",
+    scaleAudience: "For teams and high-volume production workloads.",
+    yearlyNote: "Billed {yearly} yearly — save {savings}",
+    creditsPerMonth: "{credits} credits / month",
+    creditsNote:
+      "Credits are deducted per generation based on resolution and quality.",
     monthCadence: "/ month",
     yearCadence: "/ year",
     creatorMonthlyDescription:
@@ -258,10 +301,31 @@ const englishMessages = {
     noWatermarkHistory: "No watermark, private history",
     fullCreatorAccess: "Same full Creator studio access",
     fullStudioAccess: "Same full Studio access",
+    fullScaleAccess: "Same full Scale access",
     monthlyReset: "Credits reset monthly, never roll",
     prioritySupport: "Priority billing support",
     lowerAnnualPrice: "{amount} saved",
     continueToCheckout: "Continue to checkout",
+    faqTitle: "Pricing FAQs",
+    faqIntro: "Quick answers about credits, packs, and subscriptions.",
+    faq1Question: "How do I get my free credits?",
+    faq1Answer:
+      "Create an account and 30 welcome credits land in your balance automatically on your first visit — enough for about 15 standard 1K posters.",
+    faq2Question: "How are credits deducted?",
+    faq2Answer:
+      "Each generation costs credits based on resolution and quality — a standard 1K poster costs 2 credits, while a 4K Max run costs 115. Failed generations are never charged.",
+    faq3Question: "Credit packs or subscription — which is right for me?",
+    faq3Answer:
+      "Packs are one-time purchases whose credits never expire — ideal for occasional posters. Subscriptions unlock 2K/4K resolutions and High–Max quality, and deliver a large monthly credit allowance for regular production.",
+    faq4Question: "Do credits expire?",
+    faq4Answer:
+      "Pack credits never expire. Subscription credits reset monthly and do not roll over. Welcome credits are granted once and stay in your balance until you spend them.",
+    faq5Question: "Can I cancel my subscription anytime?",
+    faq5Answer:
+      "Yes. You keep every benefit until the end of the current billing period, you are not charged again, and you can resubscribe whenever you like.",
+    faq6Question: "Can I use the posters commercially?",
+    faq6Answer:
+      "Subscription posters can be used for commercial projects, subject to model provider terms. Watermarked trial posters are for personal use only.",
   },
   about: {
     eyebrow: "Text to Poster / about",
@@ -375,8 +439,8 @@ const englishMessages = {
     howKeepAlt: "A finished poster being downloaded from the poster studio.",
     pricingCardTitle: "Creator + Studio",
     pricingMonth: "/ month",
-    pricingFeature1: "Guests get one watermarked generation per UTC day",
-    pricingFeature2: "Free accounts get four poster images per UTC day",
+    pricingFeature1: "Guests get 2 watermarked trial generations",
+    pricingFeature2: "Free accounts get 30 welcome credits, never expire",
     pricingFeature3: "Creator and Studio plans add monthly credits",
     pricingFeature4: "1K, 2K, and 4K exports",
     pricingFeature5: "Medium, High, and Max finishes",
@@ -385,7 +449,7 @@ const englishMessages = {
       "Start small, learn from the first result, and refine only what needs changing. These answers cover the practical details behind making a poster from text with the free studio.",
     faq1Question: "Is this really free?",
     faq1Answer:
-      "Yes. Guests can make one generation per UTC day, with one watermarked 1K poster per run. Free accounts can create four poster images per UTC day: four one-poster runs or two two-poster runs. Failed generations do not count.",
+      "Yes. Guests can try 2 watermarked generations. Signing up grants 30 welcome credits that never expire and work on every style and quality — one poster costs as little as 2 credits. Failed generations do not count.",
     faq2Question: "What is an AI poster generator from text?",
     faq2Answer:
       "It turns a written brief into finished visual directions. Describe the subject, mood, audience, or words you want to see, and the studio turns that brief into multiple compositions.",
@@ -397,7 +461,7 @@ const englishMessages = {
       "Your generated assets are private to your account. Commercial use remains subject to the image provider terms and any rights attached to material you include in your prompt.",
     faq5Question: "How long are my images kept?",
     faq5Answer:
-      "Guest images stay available for 24 hours, free account images for 7 days, and Pro images while your subscription is active plus a 30-day grace period after cancellation.",
+      "Guest images stay available for 24 hours, free account images for 7 days, credit pack images for 180 days after purchase, and Pro images while your subscription is active plus a 30-day grace period after cancellation.",
     faq6Question: "Can I make a poster from a short text prompt?",
     faq6Answer:
       "Yes. Start with one clear sentence and add only the details that change the result: the subject, mood, audience, format, or words that must appear. You can begin with a rough idea, compare the generated directions, and refine the prompt after you see what the first round suggests.",
@@ -460,7 +524,7 @@ const englishMessages = {
   auth: {
     signInHeading: "Sign in or create a free account.",
     signInBody:
-      "Use Google or email. We’ll send a 6-digit sign-in code, and your first email sign-in automatically creates a free account. Free accounts get a seven-day history and four poster images per UTC day; Pro removes the watermark and keeps high-definition exports private.",
+      "Use Google or email. We’ll send a 6-digit sign-in code, and your first email sign-in automatically creates a free account. New accounts get 30 welcome credits that never expire; Pro adds monthly credits, private history, and clean high-definition exports.",
     continueWithGoogle: "Continue with Google",
     orUseEmail: "or use email",
     emailAddress: "Email address",
@@ -498,6 +562,7 @@ const englishMessages = {
     free: "Free",
     creator: "Creator",
     studio: "Studio",
+    scale: "Scale",
     signedIn: "Signed in",
     accountForEmail: "Account menu for {email}",
     privateHistory: "Private history",
@@ -513,6 +578,12 @@ const englishMessages = {
     creditActivity: "Credit activity",
     trackEveryRun: "Track every run’s cost.",
     noCreditsSpent: "No credits spent yet.",
+    creditActivityEmpty:
+      "Your credit activity will appear here with the exact cost of each generation.",
+    permanentBalanceMeta: "{credits} welcome & pack credits · never expire",
+    subscriptionBalanceMeta:
+      "{tier} · {periodStart} → {periodEnd} · {credits} granted",
+    menuCredits: "{credits} credits left",
     date: "Date",
     prompt: "Prompt",
     mode: "Mode",
@@ -565,9 +636,9 @@ const englishMessages = {
       "We could not confirm the latest billing state. New purchases are paused so you are not charged twice.",
     contactSupport: "Contact support",
     freeStudio: "Free studio",
-    startDirections: "Start with two directions at a time.",
+    startDirections: "Your 30 welcome credits are ready to use.",
     upgradeDescription:
-      "Upgrade to Creator or Studio for more weighted credits, clean exports, and private history.",
+      "Buy a one-time credit pack or subscribe to Creator or Studio for monthly credits, clean exports, and private history.",
     seePlans: "See plans",
     refunds: "Refunds",
     refundPolicy:
@@ -624,6 +695,7 @@ const translated = {
       pricing: "價格",
       about: "關於",
       freeToStart: "免費開始",
+      creditsBalance: "可用點數 {credits} 點",
       openMenu: "開啟選單",
       closeMenu: "關閉選單",
       languageMenu: "語言選單",
@@ -783,22 +855,28 @@ const translated = {
       createAnother: "再建立一張",
       currentGenerating: "目前海報生成中",
       describeIdea: "描述你的海報想法",
-      guestsQuota: "訪客每天可生成 1 次。登入後每天可免費生成 4 張海報。",
-      freeQuota:
-        "免費帳戶每天最多生成 4 張海報圖片：可分成四次單張生成或兩次雙張生成。生成為 1K 並帶浮水印。Pro 可解鎖完整品質與 4 張海報。",
+      guestsQuota: "訪客可免費試用 2 次生成。登入即可獲贈 30 點歡迎點數。",
+      creditBalance: "可用點數 {credits} 點",
+      insufficientCreditsTitle: "你的點數已用完。",
+      insufficientCreditsBody:
+        "購買一次性點數包或訂閱即可繼續生成。點數永不過期，適用所有風格與品質。",
+      getCredits: "購買點數",
+      welcomeBanner: "歡迎！{credits} 點免費點數已入帳——適用任何風格與品質。",
+      dismissBanner: "關閉",
     },
     pricing: {
       ...englishMessages.pricing,
       eyebrow: "簡單透明的加權點數",
       heading: "為值得保留的方向付費。",
       intro:
-        "付費方案每次最多回傳四張海報。免費帳戶每天最多四張海報圖片；訪客無需登入，每天可免費生成一張帶浮水印的 1K 海報。年繳方案仍會每月更新點數。",
+        "付費方案每次最多回傳四張海報。新帳戶獲贈 30 點永不過期的歡迎點數，一次性點數包可隨時補充，無需訂閱。訪客無需登入即可試用 2 次帶浮水印的生成；年繳方案仍會每月更新點數。",
       footnote:
         "圖像引擎：透過 APIMart 使用 GPT Image 2.5。AI 生成內容請在發布前審閱。",
       readRefundPolicy: "查看政策。",
       billingPeriod: "付款週期",
       monthly: "每月",
       yearly: "每年",
+      packTab: "點數包",
       subscriptionPlans: "訂閱方案",
       openFreeStudio: "開啟免費工作室",
       createFreeAccount: "建立免費帳戶",
@@ -811,18 +889,54 @@ const translated = {
       signInToStart: "登入後開始",
       metadataTitle: "價格方案 | Text to Poster",
       metadataDescription:
-        "Creator 與 Studio 方案，包含每月點數、1K 至 4K 匯出、無浮水印與私人紀錄。",
+        "一次性點數包與 Creator／Studio 訂閱方案，包含每月點數、1K 至 4K 匯出、無浮水印與私人紀錄。",
       freeEyebrow: "免費／帳戶",
       freeCadence: "／永久",
-      freeDescription: "每天 4 張海報圖片，先體驗工作室再訂閱。",
-      freeFeature1: "每天 4 張海報圖片",
-      freeFeature2: "1K 輸出",
+      freeDescription: "30 點歡迎點數、永不過期——先充分體驗工作室再付費。",
+      freeFeature1: "30 點歡迎點數（一次性）",
+      freeFeature2: "1K 輸出 · low／medium 品質",
       freeFeature3: "帶浮水印下載",
       freeFeature4: "保留 7 天紀錄",
+      freeAudience: "體驗海報生成，註冊即送點數。",
+      packAudience: "一次性購買，點數永不過期。",
+      welcomeCreditsLine: "30 點 · 一次性贈送",
+      packCreditsLine: "一次入帳 {credits} 點",
+      creditsNoteMonthly: "每月最多可生成約 {count} 張 1K 圖片。",
+      creditsNoteOnce: "約可生成 {count} 張 1K 圖片。",
+      currentPlan: "當前方案",
+      longTermHistory: "訂閱有效期內長期保留歷史",
+      commercialUse: "可用於商業項目，須遵守模型服務商規則",
+      popularBadge: "最受歡迎",
+      packsEyebrow: "一次性點數包",
+      packsHeading: "需要更多？選購點數包。",
+      packsIntro: "一次性購買，無需訂閱。點數包點數永不過期。",
+      packEyebrow: "點數包",
+      packCadence: "一次性",
+      packDescription: "一次性 {credits} 點點數包。",
+      packFeatureCredits: "購買即得 {credits} 點",
+      packFeatureNoExpiry: "點數永不過期",
+      packFeatureNoWatermark: "無浮水印",
+      packFeatureHistory: "保留 180 天紀錄",
+      buyPackStarter: "獲得 100 點",
+      buyPackStandard: "獲得 300 點",
+      buyPackValue: "獲得 600 點",
       creatorMonthlyEyebrow: "Creator／每月",
       creatorYearlyEyebrow: "Creator／每年",
       studioMonthlyEyebrow: "Studio／每月",
       studioYearlyEyebrow: "Studio／每年",
+      scaleMonthlyEyebrow: "Scale／每月",
+      scaleYearlyEyebrow: "Scale／每年",
+      scaleMonthlyDescription:
+        "每月 {credits} 點，為代理公司與高用量活動預留的重度檔位。",
+      scaleYearlyDescription:
+        "每月週期提供 {credits} 點，年繳享最大額度與最優價。",
+      creatorAudience: "給獨立創作者的輕量月度額度。",
+      studioAudience: "給高頻出圖的專業創作者。",
+      scaleAudience: "給團隊與重度生產場景。",
+      yearlyNote: "年付 {yearly} · 一年省 {savings}",
+      creditsPerMonth: "每月 {credits} 點",
+      creditsNote: "每次生成依解析度與品質扣減點數。",
+      fullScaleAccess: "完整 Scale 工作室功能",
       monthCadence: "／月",
       yearCadence: "／年",
       creatorMonthlyDescription: "每月 {credits} 點，適合固定進行海報創作。",
@@ -847,7 +961,7 @@ const translated = {
       ...englishMessages.auth,
       signInHeading: "登入或建立免費帳戶。",
       signInBody:
-        "使用 Google 或電子郵件。我們會寄送 6 位數登入驗證碼，首次使用電子郵件登入會自動建立免費帳戶。免費帳戶可保留七天紀錄，每天生成四張海報；Pro 方案會移除浮水印，並保留高畫質匯出。",
+        "使用 Google 或電子郵件。我們會寄送 6 位數登入驗證碼，首次使用電子郵件登入會自動建立免費帳戶。新帳戶獲贈 30 點永不過期的歡迎點數；Pro 方案提供每月點數、私人紀錄與乾淨的高畫質匯出。",
       continueWithGoogle: "使用 Google 繼續",
       orUseEmail: "或使用電子郵件",
       emailAddress: "電子郵件地址",
@@ -888,6 +1002,11 @@ const translated = {
       released: "釋放 {credits} 點",
       usedSaved: "使用 {used} 點・節省 {saved} 點",
       used: "使用 {credits} 點",
+      creditActivityEmpty: "你的點數明細會顯示在這裡，包含每次生成的確切花費。",
+      permanentBalanceMeta: "{credits} 點歡迎與點數包點數・永不過期",
+      subscriptionBalanceMeta:
+        "{tier}・{periodStart} → {periodEnd}・已獲得 {credits} 點",
+      menuCredits: "剩餘 {credits} 點",
     },
     billing: {
       ...englishMessages.billing,
@@ -904,7 +1023,7 @@ const translated = {
       checkSubscription: "我們需要確認你的訂閱。",
       contactSupport: "聯絡客服",
       freeStudio: "免費工作室",
-      startDirections: "一次從兩個方向開始。",
+      startDirections: "你的 30 點歡迎點數已經可以使用了。",
       seePlans: "查看方案",
       refunds: "退款",
       refundPolicy:
@@ -1093,16 +1212,14 @@ const translated = {
       currentGenerating: "現在のポスターを生成中",
       describeIdea: "ポスターのアイデアを説明してください",
       guestsQuota:
-        "ゲストはUTC日付ごとに1回生成できます。ログインすると毎日4枚のポスターを無料で作成できます。",
-      freeQuota:
-        "無料アカウントではUTC日付ごとに最大4枚を生成できます。1枚を4回、または2枚を2回作成できます。1K・透かし付きです。Proでは高品質と4枚生成を利用できます。",
+        "ゲストは2回まで無料で生成できます。ログインするとウェルカムクレジット30を進呈します。",
     },
     pricing: {
       ...englishMessages.pricing,
       eyebrow: "シンプルな従量クレジット",
       heading: "残したい方向性にだけ支払う",
       intro:
-        "有料プランでは1回の生成で最大4枚のポスターを作成できます。無料アカウントではUTC日付ごとに最大4枚、ゲストはログインなしで透かし付き1Kポスターを1枚作成できます。年額プランもクレジットは毎月更新されます。",
+        "有料プランでは1回の生成で最大4枚のポスターを作成できます。新規アカウントには期限なしのウェルカムクレジット30を進呈し、サブスクリプション不要の都度購入クレジットパックもあります。ゲストはログインなしで透かし付き生成を2回試せます。年額プランもクレジットは毎月更新されます。",
       footnote:
         "画像エンジン：APIMart経由のGPT Image 2.5。AI生成物は公開前に確認してください。",
       readRefundPolicy: "ポリシーを読む",
@@ -1121,13 +1238,11 @@ const translated = {
       signInToStart: "ログインして開始",
       metadataTitle: "料金 | Text to Poster",
       metadataDescription:
-        "毎月のクレジット、1K〜4K出力、透かしなし、非公開履歴を含むCreatorとStudioのプラン。",
+        "都度購入のクレジットパックと、毎月のクレジット、1K〜4K出力、透かしなし、非公開履歴を含むCreatorとStudioのプラン。",
       freeEyebrow: "無料／アカウント",
       freeCadence: "／永久",
       freeDescription:
-        "毎日4枚のポスターを使って、登録前にスタジオを試せます。",
-      freeFeature1: "UTC日付ごとに4枚のポスター",
-      freeFeature2: "1K出力",
+        "期限なしのウェルカムクレジット30。支払い前にスタジオを存分に試せます。",
       freeFeature3: "透かし付きダウンロード",
       freeFeature4: "7日間の履歴",
       creatorMonthlyEyebrow: "Creator／月額",
@@ -1160,7 +1275,7 @@ const translated = {
       ...englishMessages.auth,
       signInHeading: "ログインまたは無料アカウントを作成",
       signInBody:
-        "Googleまたはメールアドレスを使用できます。6桁のログインコードを送信し、初回のメールログインで無料アカウントを自動作成します。無料アカウントでは7日間の履歴と1日4枚のポスターを利用できます。Proでは透かしがなく、高解像度の書き出しを非公開で保存できます。",
+        "Googleまたはメールアドレスを使用できます。6桁のログインコードを送信し、初回のメールログインで無料アカウントを自動作成します。新規アカウントには期限なしのウェルカムクレジット30を進呈します。Proでは毎月のクレジット、非公開履歴、透かしなしの高解像度書き出しが利用できます。",
       continueWithGoogle: "Googleで続ける",
       orUseEmail: "またはメールアドレスを使用",
       emailAddress: "メールアドレス",
@@ -1214,7 +1329,7 @@ const translated = {
       checkSubscription: "サブスクリプションを確認しています。",
       contactSupport: "サポートに連絡",
       freeStudio: "無料スタジオ",
-      startDirections: "まずは2つの方向性から始めましょう。",
+      startDirections: "ウェルカムクレジット30がすぐ使えます。",
       seePlans: "プランを見る",
       refunds: "返金",
       refundPolicy:
@@ -1405,9 +1520,7 @@ const translated = {
       currentGenerating: "El póster actual se está generando",
       describeIdea: "Describe tu idea para el póster",
       guestsQuota:
-        "Los invitados pueden hacer 1 generación por día UTC. Inicia sesión para crear 4 imágenes de póster gratis cada día.",
-      freeQuota:
-        "Las cuentas gratuitas pueden crear hasta 4 imágenes de póster por día UTC: cuatro ejecuciones de una imagen o dos de dos. Son de 1K y llevan marca de agua. Pro desbloquea la calidad completa y 4 pósteres.",
+        "Los invitados pueden probar 2 generaciones gratis. Inicia sesión para recibir 30 créditos de bienvenida.",
     },
     pricing: {
       ...englishMessages.pricing,
@@ -1426,13 +1539,11 @@ const translated = {
       signInToStart: "Inicia sesión para empezar",
       metadataTitle: "Precios | Text to Poster",
       metadataDescription:
-        "Planes Creator y Studio con créditos mensuales, exportaciones de 1K a 4K, sin marca de agua e historial privado.",
+        "Paquetes de créditos de pago único y planes Creator y Studio con créditos mensuales, exportaciones de 1K a 4K, sin marca de agua e historial privado.",
       freeEyebrow: "Gratis／cuenta",
       freeCadence: "／para siempre",
       freeDescription:
-        "Cuatro imágenes de póster al día UTC para probar el estudio antes de suscribirte.",
-      freeFeature1: "4 imágenes de póster al día UTC",
-      freeFeature2: "Salida 1K",
+        "30 créditos de bienvenida que nunca caducan para probar el estudio antes de pagar.",
       freeFeature3: "Descargas con marca de agua",
       freeFeature4: "Historial de 7 días",
       creatorMonthlyEyebrow: "Creator／mensual",
@@ -1465,7 +1576,7 @@ const translated = {
       ...englishMessages.auth,
       signInHeading: "Inicia sesión o crea una cuenta gratuita.",
       signInBody:
-        "Usa Google o tu correo electrónico. Te enviaremos un código de acceso de 6 dígitos y el primer inicio con correo creará automáticamente una cuenta gratuita. Las cuentas gratuitas conservan siete días de historial y cuatro imágenes al día; Pro elimina la marca de agua y mantiene privadas las exportaciones en alta definición.",
+        "Usa Google o tu correo electrónico. Te enviaremos un código de acceso de 6 dígitos y el primer inicio con correo creará automáticamente una cuenta gratuita. Las cuentas nuevas reciben 30 créditos de bienvenida que nunca caducan; Pro añade créditos mensuales, historial privado y exportaciones limpias en alta definición.",
       continueWithGoogle: "Continuar con Google",
       orUseEmail: "o usar el correo electrónico",
       emailAddress: "Correo electrónico",
@@ -1519,7 +1630,7 @@ const translated = {
       checkSubscription: "Tenemos que comprobar tu suscripción.",
       contactSupport: "Contactar con soporte",
       freeStudio: "Estudio gratuito",
-      startDirections: "Empieza con dos direcciones a la vez.",
+      startDirections: "Tus 30 créditos de bienvenida están listos para usar.",
       seePlans: "Ver planes",
       refunds: "Reembolsos",
       refundPolicy:
@@ -1709,9 +1820,7 @@ const translated = {
       currentGenerating: "جارٍ إنشاء الملصق الحالي",
       describeIdea: "صف فكرة ملصقك",
       guestsQuota:
-        "يمكن للزوار إجراء عملية إنشاء واحدة يوميًا حسب UTC. سجّل الدخول لإنشاء 4 صور ملصقات مجانًا كل يوم.",
-      freeQuota:
-        "يمكن للحسابات المجانية إنشاء 4 صور ملصقات كحد أقصى يوميًا حسب UTC. الصور بدقة 1K وتحمل علامة مائية. تتيح Pro الجودة الكاملة وإنشاء 4 ملصقات.",
+        "يمكن للزوار تجربة عمليتي إنشاء مجانًا. سجّل الدخول للحصول على 30 رصيد ترحيبي.",
     },
     pricing: {
       ...englishMessages.pricing,
@@ -1734,9 +1843,7 @@ const translated = {
       freeEyebrow: "مجاني／حساب",
       freeCadence: "／دائمًا",
       freeDescription:
-        "أربع صور ملصقات يوميًا حسب UTC لتجربة الاستوديو قبل الاشتراك.",
-      freeFeature1: "4 صور ملصقات يوميًا حسب UTC",
-      freeFeature2: "إخراج 1K",
+        "30 رصيدًا ترحيبيًا عند التسجيل — جرّب الاستوديو قبل الدفع.",
       freeFeature3: "تنزيلات بعلامة مائية",
       freeFeature4: "سجل لمدة 7 أيام",
       creatorMonthlyEyebrow: "Creator／شهري",
@@ -1770,7 +1877,7 @@ const translated = {
       ...englishMessages.auth,
       signInHeading: "سجّل الدخول أو أنشئ حسابًا مجانيًا.",
       signInBody:
-        "استخدم Google أو بريدك الإلكتروني. سنرسل رمز دخول من 6 أرقام، وسيؤدي أول تسجيل دخول بالبريد الإلكتروني إلى إنشاء حساب مجاني تلقائيًا. تحتفظ الحسابات المجانية بسجل لمدة سبعة أيام وتتيح إنشاء أربع صور ملصقات يوميًا؛ وتزيل Pro العلامة المائية وتحافظ على خصوصية الملفات عالية الدقة.",
+        "استخدم Google أو بريدك الإلكتروني. سنرسل رمز دخول من 6 أرقام، وسيؤدي أول تسجيل دخول بالبريد الإلكتروني إلى إنشاء حساب مجاني تلقائيًا. تحصل الحسابات الجديدة على 30 رصيدًا ترحيبيًا؛ وتزيل Pro العلامة المائية وتحافظ على خصوصية الملفات عالية الدقة.",
       continueWithGoogle: "المتابعة باستخدام Google",
       orUseEmail: "أو استخدم البريد الإلكتروني",
       emailAddress: "البريد الإلكتروني",
@@ -1824,7 +1931,7 @@ const translated = {
       checkSubscription: "نحتاج إلى التحقق من اشتراكك.",
       contactSupport: "التواصل مع الدعم",
       freeStudio: "الاستوديو المجاني",
-      startDirections: "ابدأ باتجاهين في كل مرة.",
+      startDirections: "أرصدتك الترحيبية البالغة 30 رصيدًا جاهزة للاستخدام.",
       seePlans: "عرض الخطط",
       refunds: "المبالغ المستردة",
       refundPolicy:
@@ -1907,15 +2014,16 @@ const coverageTranslations = {
       describeBrief: "描述你想要的海報：主題、氣氛或文案。",
       waitForCurrent: "請等待目前的生成完成，再開始下一次。",
       outputPolicy: "閱讀 AI 使用政策。",
-      guestLimitTitle: "每天免費生成 4 張海報圖片。",
+      guestLimitTitle: "免費試用 2 次海報生成。",
       guestLimitBody:
-        "你今天已使用訪客生成額度。登入或建立免費帳戶，今天繼續生成。失敗的生成不會計入額度。",
-      freeImagesUsed: "今天的免費海報圖片額度已用完。",
+        "登入或建立免費帳戶即可獲贈 30 點歡迎點數——適用所有風格與品質。失敗的生成不計入次數。",
+      insufficientCreditsTitle: "你的點數已用完。",
       proOptions: "這些選項僅限 Pro 使用。",
-      freeImagesUsedBody:
-        "你已使用今天的 4 張免費海報圖片。升級至 Pro 以今天繼續創作，或等到 UTC 00:00 額度重設後再回來。",
+      insufficientCreditsBody:
+        "購買一次性點數包或訂閱即可繼續生成。點數永不過期，適用所有風格與品質。",
       proOptionsBody:
         "你選擇了更高解析度、完成度或更多海報。升級至 Pro 後即可使用這些選項生成。",
+      getCredits: "購買點數",
       urlToPoster: "從 URL 製作海報",
       createFromLink: "從連結製作海報",
       readPage: "讀取頁面",
@@ -1961,6 +2069,26 @@ const coverageTranslations = {
       startStudioMonthly: "開始 Studio 月方案",
       chooseStudioYearly: "選擇 Studio 年方案",
       continueToCheckout: "繼續前往結帳",
+      faqTitle: "定價常見問題",
+      faqIntro: "關於點數、點數包與訂閱的快速解答。",
+      faq1Question: "免費點數怎麼領取？",
+      faq1Answer:
+        "建立帳戶後，30 點歡迎點數會在首次開啟網站時自動入帳——約可生成 15 張標準 1K 海報。",
+      faq2Question: "點數是怎麼扣的？",
+      faq2Answer:
+        "每次生成依解析度與品質扣點：標準 1K 海報每張 2 點，4K 最高品質每張 115 點。生成失敗不扣點。",
+      faq3Question: "點數包和訂閱哪個適合我？",
+      faq3Answer:
+        "點數包一次購買、點數永不過期，適合偶爾生成；訂閱解鎖 2K／4K 解析度與高品質，每月發放大量點數，適合持續出圖。",
+      faq4Question: "點數會過期嗎？",
+      faq4Answer:
+        "點數包點數永不過期；訂閱點數每月重設、不累積；歡迎點數一次性贈送，留在帳上直到用完。",
+      faq5Question: "可以隨時取消訂閱嗎？",
+      faq5Answer:
+        "可以。當期計費週期結束前權益照常保留，之後不再扣費，隨時可重新訂閱。",
+      faq6Question: "生成的海報可以商用嗎？",
+      faq6Answer:
+        "訂閱用戶的無浮水印海報可用於商業項目，須遵守模型服務商規則；帶浮水印的試用圖片僅供個人使用。",
     },
     home: {
       heroTypes: "電影／活動／產品／商業／演唱會／社群",
@@ -2023,8 +2151,8 @@ const coverageTranslations = {
       howKeepAlt: "從海報工作室下載完成的海報。",
       pricingCardTitle: "Creator + Studio",
       pricingMonth: "／月",
-      pricingFeature1: "訪客每天可免費生成一次帶浮水印的海報",
-      pricingFeature2: "免費帳戶每天可生成 4 張海報圖片",
+      pricingFeature1: "訪客可免費試用 2 次帶浮水印的生成",
+      pricingFeature2: "免費帳戶獲贈 30 點永不過期的歡迎點數",
       pricingFeature3: "Creator 與 Studio 方案提供每月點數",
       pricingFeature4: "1K、2K 與 4K 匯出",
       pricingFeature5: "中等、高與最高完成度",
@@ -2033,7 +2161,7 @@ const coverageTranslations = {
         "從小處開始，從第一個結果學習，只調整真正需要改變的地方。以下回答文字製作海報與免費工作室的實際問題。",
       faq1Question: "真的免費嗎？",
       faq1Answer:
-        "是。訪客每天可生成一次，每次一張帶浮水印的 1K 海報。免費帳戶每天可生成 4 張海報圖片：四次一張海報的生成，或兩次兩張海報的生成。失敗的生成不會計入額度。",
+        "是。訪客可免費試用 2 次帶浮水印的生成。註冊即贈 30 點永不過期的歡迎點數，適用所有風格與品質——一張海報最低只需 2 點。失敗的生成不會計入次數。",
       faq2Question: "什麼是文字 AI 海報生成器？",
       faq2Answer:
         "它會把文字簡報轉成完成的視覺方向。描述想呈現的主題、氣氛、受眾或文字，工作室就會將簡報轉成多種構圖。",
@@ -2045,7 +2173,7 @@ const coverageTranslations = {
         "生成的素材會私下保留在你的帳戶中。商業使用仍受圖片供應商條款，以及你放入提示詞的素材所附帶權利限制。",
       faq5Question: "圖片會保留多久？",
       faq5Answer:
-        "訪客圖片保留 24 小時，免費帳戶圖片保留 7 天，Pro 圖片會在訂閱有效期間保留，取消後再提供 30 天寬限期。",
+        "訪客圖片保留 24 小時，免費帳戶圖片保留 7 天，點數包圖片自購買起保留 180 天，Pro 圖片會在訂閱有效期間保留，取消後再提供 30 天寬限期。",
       faq6Question: "可以只用一小段文字製作海報嗎？",
       faq6Answer:
         "可以。先從一句清楚的話開始，只加入會改變結果的細節：主題、氣氛、受眾、格式或必須出現的文字。先比較生成方向，再依第一輪結果調整提示詞。",
@@ -2108,7 +2236,7 @@ const coverageTranslations = {
       couldNotConfirm:
         "無法確認最新的帳單狀態。為避免重複收費，新的購買已暫停。",
       upgradeDescription:
-        "升級至 Creator 或 Studio，取得更多加權點數、乾淨匯出與私人紀錄。",
+        "購買一次性點數包，或訂閱 Creator／Studio 獲得每月點數、乾淨匯出與私人紀錄。",
       metadataTitle: "帳單 | Text to Poster",
     },
     checkout: {
@@ -2197,15 +2325,16 @@ const coverageTranslations = {
         "作りたいポスターを、テーマ・雰囲気・コピーで説明してください。",
       waitForCurrent: "現在の生成が終わるまでお待ちください。",
       outputPolicy: "AI 利用ポリシーを読む。",
-      guestLimitTitle: "毎日、無料でポスター画像を4枚作成できます。",
+      guestLimitTitle: "無料で2回ポスター生成をお試しください。",
       guestLimitBody:
-        "本日のゲスト生成を使い切りました。ログインまたは無料アカウントを作成すると、今日も生成を続けられます。失敗した生成はカウントされません。",
-      freeImagesUsed: "本日の無料ポスター画像を使い切りました。",
+        "ログインまたは無料アカウントを作成すると、ウェルカムクレジット30を進呈します。すべてのスタイルと品質に使えます。失敗した生成はカウントされません。",
+      insufficientCreditsTitle: "クレジットを使い切りました。",
       proOptions: "これらのオプションは Pro 限定です。",
-      freeImagesUsedBody:
-        "本日の無料ポスター画像4枚を使い切りました。Pro にアップグレードして今日も作成するか、UTC 00:00 のクォータ更新後にお試しください。",
+      insufficientCreditsBody:
+        "都度購入のクレジットパックを購入するか、サブスクリプションに登録して生成を続けましょう。クレジットは期限なしで、すべてのスタイルと品質に使えます。",
       proOptionsBody:
         "高解像度、仕上がり、または枚数の多い設定が選択されています。Pro にアップグレードすると利用できます。",
+      getCredits: "クレジットを購入",
       urlToPoster: "URLからポスターを作成",
       createFromLink: "リンクからポスターを作成",
       readPage: "ページを読む",
@@ -2319,8 +2448,9 @@ const coverageTranslations = {
         "ポスタースタジオから完成したポスターをダウンロードしている画面。",
       pricingCardTitle: "Creator + Studio",
       pricingMonth: "／月",
-      pricingFeature1: "ゲストは毎日1回、透かし付き生成を利用可能",
-      pricingFeature2: "無料アカウントは毎日4枚のポスター画像を作成可能",
+      pricingFeature1: "ゲストは透かし付き生成を2回試用可能",
+      pricingFeature2:
+        "新規アカウントには期限なしのウェルカムクレジット30を進呈",
       pricingFeature3: "Creator と Studio は毎月クレジットを付与",
       pricingFeature4: "1K、2K、4K の書き出し",
       pricingFeature5: "Medium・High・Max の仕上がり",
@@ -2329,7 +2459,7 @@ const coverageTranslations = {
         "まず小さく始め、最初の結果から学び、変えるべき部分だけを整えます。以下では無料スタジオでテキストからポスターを作る際の実用的な疑問に答えます。",
       faq1Question: "本当に無料ですか？",
       faq1Answer:
-        "はい。ゲストは UTC 日に1回、1K・透かし付きポスターを生成できます。無料アカウントは UTC 日に4枚のポスター画像を作成できます。失敗した生成はカウントされません。",
+        "はい。ゲストは透かし付き生成を2回試せます。登録すると、期限なしですべてのスタイルと品質に使えるウェルカムクレジット30を進呈します。ポスター1枚は最低2クレジットから。失敗した生成はカウントされません。",
       faq2Question: "テキストから作る AI ポスター生成ツールとは？",
       faq2Answer:
         "文章のブリーフを完成したビジュアルの方向に変えるツールです。テーマ、雰囲気、対象、必要な言葉を説明すると、スタジオが複数の構図を作ります。",
@@ -2406,7 +2536,7 @@ const coverageTranslations = {
       couldNotConfirm:
         "最新の請求状態を確認できませんでした。二重請求を防ぐため、新規購入を一時停止しています。",
       upgradeDescription:
-        "Creator または Studio にアップグレードして、より多くのクレジット、透かしなしの書き出し、非公開履歴を利用できます。",
+        "都度購入のクレジットパックを購入するか、Creator または Studio を登録して毎月のクレジット、透かしなしの書き出し、非公開履歴を利用しましょう。",
       metadataTitle: "請求 | Text to Poster",
     },
     checkout: {
@@ -2524,13 +2654,13 @@ const coverageTranslations = {
       waitForCurrent:
         "Espera a que termine la generación actual antes de iniciar otra.",
       outputPolicy: "Leer la política de uso de IA.",
-      guestLimitTitle: "Obtén 4 imágenes de póster gratis cada día.",
+      guestLimitTitle: "Prueba 2 generaciones de póster gratis.",
       guestLimitBody:
-        "Ya usaste la generación de invitado de hoy. Inicia sesión o crea una cuenta gratuita para seguir generando hoy. Las generaciones fallidas no cuentan.",
-      freeImagesUsed: "Ya usaste las imágenes de póster gratuitas de hoy.",
+        "Inicia sesión o crea una cuenta gratuita para recibir 30 créditos de bienvenida: funcionan con cualquier estilo y calidad. Las generaciones fallidas no cuentan.",
+      insufficientCreditsTitle: "Te has quedado sin créditos.",
       proOptions: "Estas opciones son exclusivas de Pro.",
-      freeImagesUsedBody:
-        "Ya usaste las 4 imágenes gratuitas de hoy. Actualiza a Pro para seguir creando hoy o vuelve después de que la cuota se reinicie a las 00:00 UTC.",
+      insufficientCreditsBody:
+        "Compra un paquete de créditos de pago único o suscríbete para seguir generando. Los créditos nunca caducan y funcionan con cualquier estilo y calidad.",
       proOptionsBody:
         "Elegiste una resolución, acabado o cantidad mayor. Actualiza a Pro para generar con estas opciones.",
       urlToPoster: "De URL a póster",
@@ -2580,7 +2710,7 @@ const coverageTranslations = {
       eyebrow: "Créditos simples y ponderados",
       heading: "Paga por las direcciones que vale la pena conservar.",
       intro:
-        "Los planes de pago devuelven hasta cuatro pósteres por generación. Las cuentas gratuitas obtienen hasta cuatro imágenes por día UTC. Los invitados pueden probar una generación 1K con marca de agua por día UTC sin registrarse; los planes anuales también renuevan los créditos cada mes.",
+        "Los planes de pago devuelven hasta cuatro pósteres por generación. Las cuentas nuevas reciben 30 créditos de bienvenida que nunca caducan, y los paquetes de créditos de pago único recargan sin suscripción. Los invitados pueden probar dos generaciones con marca de agua sin registrarse; los planes anuales también renuevan los créditos cada mes.",
       footnote:
         "Motor de imágenes: GPT Image 2.5 mediante APIMart. Los resultados son generados por IA y deben revisarse antes de publicarse.",
       readRefundPolicy: "Leer la política.",
@@ -2664,9 +2794,9 @@ const coverageTranslations = {
       pricingCardTitle: "Creator + Studio",
       pricingMonth: "／mes",
       pricingFeature1:
-        "Los invitados obtienen una generación con marca de agua por día UTC",
+        "Los invitados obtienen dos generaciones de prueba con marca de agua",
       pricingFeature2:
-        "Las cuentas gratuitas obtienen cuatro imágenes de póster por día UTC",
+        "Las cuentas nuevas reciben 30 créditos de bienvenida que nunca caducan",
       pricingFeature3: "Los planes Creator y Studio añaden créditos mensuales",
       pricingFeature4: "Exportaciones 1K, 2K y 4K",
       pricingFeature5: "Acabados Medium, High y Max",
@@ -2675,7 +2805,7 @@ const coverageTranslations = {
         "Empieza con algo pequeño, aprende del primer resultado y ajusta solo lo que necesite cambiar. Estas respuestas cubren los detalles prácticos de crear un póster desde texto con el estudio gratuito.",
       faq1Question: "¿De verdad es gratis?",
       faq1Answer:
-        "Sí. Los invitados pueden hacer una generación por día UTC, con un póster 1K con marca de agua por generación. Las cuentas gratuitas pueden crear cuatro imágenes de póster por día UTC. Las generaciones fallidas no cuentan.",
+        "Sí. Los invitados pueden probar dos generaciones con marca de agua. Al registrarte recibes 30 créditos de bienvenida que nunca caducan y funcionan con cualquier estilo y calidad: un póster cuesta desde 2 créditos. Las generaciones fallidas no cuentan.",
       faq2Question:
         "¿Qué es un generador de pósteres con IA a partir de texto?",
       faq2Answer:
@@ -2753,7 +2883,7 @@ const coverageTranslations = {
       couldNotConfirm:
         "No pudimos confirmar el estado de facturación más reciente. Las compras nuevas están pausadas para evitar un cobro doble.",
       upgradeDescription:
-        "Actualiza a Creator o Studio para obtener más créditos ponderados, exportaciones limpias e historial privado.",
+        "Compra un paquete de créditos de pago único o suscríbete a Creator o Studio para obtener créditos mensuales, exportaciones limpias e historial privado.",
       metadataTitle: "Facturación | Text to Poster",
     },
     checkout: {
@@ -2868,15 +2998,16 @@ const coverageTranslations = {
       describeBrief: "صف الملصق الذي تريده: موضوعًا أو مزاجًا أو نصًا.",
       waitForCurrent: "انتظر انتهاء العملية الحالية قبل بدء عملية أخرى.",
       outputPolicy: "اقرأ سياسة استخدام الذكاء الاصطناعي.",
-      guestLimitTitle: "احصل على 4 صور ملصقات مجانية كل يوم.",
+      guestLimitTitle: "جرّب عمليتي إنشاء ملصقات مجانًا.",
       guestLimitBody:
-        "لقد استخدمت عملية إنشاء الزائر لهذا اليوم. سجّل الدخول أو أنشئ حسابًا مجانيًا لمتابعة الإنشاء اليوم. لا تُحتسب العمليات الفاشلة.",
-      freeImagesUsed: "لقد استهلكت صور الملصقات المجانية لهذا اليوم.",
+        "سجّل الدخول أو أنشئ حسابًا مجانيًا للحصول على 30 رصيد ترحيبي — تعمل مع كل الأنماط والجودات. لا تُحتسب العمليات الفاشلة.",
+      insufficientCreditsTitle: "لقد استهلكت أرصدتك.",
       proOptions: "هذه الخيارات متاحة في Pro فقط.",
-      freeImagesUsedBody:
-        "لقد استخدمت صور الملصقات المجانية الأربع لهذا اليوم. رقِّ إلى Pro لمتابعة الإنشاء اليوم، أو عد بعد إعادة ضبط الحصة عند 00:00 UTC.",
+      insufficientCreditsBody:
+        "اشترِ باقة أرصدة لمرة واحدة أو اشترك لمواصلة الإنشاء. الأرصدة لا تنتهي صلاحيتها وتعمل مع كل الأنماط والجودات.",
       proOptionsBody:
         "اخترت دقة أو تشطيبًا أعلى أو عددًا أكبر من الملصقات. رقِّ إلى Pro للإنشاء بهذه الخيارات.",
+      getCredits: "احصل على أرصدة",
       urlToPoster: "من URL إلى ملصق",
       createFromLink: "إنشاء ملصق من الرابط",
       readPage: "قراءة الصفحة",
@@ -2920,7 +3051,7 @@ const coverageTranslations = {
       eyebrow: "أرصدة بسيطة ومرجّحة",
       heading: "ادفع مقابل الاتجاهات التي تستحق الاحتفاظ بها.",
       intro:
-        "تعيد الخطط المدفوعة ما يصل إلى أربعة ملصقات في كل عملية إنشاء. تحصل الحسابات المجانية على ما يصل إلى أربع صور ملصقات يوميًا حسب UTC. ويمكن للزوار تجربة عملية إنشاء واحدة بدقة 1K مع علامة مائية يوميًا دون تسجيل الدخول؛ كما تُحدّث الخطط السنوية الأرصدة شهريًا.",
+        "تبدأ الحسابات الجديدة بـ 30 رصيدًا ترحيبيًا، وتضيف خطط الاشتراك أرصدة شهرية أكبر. يمكن للزوار تجربة عمليتي إنشاء تجريبيتين دون تسجيل.",
       footnote:
         "محرك الصور: GPT Image 2.5 عبر APIMart. الصور مولّدة بالذكاء الاصطناعي ويجب مراجعتها قبل النشر.",
       readRefundPolicy: "اقرأ السياسة.",
@@ -2996,10 +3127,8 @@ const coverageTranslations = {
       howKeepAlt: "تنزيل ملصق مكتمل من استوديو الملصقات.",
       pricingCardTitle: "Creator + Studio",
       pricingMonth: "／شهريًا",
-      pricingFeature1:
-        "يحصل الزوار على عملية إنشاء واحدة بعلامة مائية يوميًا حسب UTC",
-      pricingFeature2:
-        "تحصل الحسابات المجانية على أربع صور ملصقات يوميًا حسب UTC",
+      pricingFeature1: "يحصل الزوار على عمليتي إنشاء تجريبية بعلامة مائية",
+      pricingFeature2: "تحصل الحسابات الجديدة على 30 رصيدًا ترحيبيًا (مرة واحدة)",
       pricingFeature3: "تضيف خطتا Creator وStudio أرصدة شهرية",
       pricingFeature4: "تصدير بدقة 1K و2K و4K",
       pricingFeature5: "تشطيبات Medium وHigh وMax",
@@ -3008,7 +3137,7 @@ const coverageTranslations = {
         "ابدأ بخطوة صغيرة، وتعلّم من النتيجة الأولى، ونقّح ما يحتاج إلى تغيير فقط. تغطي هذه الإجابات التفاصيل العملية لإنشاء ملصق من النص باستخدام الاستوديو المجاني.",
       faq1Question: "هل الخدمة مجانية حقًا؟",
       faq1Answer:
-        "نعم. يمكن للزوار إجراء عملية إنشاء واحدة يوميًا حسب UTC مع ملصق واحد بدقة 1K وعلامة مائية. ويمكن للحسابات المجانية إنشاء أربع صور ملصقات يوميًا. لا تُحتسب العمليات الفاشلة.",
+        "نعم. يمكن للزوار إجراء عمليتي إنشاء تجريبيتين، وتحصل الحسابات الجديدة على 30 رصيدًا ترحيبيًا (مرة واحدة). لا تُحتسب العمليات الفاشلة.",
       faq2Question: "ما مولّد الملصقات بالذكاء الاصطناعي من النص؟",
       faq2Answer:
         "إنه يحول موجزًا مكتوبًا إلى اتجاهات بصرية مكتملة. صف الموضوع أو المزاج أو الجمهور أو الكلمات التي تريد ظهورها، وسيحوّل الاستوديو الموجز إلى تكوينات متعددة.",
@@ -3084,7 +3213,7 @@ const coverageTranslations = {
       couldNotConfirm:
         "تعذر تأكيد أحدث حالة للفوترة. أُوقفت عمليات الشراء الجديدة حتى لا يتم تحصيل الرسوم مرتين.",
       upgradeDescription:
-        "رقِّ إلى Creator أو Studio للحصول على أرصدة مرجّحة أكثر وتصدير نظيف وسجل خاص.",
+        "اشترِ باقة أرصدة لمرة واحدة أو اشترك في Creator أو Studio للحصول على أرصدة شهرية وتصدير نظيف وسجل خاص.",
       metadataTitle: "الفوترة | Text to Poster",
     },
     checkout: {

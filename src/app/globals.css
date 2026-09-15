@@ -139,6 +139,36 @@ textarea:focus-visible {
   line-height: 1.6;
   white-space: nowrap;
 }
+
+/* 导航栏积分余额：图标 + 数字，点击进入 account 页 */
+.header-credits {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.35rem;
+  padding: 0 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition: border-color 0.15s ease;
+}
+
+.header-credits svg {
+  color: var(--accent);
+}
+
+.header-credits:hover {
+  border-color: var(--ink);
+}
+
+.header-credits:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
 .header-cta:hover {
   background: var(--accent-dark);
 }
@@ -222,9 +252,23 @@ textarea:focus-visible {
   border-radius: 0.3rem;
   color: var(--ink-muted);
   font-size: 0.6rem;
+  margin-right: 0.35rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+/* 用户菜单里的积分余额徽标 */
+.user-menu-credits {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.25rem;
+  padding: 0.12rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 0.3rem;
+  color: var(--ink-muted);
+  font-size: 0.6rem;
+  font-variant-numeric: tabular-nums;
 }
 .tier-badge.is-creator {
   border-color: var(--ink);
@@ -1052,6 +1096,36 @@ textarea:focus-visible {
   font-size: 0.72rem;
   line-height: 1.45;
 }
+
+/* 余额不足以覆盖当前选择：图标 + 加重文字（不只靠颜色传达状态） */
+.pro-note.is-insufficient {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* 注册后一次性赠送积分的欢迎横幅（24h 内首次到账时展示） */
+.welcome-credits-banner {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0 0 1.5rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--paper-deep);
+}
+
+.welcome-credits-banner p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.welcome-credits-banner svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
 .ai-disclosure {
   margin: 1rem 0 0;
   color: var(--ink-muted);
@@ -1089,6 +1163,26 @@ textarea:focus-visible {
   color: var(--ink-muted);
   opacity: 1;
   cursor: not-allowed;
+}
+
+/* URL 弹窗底部：编辑文字（描边、小宽度）与生成海报同行 */
+.pipeline-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+.pipeline-actions .pipeline-edit-button {
+  flex: 0 0 auto;
+  min-width: 9.5rem;
+  min-height: 3.35rem;
+  padding: 0.8rem 1.4rem;
+}
+
+.pipeline-actions .generate-button {
+  flex: 1;
+  margin-top: 0;
 }
 .error-message {
   display: flex;
@@ -2824,6 +2918,14 @@ html[lang="ar"] .wordmark {
   background: var(--accent-dark);
   border-color: var(--accent-dark);
 }
+/* 定价卡"当前方案"禁用态按钮 */
+.solid-button.is-current,
+.solid-button.is-current:hover {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink-muted);
+  cursor: default;
+}
 .outline-button {
   border: 1px solid var(--ink);
   background: transparent;
@@ -3177,25 +3279,83 @@ dialog.modal-backdrop:not([open]) {
   letter-spacing: 0;
   text-transform: none;
 }
+
+/* 年付折扣标签：tab 内徽章 + 卡片右上角角标 */
+.billing-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--paper);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.plan-discount-badge {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--paper);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
 .billing-tab[aria-selected="true"] .billing-tab-note {
   color: var(--accent);
 }
 .plan-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   max-width: none;
   margin: 0 auto;
   padding: 0;
 }
 .plan-card {
+  position: relative;
   padding: clamp(1.3rem, 3vw, 2.2rem);
   border: 1px solid var(--line);
   background: rgba(233, 225, 212, 0.55);
 }
 .plan-card.featured {
-  border: 2px solid var(--ink);
+  border: 2px solid var(--accent);
   background: var(--paper-deep);
+}
+/* Studio 卡"最受欢迎"悬浮标签：顶部居中，红底白字 */
+.plan-popular-badge {
+  position: absolute;
+  top: -0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.7rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--paper);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+/* featured（Studio）卡的 CTA 按钮红色 */
+.plan-card.featured .solid-button {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.plan-card.featured .solid-button:hover {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
 }
 .plan-card h2 {
   margin: 0;
@@ -3210,6 +3370,61 @@ dialog.modal-backdrop:not([open]) {
   font-size: 0.78rem;
   letter-spacing: 0;
 }
+/* 订阅卡：档位名 + 适合人群 + 价格区（参考运营后台卡片结构） */
+.plan-card .plan-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.plan-card .plan-audience {
+  margin: 0.45rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.plan-card .plan-price-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 1.4rem 0 0;
+}
+.plan-card .plan-price {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+}
+.plan-card .plan-price-line small {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+.plan-card .plan-yearly-note {
+  margin: 0.5rem 0 0;
+  color: var(--accent-dark);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.plan-card .plan-credits-line {
+  margin: 1.2rem 0 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+.plan-card .plan-credits-note {
+  margin: 0.3rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+.pricing-action {
+  display: grid;
+  gap: 0.4rem;
+}
+.plan-card .pricing-action {
+  margin-top: 1.3rem;
+}
 .plan-original-price {
   margin-left: 0.75rem;
   color: var(--ink-muted);
@@ -3222,10 +3437,15 @@ dialog.modal-backdrop:not([open]) {
 .plan-card > p:not(.eyebrow) {
   color: var(--ink-muted);
 }
+/* 同特异性（0,2,1）且声明在后，覆盖上面的 muted，保证价格/点数为深色 */
+.plan-card > p.plan-price-line,
+.plan-card > p.plan-credits-line {
+  color: var(--ink);
+}
 .plan-card ul {
   display: grid;
   gap: 0.7rem;
-  margin: 2rem 0;
+  margin: 1.6rem 0 0;
   padding: 0;
   color: var(--ink-muted);
   list-style: none;
@@ -3236,10 +3456,6 @@ dialog.modal-backdrop:not([open]) {
   margin-right: 0.55rem;
   color: var(--accent);
   font-weight: 800;
-}
-.pricing-action {
-  display: grid;
-  gap: 0.4rem;
 }
 .pricing-footnote {
   max-width: var(--container-max);
@@ -3802,4 +4018,12 @@ dialog.modal-backdrop:not([open]) {
 }
 .movie-use-case-grid {
   max-width: 58rem;
+}
+
+/* 定价页积分包 tab 的说明文字 */
+.packs-tab-intro {
+  grid-column: 1 / -1;
+  margin: 0 0 0.5rem;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
 }

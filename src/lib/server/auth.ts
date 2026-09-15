@@ -6,13 +6,15 @@ import {
   type SubscriptionLifecycleState,
 } from "./waffo-subscription";
 
-export type SubscriptionTier = "creator" | "studio";
+export type SubscriptionTier = "creator" | "studio" | "scale";
 
 export type AuthContext = Readonly<{
   userId: string | null;
   email: string | null;
   avatarUrl: string | null;
   isPro: boolean;
+  /** 用户是否购买过积分包（credit_grants.source = 'credit_pack'） */
+  hasPack: boolean;
   tier: SubscriptionTier | null;
   subscriptionState: SubscriptionLifecycleState;
 }>;
@@ -28,6 +30,7 @@ export async function getAuthContext(): Promise<AuthContext> {
         email: null,
         avatarUrl: null,
         isPro: false,
+        hasPack: false,
         tier: null,
         subscriptionState: "none",
       };
@@ -42,6 +45,7 @@ export async function getAuthContext(): Promise<AuthContext> {
       email: null,
       avatarUrl: null,
       isPro: false,
+      hasPack: false,
       tier: null,
       subscriptionState: "none",
     };
@@ -60,6 +64,14 @@ export async function getAuthContext(): Promise<AuthContext> {
     );
   }
 
+  // 积分包购买记录：有则解锁全档位 / 无水印 / 180 天保留（按 pro 模式生成）
+  const { data: packGrant } = await client
+    .from("credit_grants")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("source", "credit_pack")
+    .limit(1);
+
   const subscriptionState = lifecycleState(
     subscription
       ? { status: subscription.status, periodEnd: subscription.period_end }
@@ -73,6 +85,7 @@ export async function getAuthContext(): Promise<AuthContext> {
     email: user.email ?? null,
     avatarUrl: typeof rawAvatar === "string" ? rawAvatar : null,
     isPro,
+    hasPack: (packGrant?.length ?? 0) > 0,
     tier: isPro ? (subscription?.tier ?? null) : null,
     subscriptionState,
   };
@@ -83,6 +96,7 @@ export async function requireUser(): Promise<
     userId: string;
     email: string | null;
     isPro: boolean;
+    hasPack: boolean;
     subscriptionState: SubscriptionLifecycleState;
   }>
 > {
@@ -94,6 +108,7 @@ export async function requireUser(): Promise<
     userId: context.userId,
     email: context.email,
     isPro: context.isPro,
+    hasPack: context.hasPack,
     subscriptionState: context.subscriptionState,
   };
 }

@@ -57,7 +57,9 @@ export function UserMenu({ email, avatarUrl, tier }: Props) {
       ? t("creator")
       : tier === "studio"
         ? t("studio")
-        : t("free");
+        : tier === "scale"
+          ? t("scale")
+          : t("free");
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);

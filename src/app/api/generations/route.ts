@@ -25,7 +25,13 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     const auth = await getAuthContext();
     const identity = getGuestIdentity(request);
-    const actor = getActorForRequest(auth.userId, identity, auth.isPro);
+    // 积分包用户与订阅用户同享全档位 / 无水印 / 长保留期（pro 模式），
+    // 点数仍从对应桶扣减，余额不足时由 reserve_credits 拒绝。
+    const actor = getActorForRequest(
+      auth.userId,
+      identity,
+      auth.isPro || auth.hasPack,
+    );
     const generation = await createGeneration(actor, parsed.data);
     const response = NextResponse.json(
       toGenerationAcceptedResponse(generation),

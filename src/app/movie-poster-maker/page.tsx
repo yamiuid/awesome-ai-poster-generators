@@ -196,6 +196,7 @@ export default async function MoviePosterMakerPage() {
             </div>
             <PosterStudio
               isPro={auth.isPro}
+              hasPack={auth.hasPack}
               isGuest={!auth.userId}
               initialStyle="movie"
             />
@@ -280,6 +281,7 @@ export default async function MoviePosterMakerPage() {
           </div>
           <PosterStudio
             isPro={auth.isPro}
+            hasPack={auth.hasPack}
             isGuest={!auth.userId}
             initialStyle="movie"
             examples={movieDirections}

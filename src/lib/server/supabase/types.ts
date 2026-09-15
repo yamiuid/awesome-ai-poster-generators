@@ -29,7 +29,7 @@ export type Database = {
         waffo_order_id: string | null;
         waffo_subscription_id: string | null;
         plan: "monthly" | "yearly";
-        tier: "creator" | "studio";
+        tier: "creator" | "studio" | "scale";
         status: "active" | "canceling" | "canceled" | "past_due" | "refunded";
         activated_at: string;
         period_start: string;
@@ -45,6 +45,16 @@ export type Database = {
         period_start: string;
         period_end: string;
         credits_granted: number;
+        bucket: string;
+        created_at: string;
+      }>;
+      credit_grants: TableDefinition<{
+        id: string;
+        user_id: string;
+        source: string;
+        amount: number;
+        idempotency_key: string;
+        waffo_order_id: string | null;
         created_at: string;
       }>;
       generations: TableDefinition<{
@@ -172,6 +182,18 @@ export type Database = {
       migrate_legacy_guest_generations: {
         Args: { p_legacy_key: string; p_stable_key: string };
         Returns: Json;
+      };
+      ensure_permanent_bucket: {
+        Args: { p_user_id: string };
+        Returns: null;
+      };
+      claim_welcome_credits: {
+        Args: { p_user_id: string };
+        Returns: number;
+      };
+      apply_credit_pack_grant: {
+        Args: { p_user_id: string; p_order_id: string; p_amount: number };
+        Returns: number;
       };
     };
     Enums: Record<string, never>;

@@ -4,16 +4,22 @@ import ky, { HTTPError } from "ky";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
-import type { CheckoutPlan } from "@/lib/domain/plans";
+import type { CheckoutPlan, CreditPackPlan } from "@/lib/domain/plans";
 import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
 import type { SubscriptionLifecycleState } from "@/lib/server/waffo-subscription";
 
 type Props = Readonly<{
-  plan: CheckoutPlan;
+  plan: CheckoutPlan | CreditPackPlan;
   subscriptionState: SubscriptionLifecycleState;
   isSignedIn: boolean;
   isConfigured: boolean;
 }>;
+
+function isPackPlan(
+  plan: CheckoutPlan | CreditPackPlan,
+): plan is CreditPackPlan {
+  return plan.startsWith("pack_");
+}
 
 export function PricingAction({
   plan,
@@ -62,14 +68,22 @@ export function PricingAction({
     }
   }
 
-  if (subscriptionState === "active" || subscriptionState === "canceling") {
+  // 积分包是一次性购买：订阅状态不影响购买（订阅用户也可买包）
+  const pack = isPackPlan(plan);
+  if (
+    !pack &&
+    (subscriptionState === "active" || subscriptionState === "canceling")
+  ) {
     return (
       <Link className="outline-button" href="/account/billing">
         {t("manageSubscription")}
       </Link>
     );
   }
-  if (subscriptionState === "past_due" || subscriptionState === "stale") {
+  if (
+    !pack &&
+    (subscriptionState === "past_due" || subscriptionState === "stale")
+  ) {
     return (
       <Link className="outline-button" href="/account/billing">
         {t("billingNeedsAttention")}
@@ -110,13 +124,19 @@ export function PricingAction({
       >
         {loading
           ? t("openingCheckout")
-          : plan === "creator_monthly"
-            ? t("startCreatorMonthly")
-            : plan === "creator_yearly"
-              ? t("chooseCreatorYearly")
-              : plan === "studio_monthly"
-                ? t("startStudioMonthly")
-                : t("chooseStudioYearly")}
+          : pack
+            ? plan === "pack_starter"
+              ? t("buyPackStarter")
+              : plan === "pack_standard"
+                ? t("buyPackStandard")
+                : t("buyPackValue")
+            : plan === "creator_monthly"
+              ? t("startCreatorMonthly")
+              : plan === "creator_yearly"
+                ? t("chooseCreatorYearly")
+                : plan === "studio_monthly"
+                  ? t("startStudioMonthly")
+                  : t("chooseStudioYearly")}
       </button>
       {showArabicCheckoutNotice && (
         <div className="checkout-locale-notice" role="alert">

@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { AppError, responseForError } from "@/lib/server/errors";
 import { createSupabaseAdminClient } from "@/lib/server/supabase/admin";
 import { verifyWaffoWebhook } from "@/lib/server/waffo";
-import { applySubscriptionEvent } from "@/lib/server/waffo-event-processing";
+import {
+  applyCreditPackEvent,
+  applySubscriptionEvent,
+  isCreditPackOrder,
+} from "@/lib/server/waffo-event-processing";
 import { shouldProcessPaymentEvent } from "@/lib/server/waffo-subscription";
 
 export async function POST(request: Request): Promise<Response> {
@@ -49,7 +53,13 @@ export async function POST(request: Request): Promise<Response> {
       return NextResponse.json({ received: true, duplicate: true });
     }
 
-    await applySubscriptionEvent(admin, event);
+    // 积分包订单走独立路径：order.completed 对订阅语义是危险的（会被当成
+    // 订阅激活），只有 metadata 标记为 credit_pack 的订单才入账积分。
+    if (isCreditPackOrder(event.data)) {
+      await applyCreditPackEvent(admin, event);
+    } else {
+      await applySubscriptionEvent(admin, event);
+    }
     const { error: processedError } = await admin
       .from("payment_events")
       .update({ processed_at: new Date().toISOString() })
