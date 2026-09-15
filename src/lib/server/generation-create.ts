@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { batchCreditCost } from "@/lib/domain/credits";
-import type { GenerationRequest, ProviderQuality } from "@/lib/domain/poster";
+import {
+  type GenerationRequest,
+  normalizeReferenceImages,
+  type ProviderQuality,
+} from "@/lib/domain/poster";
 import { buildPosterPrompt } from "@/lib/domain/prompts";
 import { type ProviderGenerationRequest, submitGeneration } from "./apimart";
 import { AppError } from "./errors";
@@ -79,6 +83,8 @@ export async function createGeneration(
     );
   }
   const providerInput = providerRequest(request, actor);
+  // 参考图（图生图）：每张在文生图基础价上加 1 积分，与档位无关
+  const referenceImages = normalizeReferenceImages(request);
   // 积分按实际生成档位（free 模式可能被降级）计算
   const credits =
     actor.mode === "guest"
@@ -87,6 +93,7 @@ export async function createGeneration(
           providerInput.resolution,
           providerInput.quality,
           providerInput.imageCount,
+          referenceImages.length,
         );
   const guestClaim = actor.mode !== "pro";
 
@@ -105,6 +112,7 @@ export async function createGeneration(
       p_image_count: providerInput.imageCount,
       p_mode: actor.mode,
       p_reserved_credits: credits,
+      p_reference_count: referenceImages.length,
     });
     if (error) {
       throw new AppError(
@@ -177,6 +185,7 @@ export async function createGeneration(
         resolution: providerInput.resolution,
         quality: providerInput.quality,
         image_count: providerInput.imageCount,
+        reference_count: referenceImages.length,
         mode: actor.mode,
         status: "submitted",
         progress: 0,
@@ -233,7 +242,7 @@ export async function createGeneration(
     const provider = await submitGeneration(
       providerInput,
       buildPosterPrompt(request, {
-        hasReferenceImage: Boolean(request.referenceImageUrl),
+        hasReferenceImage: referenceImages.length > 0,
         textLanguage,
       }),
     );

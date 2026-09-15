@@ -1,5 +1,5 @@
 import type { UiLocale } from "@/lib/i18n/locale";
-import type { AspectRatio, GenerationRequest, PosterStyle } from "./poster";
+import type { GenerationRequest, OutputAspect, PosterStyle } from "./poster";
 
 export const PROMPT_LANGUAGES = [
   "en",
@@ -45,7 +45,8 @@ const STYLE_INSTRUCTIONS: Readonly<Record<PosterStyle, string>> = {
   y2k: "Y2K pop graphic design, glossy chrome details, playful digital forms, optimistic turn-of-the-millennium energy",
 };
 
-const RATIO_INSTRUCTIONS: Readonly<Record<AspectRatio, string>> = {
+const RATIO_INSTRUCTIONS: Readonly<Record<OutputAspect, string>> = {
+  auto: "composition matching the reference image proportions",
   "1:1": "balanced square composition",
   "4:5": "portrait social poster composition",
   "3:4": "editorial portrait poster composition",

@@ -70,6 +70,7 @@ export type Database = {
         resolution: string;
         quality: string;
         image_count: number;
+        reference_count: number;
         mode: string;
         status: string;
         progress: number;
@@ -143,6 +144,7 @@ export type Database = {
           p_generation_id: string;
           p_successful_images: number;
           p_cost_per_image: number;
+          p_surcharge?: number;
         };
         Returns: boolean;
       };
@@ -168,6 +170,7 @@ export type Database = {
           p_image_count: number;
           p_mode: string;
           p_reserved_credits: number;
+          p_reference_count?: number;
         };
         Returns: Json;
       };

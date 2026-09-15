@@ -26,7 +26,8 @@ export async function failGeneration(
   status: "failed" | "timed_out",
 ): Promise<GenerationRow> {
   const updated = await failLimitedGeneration(generation.id, status, message);
-  if (generation.mode === "pro" && updated) {
+  // free/pro 模式都有预扣积分，失败时随结算释放返还（guest 无预扣）
+  if (generation.mode !== "guest" && updated) {
     await settleGenerationCredits(generation.id, 0, 0);
   }
   const { data, error } = await createSupabaseAdminClient()
@@ -146,7 +147,9 @@ async function finalizeCompleted(
   const status =
     stored >= generation.image_count ? "succeeded" : "partially_succeeded";
   if (
-    generation.mode === "pro" &&
+    // free 模式同样预扣了积分，成功时也要按实际产出结算并写 consume 流水，
+    // 否则点数使用记录为空且预扣永久占用余额
+    generation.mode !== "guest" &&
     isResolution(generation.resolution) &&
     isQuality(generation.quality)
   ) {
@@ -154,6 +157,8 @@ async function finalizeCompleted(
       generation.id,
       stored,
       creditCost(generation.resolution, generation.quality),
+      // 参考图加价随结算收取（全失败时 surcharge 不生效，预扣释放返还）
+      generation.reference_count ?? 0,
     );
   }
   const { data, error } = await admin

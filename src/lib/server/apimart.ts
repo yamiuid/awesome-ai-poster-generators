@@ -2,7 +2,11 @@ import ky, { HTTPError } from "ky";
 import type { Dispatcher } from "undici";
 import { ProxyAgent, Socks5ProxyAgent, fetch as undiciFetch } from "undici";
 import { z } from "zod";
-import type { GenerationRequest, ProviderQuality } from "@/lib/domain/poster";
+import {
+  type GenerationRequest,
+  normalizeReferenceImages,
+  type ProviderQuality,
+} from "@/lib/domain/poster";
 import { getServerEnv } from "./env";
 import { AppError } from "./errors";
 
@@ -118,6 +122,7 @@ export async function submitGeneration(
   prompt: string,
 ): Promise<Readonly<{ taskId: string }>> {
   try {
+    const referenceUrls = normalizeReferenceImages(request);
     const response = await client()
       .post("images/generations", {
         json: {
@@ -128,10 +133,8 @@ export async function submitGeneration(
           quality: request.quality,
           output_format: "png",
           n: request.imageCount,
-          // 参考图模式：带 image_urls 时 APIMart 走图生图，保持网页原图作为视觉素材
-          ...(request.referenceImageUrl
-            ? { image_urls: [request.referenceImageUrl] }
-            : {}),
+          // 参考图模式：带 image_urls 时 APIMart 走图生图，保持参考图作为视觉素材
+          ...(referenceUrls.length ? { image_urls: referenceUrls } : {}),
         },
         retry: { limit: 0 },
       })

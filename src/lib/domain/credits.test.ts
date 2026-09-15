@@ -82,6 +82,13 @@ describe("batchCreditCost", () => {
     expect(batchCreditCost("2k", "high", 2)).toBe(36);
     expect(batchCreditCost("2k", "medium", 4)).toBe(24);
   });
+
+  it("adds one credit per reference image on top of the base cost", () => {
+    expect(batchCreditCost("1k", "low", 1, 0)).toBe(2);
+    expect(batchCreditCost("1k", "low", 1, 1)).toBe(3);
+    expect(batchCreditCost("1k", "low", 1, 5)).toBe(7);
+    expect(batchCreditCost("4k", "max", 4, 5)).toBe(465);
+  });
 });
 
 describe("quality tiers", () => {

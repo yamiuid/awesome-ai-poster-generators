@@ -106,29 +106,56 @@ export const aspectLabels: Readonly<Record<AspectRatio, string>> = {
   "3:2": "Landscape",
 };
 
+// 图生图可选 "auto"：交给模型匹配参考图比例
+export const OUTPUT_ASPECTS = ["auto", ...ASPECT_RATIOS] as const;
+export type OutputAspect = (typeof OUTPUT_ASPECTS)[number];
+
+export const MAX_REFERENCE_IMAGES = 5;
+
+// 参考图（图生图）：仅接受 http(s) URL，交给图片模型做视觉参考
+const referenceUrlSchema = z
+  .string()
+  .trim()
+  .url()
+  .max(2048)
+  .refine(
+    (value) => value.startsWith("http://") || value.startsWith("https://"),
+    "Only http(s) image URLs are supported.",
+  );
+
 export const generationRequestSchema = z.object({
   prompt: z.string().trim().min(3).max(1500),
   siteLocale: z.enum(UI_LOCALES).optional(),
   inputType: z.enum(["idea", "url", "text"]).optional(),
-  // 页面/素材参考图（图生图）：仅接受 http(s) URL，交给图片模型做视觉参考
-  referenceImageUrl: z
-    .string()
-    .trim()
-    .url()
-    .max(2048)
-    .refine(
-      (value) => value.startsWith("http://") || value.startsWith("https://"),
-      "Only http(s) image URLs are supported.",
-    )
+  // 多参考图（最多 5 张）
+  referenceImageUrls: z
+    .array(referenceUrlSchema)
+    .max(MAX_REFERENCE_IMAGES)
     .optional(),
+  // 旧单参考图字段（UrlPipelineModal 网页截图场景），归一化并入数组
+  referenceImageUrl: referenceUrlSchema.optional(),
   style: z.enum(STYLES),
-  aspectRatio: z.enum(ASPECT_RATIOS),
+  aspectRatio: z.enum(OUTPUT_ASPECTS),
   resolution: z.enum(RESOLUTIONS),
   quality: z.enum(QUALITIES),
   imageCount: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
 });
 
 export type GenerationRequest = z.infer<typeof generationRequestSchema>;
+
+/** 旧单张字段并入数组去重，供 provider 请求与积分计算统一使用 */
+export function normalizeReferenceImages(
+  request: Pick<
+    GenerationRequest,
+    "referenceImageUrls" | "referenceImageUrl"
+  >,
+): string[] {
+  const urls = new Set<string>([
+    ...(request.referenceImageUrls ?? []),
+    ...(request.referenceImageUrl ? [request.referenceImageUrl] : []),
+  ]);
+  return [...urls].slice(0, MAX_REFERENCE_IMAGES);
+}
 export type ProviderQuality = "low" | Quality;
 
 export type GenerationMode = "guest" | "free" | "pro";
@@ -152,7 +179,7 @@ export type GenerationResponse = Readonly<{
   id: string;
   status: GenerationStatus;
   progress: number;
-  aspectRatio: AspectRatio;
+  aspectRatio: OutputAspect;
   prompt: string;
   inputType?: "idea" | "url" | "text" | null | undefined;
   createdAt: string;
@@ -176,7 +203,7 @@ export const generationResponseSchema = z.object({
     "timed_out",
   ]),
   progress: z.number().int().min(0).max(100),
-  aspectRatio: z.enum(ASPECT_RATIOS),
+  aspectRatio: z.enum(OUTPUT_ASPECTS),
   prompt: z.string(),
   inputType: z.enum(["idea", "url", "text"]).optional(),
   createdAt: z.string(),

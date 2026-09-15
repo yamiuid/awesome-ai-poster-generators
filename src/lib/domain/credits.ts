@@ -38,12 +38,19 @@ export function creditCost(resolution: Resolution, quality: Quality): number {
   return CREDIT_COSTS_PER_IMAGE[resolution][quality];
 }
 
+// 图生图加价：每张参考图在文生图总价上加 1 积分（与分辨率/质量无关）
+export const REFERENCE_IMAGE_COST = 1;
+
 export function batchCreditCost(
   resolution: Resolution,
   quality: Quality,
   imageCount: ImageCount = IMAGES_PER_GENERATION,
+  referenceImageCount = 0,
 ): number {
-  return creditCost(resolution, quality) * imageCount;
+  return (
+    creditCost(resolution, quality) * imageCount +
+    REFERENCE_IMAGE_COST * referenceImageCount
+  );
 }
 
 export function isImageCount(value: number): value is ImageCount {

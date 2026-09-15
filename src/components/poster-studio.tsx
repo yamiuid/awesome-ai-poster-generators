@@ -10,16 +10,20 @@ import {
   CircleAlert,
   History,
   Images,
+  ImagePlus,
   LoaderCircle,
   LockKeyhole,
   Pencil,
   Sparkles,
+  Upload,
   X,
 } from "lucide-react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import {
+  type ChangeEvent,
   type ClipboardEvent,
+  type DragEvent,
   type JSX,
   type KeyboardEvent,
   useEffect,
@@ -53,6 +57,9 @@ import {
   generationResponseSchema,
   IMAGE_COUNTS,
   type ImageCount,
+  isAspectRatio,
+  MAX_REFERENCE_IMAGES,
+  type OutputAspect,
   type PosterStyle,
   QUALITIES,
   type Quality,
@@ -147,24 +154,44 @@ const EMPTY_BRIEF_FIELDS: BriefFields = {
 
 type GenerationParams = Readonly<{
   style: PosterStyle;
-  aspectRatio: AspectRatio;
+  aspectRatio: OutputAspect;
   resolution: Resolution;
   quality: Quality;
   imageCount: ImageCount;
   inputType: InputType;
   referenceImageUrl?: string;
+  referenceImageUrls?: readonly string[];
 }>;
 
 type GenerateOverrides = Readonly<{
   prompt?: string;
   inputType?: InputType;
   referenceImageUrl?: string;
+  referenceImageUrls?: readonly string[];
   style?: PosterStyle;
-  aspectRatio?: AspectRatio;
+  aspectRatio?: OutputAspect;
   resolution?: Resolution;
   quality?: Quality;
   imageCount?: ImageCount;
 }>;
+
+// —— 图生图（参考图上传）——
+type GenerationMode = "text" | "image";
+type ReferenceImage = Readonly<{
+  id: string;
+  /** 服务端 URL；上传中为 null */
+  url: string | null;
+  /** 本地预览 URL（objectURL），上传成功后 revoke */
+  previewUrl: string;
+  name: string;
+}>;
+// 与服务端 uploads.ts 的限制保持一致（客户端预校验，服务端仍有魔数兜底）
+const REFERENCE_MAX_FILE_BYTES = 10 * 1024 * 1024;
+const REFERENCE_ACCEPTED_TYPES: ReadonlySet<string> = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 
 function promptStudioLocale(rawLocale: string): UiLocale {
   return isUiLocale(rawLocale) ? rawLocale : "en";
@@ -1002,6 +1029,169 @@ function MobileStudioTabs({
   );
 }
 
+function ModeSwitch({
+  mode,
+  onChange,
+}: Readonly<{
+  mode: GenerationMode;
+  onChange: (mode: GenerationMode) => void;
+}>): JSX.Element {
+  const t = useTranslations("studio");
+  return (
+    <div className="mode-switch" role="tablist" aria-label={t("generationMode")}>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === "text"}
+        className={`mode-switch-option ${mode === "text" ? "is-active" : ""}`}
+        onClick={() => onChange("text")}
+      >
+        <Sparkles size={15} aria-hidden="true" /> {t("modeTextToPoster")}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === "image"}
+        className={`mode-switch-option ${mode === "image" ? "is-active" : ""}`}
+        onClick={() => onChange("image")}
+      >
+        <ImagePlus size={15} aria-hidden="true" /> {t("modeImageToPoster")}
+      </button>
+    </div>
+  );
+}
+
+const REFERENCE_INPUT_ID = "reference-image-input";
+
+function ReferenceUploader({
+  images,
+  disabled = false,
+  onFiles,
+  onRemove,
+}: Readonly<{
+  images: readonly ReferenceImage[];
+  disabled?: boolean;
+  onFiles: (files: readonly File[]) => void;
+  onRemove: (id: string) => void;
+}>): JSX.Element {
+  const t = useTranslations("studio");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  // 上传中的占位项已在 images 内（url === null），不重复计数
+  const occupied = images.length;
+  const slotsLeft = MAX_REFERENCE_IMAGES - occupied;
+
+  function openPicker(): void {
+    if (!disabled) {
+      inputRef.current?.click();
+    }
+  }
+
+  function handleInputChange(event: ChangeEvent<HTMLInputElement>): void {
+    onFiles(event.target.files ? [...event.target.files] : []);
+    // 重置以支持重复选择同一文件
+    event.target.value = "";
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>): void {
+    event.preventDefault();
+    setDragOver(false);
+    if (disabled) {
+      return;
+    }
+    onFiles([...event.dataTransfer.files]);
+  }
+
+  return (
+    <div className="reference-section">
+      <div className="reference-header">
+        <span className="field-label" id="reference-images-label">
+          {t("referenceImages")}
+        </span>
+        <span className="reference-count">
+          {occupied}/{MAX_REFERENCE_IMAGES}
+        </span>
+      </div>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: 拖拽上传区域，可交互入口在内部按钮 */}
+      <div
+        className={`reference-dropzone ${dragOver ? "is-dragover" : ""}`}
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+      >
+        {occupied === 0 ? (
+          <button
+            type="button"
+            className="reference-empty"
+            onClick={openPicker}
+            disabled={disabled}
+          >
+            <span className="reference-empty-icon" aria-hidden="true">
+              <ImagePlus size={22} />
+            </span>
+            <span className="reference-empty-title">{t("dropzoneTitle")}</span>
+            <span className="reference-empty-hint">{t("dropzoneHint")}</span>
+          </button>
+        ) : (
+          <>
+            {images.map((image) => (
+              <div className="reference-thumb" key={image.id}>
+                {/* biome-ignore lint/performance/noImgElement: 本地 objectURL 预览无法走 next/image 优化 */}
+                <img
+                  src={image.previewUrl}
+                  alt={image.name}
+                  className="reference-thumb-image"
+                />
+                <button
+                  type="button"
+                  className="reference-thumb-remove"
+                  aria-label={t("removeImage")}
+                  disabled={disabled}
+                  onClick={() => onRemove(image.id)}
+                >
+                  <X size={13} aria-hidden="true" />
+                </button>
+                {image.url === null && (
+                  <span
+                    className="reference-thumb-uploading"
+                    aria-hidden="true"
+                  >
+                    <LoaderCircle size={16} className="spin" />
+                  </span>
+                )}
+              </div>
+            ))}
+            {slotsLeft > 0 && !disabled && (
+              <button
+                type="button"
+                className="reference-add-tile"
+                onClick={openPicker}
+                aria-label={t("uploadMore")}
+              >
+                <Upload size={18} aria-hidden="true" />
+                <span>{t("uploadMore")}</span>
+              </button>
+            )}
+          </>
+        )}
+        <input
+          ref={inputRef}
+          id={REFERENCE_INPUT_ID}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          className="reference-file-input"
+          onChange={handleInputChange}
+          disabled={disabled || slotsLeft <= 0}
+        />
+      </div>
+    </div>
+  );
+}
+
 function StudioExamplesPanel({
   examples,
   activeIndex,
@@ -1467,8 +1657,12 @@ export function PosterStudio({
   const commonT = useTranslations("common");
   const locale = promptStudioLocale(useLocale());
   const [prompt, setPrompt] = useState("");
+  // 生图模式：文生图 / 图生图（参考图）
+  const [mode, setMode] = useState<GenerationMode>("text");
+  const [referenceImages, setReferenceImages] = useState<ReferenceImage[]>([]);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [style, setStyle] = useState<PosterStyle>(initialStyle ?? "auto");
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("2:3");
+  const [aspectRatio, setAspectRatio] = useState<OutputAspect>("2:3");
   const [resolution, setResolution] = useState<Resolution>("1k");
   const [quality, setQuality] = useState<Quality>("low");
   // 默认 1 张；免费用户最大 2 张，Pro 可选 1-4 张
@@ -1620,9 +1814,11 @@ export function PosterStudio({
             resolution: params.resolution,
             quality: params.quality,
             imageCount: params.imageCount,
-            ...(params.referenceImageUrl
-              ? { referenceImageUrl: params.referenceImageUrl }
-              : {}),
+            ...(params.referenceImageUrls?.length
+              ? { referenceImageUrls: params.referenceImageUrls }
+              : params.referenceImageUrl
+                ? { referenceImageUrl: params.referenceImageUrl }
+                : {}),
           }
         : {}),
     });
@@ -1645,6 +1841,140 @@ export function PosterStudio({
       track("long_text_pasted");
     }
   }
+
+
+  // —— 图生图：参考图上传 ——
+
+  function removeReference(id: string): void {
+    setReferenceImages((prev) => {
+      const target = prev.find((image) => image.id === id);
+      if (target) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return prev.filter((image) => image.id !== id);
+    });
+  }
+
+  function clearReferenceImages(): void {
+    setReferenceImages((prev) => {
+      for (const image of prev) {
+        URL.revokeObjectURL(image.previewUrl);
+      }
+      return [];
+    });
+    setUploadingCount(0);
+  }
+
+  function handleReferenceFiles(files: readonly File[]): void {
+    if (files.length === 0) {
+      return;
+    }
+    const slotsLeft = MAX_REFERENCE_IMAGES - referenceImages.length;
+    if (slotsLeft <= 0) {
+      setError(t("tooManyReferences"));
+      return;
+    }
+    const accepted: File[] = [];
+    for (const file of files.slice(0, slotsLeft)) {
+      if (!REFERENCE_ACCEPTED_TYPES.has(file.type)) {
+        setError(t("fileTypeUnsupported"));
+        continue;
+      }
+      if (file.size > REFERENCE_MAX_FILE_BYTES) {
+        setError(t("fileTooLarge"));
+        continue;
+      }
+      accepted.push(file);
+    }
+    if (files.length > slotsLeft) {
+      setError(t("tooManyReferences"));
+    }
+    if (accepted.length === 0) {
+      return;
+    }
+    setError(null);
+    const pending: ReferenceImage[] = accepted.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      url: null,
+      previewUrl: URL.createObjectURL(file),
+      name: file.name,
+    }));
+    setReferenceImages((prev) => [...prev, ...pending]);
+    void uploadReferenceFiles(pending, accepted);
+  }
+
+  async function uploadReferenceFiles(
+    pending: readonly ReferenceImage[],
+    files: readonly File[],
+  ): Promise<void> {
+    setUploadingCount((count) => count + files.length);
+    try {
+      const formData = new FormData();
+      for (const file of files) {
+        formData.append("file", file);
+      }
+      const raw: unknown = await ky
+        .post("/api/uploads/reference", {
+          body: formData,
+          timeout: 60_000,
+        })
+        .json();
+      const urls =
+        typeof raw === "object" &&
+        raw !== null &&
+        "urls" in raw &&
+        Array.isArray(raw.urls)
+          ? raw.urls.filter(
+              (value): value is string => typeof value === "string",
+            )
+          : [];
+      if (urls.length !== files.length) {
+        throw new Error("Upload response was invalid.");
+      }
+      setReferenceImages((prev) =>
+        prev.map((image) => {
+          const index = pending.findIndex((entry) => entry.id === image.id);
+          const url = index >= 0 ? urls[index] : undefined;
+          if (index === -1 || url === undefined) {
+            return image;
+          }
+          URL.revokeObjectURL(image.previewUrl);
+          return { ...image, url, previewUrl: url };
+        }),
+      );
+      track("reference_image_added");
+    } catch {
+      // 上传失败：移除对应占位并提示
+      const failedIds = new Set(pending.map((entry) => entry.id));
+      setReferenceImages((prev) =>
+        prev.filter((image) => {
+          if (!failedIds.has(image.id)) {
+            return true;
+          }
+          URL.revokeObjectURL(image.previewUrl);
+          return false;
+        }),
+      );
+      setError(t("uploadFailed"));
+    } finally {
+      setUploadingCount((count) => Math.max(0, count - files.length));
+    }
+  }
+
+  // 已上传完成（有服务端 URL）的参考图，参与生图请求与积分计算
+  const uploadedReferenceUrls = useMemo(
+    () =>
+      referenceImages
+        .map((image) => image.url)
+        .filter((url): url is string => url !== null),
+    [referenceImages],
+  );
+  // 图生图模式不暴露品质选择：high 及以上一律按 medium 计费与提交
+  const effectiveQuality: Quality =
+    mode === "image" &&
+    (quality === "high" || quality === "xhigh" || quality === "max")
+      ? "medium"
+      : quality;
 
   function openLightbox(url: string): void {
     lightboxPreviousFocus.current =
@@ -1911,6 +2241,8 @@ export function PosterStudio({
     setResolution("1k");
     setQuality("low");
     setImageCount(1);
+    setMode("text");
+    clearReferenceImages();
     setError(null);
     setUpgradePrompt(false);
     setGuestLimitPrompt(false);
@@ -2170,15 +2502,38 @@ export function PosterStudio({
     setGuestLimitPrompt(false);
     const generationPrompt = (overrides?.prompt ?? prompt).trim();
     const generationType = overrides?.inputType ?? detectInputType(prompt);
-    const generationReferenceImage = overrides?.referenceImageUrl;
+    // 参考图来源：显式 overrides（URL 管线 / 内容编辑）优先，否则取图生图面板已上传项
+    const generationReferenceUrls = overrides
+      ? [
+          ...new Set<string>([
+            ...(overrides.referenceImageUrls ?? []),
+            ...(overrides.referenceImageUrl
+              ? [overrides.referenceImageUrl]
+              : []),
+          ]),
+        ].slice(0, MAX_REFERENCE_IMAGES)
+      : mode === "image"
+        ? uploadedReferenceUrls
+        : [];
     const generationStyle = overrides?.style ?? style;
     const generationAspectRatio = overrides?.aspectRatio ?? aspectRatio;
     const generationResolution = overrides?.resolution ?? resolution;
-    const generationQuality = overrides?.quality ?? quality;
+    const generationQuality = overrides?.quality ?? effectiveQuality;
     const generationImageCount = overrides?.imageCount ?? imageCount;
     // 按钮默认启用（对爬虫友好：HTML 中不显示 disabled），无输入时在提交前校验提示
     if (generationPrompt.length < 3) {
       setError(t("describeBrief"));
+      return;
+    }
+    // 图生图模式必须有至少一张已上传完成的参考图
+    if (
+      mode === "image" &&
+      !overrides &&
+      generationReferenceUrls.length === 0
+    ) {
+      setError(
+        uploadingCount > 0 ? t("referenceUploading") : t("needReferenceImage"),
+      );
       return;
     }
     // 免费用户选了锁定档位：不发起请求，引导开通会员
@@ -2224,8 +2579,8 @@ export function PosterStudio({
       quality: generationQuality,
       imageCount: generationImageCount,
       inputType: generationType,
-      ...(generationReferenceImage
-        ? { referenceImageUrl: generationReferenceImage }
+      ...(generationReferenceUrls.length > 0
+        ? { referenceImageUrls: generationReferenceUrls }
         : {}),
     };
     paramsByGeneration.current.set(submissionKey, generationParams);
@@ -2251,8 +2606,8 @@ export function PosterStudio({
             quality: generationQuality,
             imageCount: generationImageCount,
             siteLocale: locale,
-            ...(generationReferenceImage
-              ? { referenceImageUrl: generationReferenceImage }
+            ...(generationReferenceUrls.length > 0
+              ? { referenceImageUrls: generationReferenceUrls }
               : {}),
           },
           timeout: 30_000,
@@ -2311,6 +2666,7 @@ export function PosterStudio({
                     generationResolution,
                     generationQuality,
                     generationImageCount,
+                    generationReferenceUrls.length,
                   ),
               ),
         );
@@ -2355,14 +2711,20 @@ export function PosterStudio({
   // 免费积分用户：1K + low/medium 可用；选了 2K/4K 或 high 及以上质量时提示升级。
   // 积分包用户（paid）与订阅用户解锁全部档位。
   // 余额未加载（null）时放行，由服务端 INSUFFICIENT_CREDITS 402 兜底。
-  const creditCost = batchCreditCost(resolution, quality, imageCount);
+  // 积分预估：图生图按已上传完成的参考图张数加价（每张 +1）
+  const creditCost = batchCreditCost(
+    resolution,
+    effectiveQuality,
+    imageCount,
+    mode === "image" ? uploadedReferenceUrls.length : 0,
+  );
   const needsPro =
     !paid &&
     !isGuest &&
     (resolution !== "1k" ||
-      quality === "high" ||
-      quality === "xhigh" ||
-      quality === "max");
+      effectiveQuality === "high" ||
+      effectiveQuality === "xhigh" ||
+      effectiveQuality === "max");
   const insufficientCredits =
     !paid &&
     !isGuest &&
@@ -2502,8 +2864,35 @@ export function PosterStudio({
           role="tabpanel"
           aria-labelledby="studio-mobile-create-tab"
         >
+          <ModeSwitch
+            mode={mode}
+            onChange={(next) => {
+              setMode(next);
+              setError(null);
+              // 图生图参数只有比例+分辨率：默认匹配原图、1 张、风格 auto；
+              // 切回文生图时把比例从 auto 还原为可用值
+              if (next === "image") {
+                setAspectRatio("auto");
+                setStyle("auto");
+                setImageCount(1);
+              } else {
+                setAspectRatio((current) =>
+                  current === "auto" ? "2:3" : current,
+                );
+              }
+              track(next === "image" ? "image_mode_on" : "image_mode_off");
+            }}
+          />
+          {mode === "image" && (
+            <ReferenceUploader
+              images={referenceImages}
+              disabled={isSubmitting}
+              onFiles={handleReferenceFiles}
+              onRemove={removeReference}
+            />
+          )}
           <label className="field-label" htmlFor="poster-prompt">
-            {t("describeIdea")}
+            {mode === "image" ? t("describeEditLabel") : t("describeIdea")}
           </label>
           <textarea
             ref={promptFieldRef}
@@ -2512,7 +2901,11 @@ export function PosterStudio({
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             onPaste={handlePaste}
-            placeholder={t("promptPlaceholder")}
+            placeholder={
+              mode === "image"
+                ? t("describeEditPrompt")
+                : t("promptPlaceholder")
+            }
             maxLength={1500}
             rows={5}
             disabled={isSubmitting}
@@ -2524,11 +2917,61 @@ export function PosterStudio({
 
           <fieldset className="control-block">
             <legend className="field-label">{t("outputSettings")}</legend>
+            {mode === "image" ? (
+              // 图生图：只暴露比例（含匹配原图）与分辨率，一行两等分撑满
+              <div className="studio-options studio-options--image">
+                <div className="option-select">
+                  <span>{t("outputAspect")}</span>
+                  <TierSelect
+                    label={t("aspectRatio")}
+                    value={aspectRatio}
+                    onChange={(next) => {
+                      if (next === "auto" || isAspectRatio(next)) {
+                        setAspectRatio(next);
+                        setUpgradePrompt(false);
+                      }
+                    }}
+                    disabled={isSubmitting}
+                    options={[
+                      {
+                        value: "auto",
+                        label: t("matchReference"),
+                        locked: false,
+                      },
+                      ...ASPECT_RATIOS.map((option) => ({
+                        value: option,
+                        label: `${t(ASPECT_LABEL_KEYS[option])} (${option})`,
+                        locked: false,
+                      })),
+                    ]}
+                  />
+                </div>
+                <div className="option-select">
+                  <span>{t("outputResolution")}</span>
+                  <TierSelect
+                    label={t("resolution")}
+                    value={resolution}
+                    onChange={(next) => {
+                      if (RESOLUTIONS.some((option) => option === next)) {
+                        setResolution(next as Resolution);
+                        setUpgradePrompt(false);
+                      }
+                    }}
+                    disabled={isSubmitting}
+                    options={RESOLUTIONS.map((option) => ({
+                      value: option,
+                      label: t(RESOLUTION_LABEL_KEYS[option]),
+                      locked: option !== "1k" && !paid,
+                    }))}
+                  />
+                </div>
+              </div>
+            ) : (
             <div className="studio-options">
               <div className="option-select option-select--wide">
                 <span>{t("output")}</span>
                 <OutputSettingsSelect
-                  aspectRatio={aspectRatio}
+                  aspectRatio={aspectRatio === "auto" ? "2:3" : aspectRatio}
                   resolution={resolution}
                   quality={quality}
                   tier={paid ? "pro" : isGuest ? "guest" : "free"}
@@ -2589,6 +3032,7 @@ export function PosterStudio({
                 />
               </div>
             </div>
+            )}
           </fieldset>
           {!isGuest && (
             <p className="credit-estimate">

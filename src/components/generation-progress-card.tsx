@@ -9,9 +9,9 @@ import {
   generationPhase,
 } from "@/lib/domain/generation-progress";
 import type {
-  AspectRatio,
   GenerationImage,
   GenerationResponse,
+  OutputAspect,
 } from "@/lib/domain/poster";
 
 const POSTER_SLOTS = [0, 1, 2, 3] as const;
@@ -47,7 +47,7 @@ function PosterCard({
 }: Readonly<{
   index: number;
   image: GenerationImage | undefined;
-  aspectRatio: AspectRatio;
+  aspectRatio: OutputAspect;
   progressLabel: string;
   progress: number | null;
   onZoom: (url: string) => void;

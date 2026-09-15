@@ -222,6 +222,8 @@ const englishMessages = {
     tooManyReferences: "You can add up to 5 reference images.",
     needReferenceImage: "Add at least one reference image first.",
     referenceUploading: "Reference images are still uploading.",
+    posterPreview: "Poster preview",
+    retryPoster: "Couldn’t load poster. Retry",
   },
   pricing: {
     eyebrow: "Simple, weighted credits",
@@ -634,6 +636,10 @@ const englishMessages = {
     retryPoster: "Couldn’t load poster. Retry",
     generationProgress: "Poster generation progress",
     metadataTitle: "History | Text to Poster",
+    download: "Download",
+    fullSizePreview: "Full size preview",
+    closePreview: "Close preview",
+    seePlans: "See plans",
   },
   billing: {
     billing: "Billing",
@@ -887,6 +893,8 @@ const translated = {
       getCredits: "購買點數",
       welcomeBanner: "歡迎！{credits} 點免費點數已入帳——適用任何風格與品質。",
       dismissBanner: "關閉",
+      posterPreview: "海報預覽",
+      retryPoster: "無法載入海報，重試",
     },
     pricing: {
       ...englishMessages.pricing,
@@ -1031,6 +1039,10 @@ const translated = {
       subscriptionBalanceMeta:
         "{tier}・{periodStart} → {periodEnd}・已獲得 {credits} 點",
       menuCredits: "剩餘 {credits} 點",
+      download: "下載",
+      fullSizePreview: "預覽完整尺寸",
+      closePreview: "關閉預覽",
+      seePlans: "查看方案",
     },
     billing: {
       ...englishMessages.billing,
@@ -1237,6 +1249,8 @@ const translated = {
       describeIdea: "ポスターのアイデアを説明してください",
       guestsQuota:
         "ゲストは2回まで無料で生成できます。ログインするとウェルカムクレジット30を進呈します。",
+      posterPreview: "ポスタープレビュー",
+      retryPoster: "ポスターを読み込めませんでした。再試行",
     },
     pricing: {
       ...englishMessages.pricing,
@@ -1338,6 +1352,10 @@ const translated = {
       released: "{credits}クレジットを返却",
       usedSaved: "{used}クレジット使用・{saved}節約",
       used: "{credits}クレジット使用",
+      download: "ダウンロード",
+      fullSizePreview: "原寸プレビュー",
+      closePreview: "プレビューを閉じる",
+      seePlans: "プランを見る",
     },
     billing: {
       ...englishMessages.billing,
@@ -1545,6 +1563,8 @@ const translated = {
       describeIdea: "Describe tu idea para el póster",
       guestsQuota:
         "Los invitados pueden probar 2 generaciones gratis. Inicia sesión para recibir 30 créditos de bienvenida.",
+      posterPreview: "Vista previa del póster",
+      retryPoster: "No se pudo cargar el póster. Reintentar",
     },
     pricing: {
       ...englishMessages.pricing,
@@ -1639,6 +1659,10 @@ const translated = {
       released: "Liberando {credits} créditos",
       usedSaved: "Usaste {used} créditos · ahorraste {saved}",
       used: "Usaste {credits} créditos",
+      download: "Descargar",
+      fullSizePreview: "Vista previa completa",
+      closePreview: "Cerrar vista previa",
+      seePlans: "Ver planes",
     },
     billing: {
       ...englishMessages.billing,
@@ -1845,6 +1869,8 @@ const translated = {
       describeIdea: "صف فكرة ملصقك",
       guestsQuota:
         "يمكن للزوار تجربة عمليتي إنشاء مجانًا. سجّل الدخول للحصول على 30 رصيد ترحيبي.",
+      posterPreview: "معاينة الملصق",
+      retryPoster: "تعذر تحميل الملصق. إعادة المحاولة",
     },
     pricing: {
       ...englishMessages.pricing,
@@ -1940,6 +1966,10 @@ const translated = {
       released: "تم تحرير {credits} رصيد",
       usedSaved: "استخدمت {used} رصيد · وفّرت {saved}",
       used: "استخدمت {credits} رصيد",
+      download: "تنزيل",
+      fullSizePreview: "معاينة بالحجم الكامل",
+      closePreview: "إغلاق المعاينة",
+      seePlans: "عرض الخطط",
     },
     billing: {
       ...englishMessages.billing,

@@ -8,11 +8,14 @@ export async function settleGenerationCredits(
   generationId: string,
   successfulImages: number,
   costPerImage: number,
+  surcharge = 0,
 ): Promise<void> {
   const { error } = await createSupabaseAdminClient().rpc("settle_credits", {
     p_generation_id: generationId,
     p_successful_images: successfulImages,
     p_cost_per_image: costPerImage,
+    // 参考图加价（每张 1 积分），仅在结算消费时收取
+    ...(surcharge > 0 ? { p_surcharge: surcharge } : {}),
   });
   if (error) {
     throw new AppError(

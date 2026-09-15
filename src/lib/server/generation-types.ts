@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
-  AspectRatio,
   GenerationAcceptedResponse,
   GenerationMode,
   GenerationResponse,
   GenerationStatus,
+  OutputAspect,
 } from "@/lib/domain/poster";
 import type { Database } from "./supabase/types";
 
@@ -64,8 +64,10 @@ export function ownsGeneration(
         generation.guest_key === actor.legacyGuestKey;
 }
 
-function toAspectRatio(value: string): AspectRatio {
+function toAspectRatio(value: string): OutputAspect {
   switch (value) {
+    case "auto":
+      return "auto";
     case "1:1":
     case "4:5":
     case "3:4":

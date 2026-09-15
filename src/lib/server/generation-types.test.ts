@@ -19,6 +19,7 @@ const generation: GenerationRow = {
   resolution: "2k",
   quality: "high",
   image_count: 4,
+  reference_count: 0,
   mode: "pro",
   status: "succeeded",
   progress: 100,
