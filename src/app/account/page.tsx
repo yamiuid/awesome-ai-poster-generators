@@ -16,7 +16,7 @@ import {
   getAccountBalance,
   listAccountTransactions,
 } from "@/lib/server/credit-ledger";
-import { createPosterUrl } from "@/lib/server/storage";
+import { createPosterUrls } from "@/lib/server/storage";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -81,8 +81,8 @@ export default async function AccountPage({ searchParams }: PageProps) {
   }
   const imageUrls = new Map<string, string>();
   const allAssets = assets ?? [];
-  const signedUrls = await Promise.all(
-    allAssets.map((asset) => createPosterUrl(asset.storage_path)),
+  const signedUrls = await createPosterUrls(
+    allAssets.map((asset) => asset.storage_path),
   );
   allAssets.forEach((asset, index) => {
     const url = signedUrls[index];

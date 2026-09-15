@@ -107,21 +107,55 @@ describe("createPosterUrl (supabase provider)", () => {
     );
   });
 
-  it("uses createSignedUrl by default", async () => {
-    const createSignedUrl = vi.fn().mockResolvedValue({
-      data: { signedUrl: "https://example.supabase.co/object/sign/…" },
+  it("uses the batch createSignedUrls by default", async () => {
+    const createSignedUrls = vi.fn().mockResolvedValue({
+      data: [
+        {
+          path: "u/1/0.png",
+          signedUrl: "https://example.supabase.co/object/sign/…",
+          error: null,
+        },
+      ],
       error: null,
     });
     mockedAdmin.mockReturnValue({
       storage: {
-        from: () => ({ createSignedUrl, getPublicUrl: vi.fn() }),
+        from: () => ({
+          createSignedUrls,
+          createSignedUrl: vi.fn(),
+          getPublicUrl: vi.fn(),
+        }),
       },
     } as never);
 
     await expect(createPosterUrl("u/1/0.png")).resolves.toBe(
       "https://example.supabase.co/object/sign/…",
     );
-    expect(createSignedUrl).toHaveBeenCalledWith("u/1/0.png", 600);
+    expect(createSignedUrls).toHaveBeenCalledWith(["u/1/0.png"], 3600);
+  });
+
+  it("falls back to single signing when the batch omits a path", async () => {
+    const createSignedUrl = vi.fn().mockResolvedValue({
+      data: { signedUrl: "https://example.supabase.co/object/sign/single" },
+      error: null,
+    });
+    mockedAdmin.mockReturnValue({
+      storage: {
+        from: () => ({
+          createSignedUrls: vi.fn().mockResolvedValue({
+            data: [{ path: "u/1/0.png", signedUrl: null, error: "not found" }],
+            error: null,
+          }),
+          createSignedUrl,
+          getPublicUrl: vi.fn(),
+        }),
+      },
+    } as never);
+
+    await expect(createPosterUrl("u/1/0.png")).resolves.toBe(
+      "https://example.supabase.co/object/sign/single",
+    );
+    expect(createSignedUrl).toHaveBeenCalledWith("u/1/0.png", 3600);
   });
 });
 

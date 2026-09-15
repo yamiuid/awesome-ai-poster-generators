@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getServerEnv } from "@/lib/server/env";
 import { recoverGeneration } from "@/lib/server/generation-poll";
-import { deletePoster } from "@/lib/server/storage";
+import {
+  deleteReference,
+  deletePoster,
+  listStaleReferences,
+} from "@/lib/server/storage";
 import { createSupabaseAdminClient } from "@/lib/server/supabase/admin";
 import { getWaffoClient } from "@/lib/server/waffo";
 import {
@@ -60,6 +64,20 @@ export async function GET(request: Request): Promise<Response> {
     }
   }
 
+  // 参考图（图生图上传件）：30 天后清理，失败不阻断后续任务
+  let deletedReferences = 0;
+  try {
+    const staleReferences = await listStaleReferences(
+      new Date(now.getTime() - 30 * 24 * 60 * 60 * 1_000),
+    );
+    for (let index = 0; index < staleReferences.length; index += 500) {
+      await deleteReference(staleReferences.slice(index, index + 500));
+    }
+    deletedReferences = staleReferences.length;
+  } catch (error) {
+    console.error("Reference image cleanup failed", error);
+  }
+
   // 支付对账：先重放投递失败/处理中断的结算事件，再用 Waffo 侧订单自愈过期订阅。
   // 任一步失败都不能影响下面的资产清理与生成恢复。
   let paymentEvents = { replayed: 0, unresolved: 0, failed: 0 };
@@ -109,6 +127,7 @@ export async function GET(request: Request): Promise<Response> {
   }
   return NextResponse.json({
     deletedAssets: expiredAssets?.length ?? 0,
+    deletedReferences,
     recoveredGenerations,
     failedRecoveries,
     paymentEvents,

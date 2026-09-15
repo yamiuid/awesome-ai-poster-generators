@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { GenerationMode } from "@/lib/domain/poster";
 import { isVisibleGuestRecent } from "@/lib/domain/generation-history";
 import { generationFailureStatus } from "@/lib/domain/generation-progress";
 import { getTask } from "./apimart";
@@ -10,7 +11,7 @@ import {
   ownsGeneration,
   toGenerationResponse,
 } from "./generation-types";
-import { createPosterUrl } from "./storage";
+import { createPosterUrls } from "./storage";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
 const POLL_DELAY_MS = 4_000;
@@ -18,9 +19,25 @@ const MAX_GENERATION_MS = 15 * 60 * 1_000;
 const MAX_POLL_FAILURES = 5;
 const PROVIDER_TIMEOUT_MESSAGE =
   "The image service stopped responding and your credits were returned.";
-const GUEST_HISTORY_MS = 24 * 60 * 60 * 1_000;
-const SIGNED_RECENT_MS = 30 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1_000;
+/**
+ * 首页历史窗口必须覆盖资产保留期（见 generation-task.ts 写入的 expires_at）：
+ * 游客 1 天、登录免费用户 7 天、Pro 资产永久不过期。
+ * 窗口短于保留期会出现「图片还在存储里、历史里却查不到」。
+ */
+const GUEST_HISTORY_MS = 1 * DAY_MS;
+const FREE_HISTORY_MS = 7 * DAY_MS;
 const RECENT_LIMIT = 20;
+
+export function recentHistoryWindow(mode: GenerationMode): string | null {
+  if (mode === "pro") {
+    // Pro 资产的 expires_at 为 null（永久保留），不限时间窗，只按 RECENT_LIMIT 截断
+    return null;
+  }
+  return new Date(
+    Date.now() - (mode === "guest" ? GUEST_HISTORY_MS : FREE_HISTORY_MS),
+  ).toISOString();
+}
 const TERMINAL_STATUSES = [
   "succeeded",
   "partially_succeeded",
@@ -173,8 +190,8 @@ async function responseFor(
       503,
     );
   }
-  const urls = await Promise.all(
-    (assets ?? []).map((asset) => createPosterUrl(asset.storage_path)),
+  const urls = await createPosterUrls(
+    (assets ?? []).map((asset) => asset.storage_path),
   );
   const consumed = await loadConsumedCredits(admin, [generation.id]);
   return toGenerationResponse(
@@ -195,17 +212,18 @@ export async function listRecentGenerations(
     .select("*")
     .in("status", ["submitted", "processing"])
     .order("created_at", { ascending: false });
-  const recentWindow = new Date(
-    Date.now() - (actor.mode === "guest" ? GUEST_HISTORY_MS : SIGNED_RECENT_MS),
-  ).toISOString();
+  const recentWindow = recentHistoryWindow(actor.mode);
   const recentStatuses = TERMINAL_STATUSES;
-  const recentQuery = admin
+  const recentBaseQuery = admin
     .from("generations")
     .select("*")
     .in("status", [...recentStatuses])
-    .gte("created_at", recentWindow)
-    .order("created_at", { ascending: false })
-    .limit(actor.userId ? 1 : RECENT_LIMIT);
+    .order("created_at", { ascending: false });
+  const recentQuery = (
+    recentWindow
+      ? recentBaseQuery.gte("created_at", recentWindow)
+      : recentBaseQuery
+  ).limit(RECENT_LIMIT);
   const [activeResult, recentResult] = actor.userId
     ? await Promise.all([
         activeQuery.eq("user_id", actor.userId),

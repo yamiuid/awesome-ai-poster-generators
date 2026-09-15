@@ -1531,6 +1531,7 @@ export function PosterStudio({
   const givenUpIds = useRef(new Set<string>());
   const generationById = useRef(new Map<string, GenerationResponse>());
   const submissionSequence = useRef(0);
+  const recentRefreshedAt = useRef(0);
   const paramsByGeneration = useRef(new Map<string, GenerationParams>());
   const inputTypeByGeneration = useRef(new Map<string, InputType>());
   const examples = providedExamples ?? STUDIO_JOB_EXAMPLES;
@@ -1784,7 +1785,9 @@ export function PosterStudio({
         generations.map((generation) => generation.id),
       );
       const next = responses.filter(
-        (generation) => !currentIds.has(generation.id),
+        (generation) =>
+          !currentIds.has(generation.id) &&
+          !dismissedIds.current.has(generation.id),
       );
       const byId = new Map(
         prev.map((generation) => [generation.id, generation]),
@@ -2037,6 +2040,7 @@ export function PosterStudio({
       for (const id of activeIds.current) {
         startPolling(id);
       }
+      refreshRecent();
     }
     document.addEventListener("visibilitychange", resumeActivePolling);
     window.addEventListener("focus", resumeActivePolling);
@@ -2075,6 +2079,16 @@ export function PosterStudio({
       }
       setError(t("restoreFailed"));
     }
+  }
+
+  // 图片走签名 URL（1 小时有效），页面长时间停留后旧链接会 403 裂图。
+  // 用户回到页面时按 5 分钟节流重取一次历史，既刷新链接又避免请求风暴。
+  function refreshRecent(): void {
+    if (Date.now() - recentRefreshedAt.current < 5 * 60 * 1_000) {
+      return;
+    }
+    recentRefreshedAt.current = Date.now();
+    void recoverRecent();
   }
 
   async function poll(id: string): Promise<void> {

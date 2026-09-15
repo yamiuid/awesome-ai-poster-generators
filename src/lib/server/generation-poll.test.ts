@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { isRecoverableTimedOutGeneration } from "./generation-poll";
+import { describe, expect, it, vi } from "vitest";
+import {
+  isRecoverableTimedOutGeneration,
+  recentHistoryWindow,
+} from "./generation-poll";
+
+const DAY_MS = 24 * 60 * 60 * 1_000;
 
 describe("generation recovery", () => {
   it("rechecks timeout rows created by the local poll failure guard", () => {
@@ -12,5 +17,29 @@ describe("generation recovery", () => {
     };
 
     expect(isRecoverableTimedOutGeneration(generation)).toBe(true);
+  });
+});
+
+describe("recentHistoryWindow", () => {
+  const now = new Date("2026-09-15T12:00:00.000Z");
+  const daysBetween = (iso: string | null): number =>
+    iso === null ? Number.NaN : (now.getTime() - Date.parse(iso)) / DAY_MS;
+
+  it("covers the guest retention window of one day", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    expect(daysBetween(recentHistoryWindow("guest"))).toBe(1);
+    vi.useRealTimers();
+  });
+
+  it("covers the signed-in free retention window of seven days", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    expect(daysBetween(recentHistoryWindow("free"))).toBe(7);
+    vi.useRealTimers();
+  });
+
+  it("leaves Pro history unbounded because its assets never expire", () => {
+    expect(recentHistoryWindow("pro")).toBeNull();
   });
 });
