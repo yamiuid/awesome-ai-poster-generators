@@ -146,9 +146,9 @@ export default async function Home({
     offers: {
       "@type": "AggregateOffer",
       lowPrice: "0",
-      highPrice: "19.90",
+      highPrice: "430.80",
       priceCurrency: "USD",
-      offerCount: 8,
+      offerCount: 10,
     },
   };
   const faqJsonLd = {
@@ -391,7 +391,7 @@ export default async function Home({
         <div className="pricing-card">
           <h3>{t("pricingCardTitle")}</h3>
           <p className="pricing-price">
-            $2.90–$19.90 <small>{t("pricingMonth")}</small>
+            $9.90–$49.90 <small>{t("pricingMonth")}</small>
           </p>
           <ul>
             <li>{t("pricingFeature1")}</li>
@@ -400,6 +400,7 @@ export default async function Home({
             <li>{t("pricingFeature4")}</li>
             <li>{t("pricingFeature5")}</li>
             <li>{t("pricingFeature6")}</li>
+            <li>{t("pricingFeature7")}</li>
           </ul>
           <Link className="pricing-link" href="/pricing">
             {t("seePlans")} <ArrowUpRight size={15} />

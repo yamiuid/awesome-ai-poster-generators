@@ -266,7 +266,7 @@ const englishMessages = {
     signInToStart: "Sign in to start",
     metadataTitle: "Pricing | Text to Poster",
     metadataDescription:
-      "One-time credit packs plus Creator and Studio plans with monthly credits, 1K-4K exports, no watermark, and private history.",
+      "One-time credit packs plus Creator, Studio, and Scale plans with monthly credits, 1K-4K exports, no watermark, and private history.",
     freeEyebrow: "Free / account",
     freeCadence: "/ forever",
     freeDescription:
@@ -457,14 +457,16 @@ const englishMessages = {
     howKeepBody:
       "Keep the direction that lands, refine the brief, and download. Free previews are watermarked; Pro adds private history and clean high-definition exports.",
     howKeepAlt: "A finished poster being downloaded from the poster studio.",
-    pricingCardTitle: "Creator + Studio",
+    pricingCardTitle: "Creator · Studio · Scale",
     pricingMonth: "/ month",
     pricingFeature1: "Guests get 2 watermarked trial generations",
     pricingFeature2: "Free accounts get 30 welcome credits, never expire",
-    pricingFeature3: "Creator and Studio plans add monthly credits",
+    pricingFeature3:
+      "Creator, Studio, and Scale plans add 500–3,000 monthly credits",
     pricingFeature4: "1K, 2K, and 4K exports",
     pricingFeature5: "Medium, High, and Max finishes",
     pricingFeature6: "Private history with no watermark",
+    pricingFeature7: "One-time credit packs from $4.90 — never expire",
     faqIntro:
       "Start small, learn from the first result, and refine only what needs changing. These answers cover the practical details behind making a poster from text with the free studio.",
     faq1Question: "Is this really free?",
@@ -2190,14 +2192,15 @@ const coverageTranslations = {
       howKeepBody:
         "保留最有感覺的方向，調整簡報後下載。免費預覽會有浮水印；Pro 提供私人紀錄與乾淨的高畫質匯出。",
       howKeepAlt: "從海報工作室下載完成的海報。",
-      pricingCardTitle: "Creator + Studio",
+      pricingCardTitle: "Creator · Studio · Scale",
       pricingMonth: "／月",
       pricingFeature1: "訪客可免費試用 2 次帶浮水印的生成",
       pricingFeature2: "免費帳戶獲贈 30 點永不過期的歡迎點數",
-      pricingFeature3: "Creator 與 Studio 方案提供每月點數",
+      pricingFeature3: "Creator、Studio 與 Scale 方案每月提供 500–3,000 點",
       pricingFeature4: "1K、2K 與 4K 匯出",
       pricingFeature5: "中等、高與最高完成度",
       pricingFeature6: "無浮水印的私人紀錄",
+      pricingFeature7: "一次性點數包 $4.90 起——點數永不過期",
       faqIntro:
         "從小處開始，從第一個結果學習，只調整真正需要改變的地方。以下回答文字製作海報與免費工作室的實際問題。",
       faq1Question: "真的免費嗎？",
@@ -2507,12 +2510,10 @@ const coverageTranslations = {
         "気に入った方向を残し、ブリーフを整えてダウンロードします。無料プレビューには透かしが入り、Pro では非公開履歴と高解像度のクリーンな書き出しが使えます。",
       howKeepAlt:
         "ポスタースタジオから完成したポスターをダウンロードしている画面。",
-      pricingCardTitle: "Creator + Studio",
       pricingMonth: "／月",
       pricingFeature1: "ゲストは透かし付き生成を2回試用可能",
       pricingFeature2:
         "新規アカウントには期限なしのウェルカムクレジット30を進呈",
-      pricingFeature3: "Creator と Studio は毎月クレジットを付与",
       pricingFeature4: "1K、2K、4K の書き出し",
       pricingFeature5: "Medium・High・Max の仕上がり",
       pricingFeature6: "透かしなしの非公開履歴",
@@ -2872,13 +2873,11 @@ const coverageTranslations = {
       howKeepBody:
         "Conserva la dirección que funciona, ajusta el brief y descarga. Las vistas previas gratuitas llevan marca de agua; Pro añade historial privado y exportaciones limpias en alta definición.",
       howKeepAlt: "Un póster terminado que se descarga desde el estudio.",
-      pricingCardTitle: "Creator + Studio",
       pricingMonth: "／mes",
       pricingFeature1:
         "Los invitados obtienen dos generaciones de prueba con marca de agua",
       pricingFeature2:
         "Las cuentas nuevas reciben 30 créditos de bienvenida que nunca caducan",
-      pricingFeature3: "Los planes Creator y Studio añaden créditos mensuales",
       pricingFeature4: "Exportaciones 1K, 2K y 4K",
       pricingFeature5: "Acabados Medium, High y Max",
       pricingFeature6: "Historial privado sin marca de agua",
@@ -3226,11 +3225,9 @@ const coverageTranslations = {
       howKeepBody:
         "احتفظ بالاتجاه المناسب ونقّح الموجز ثم نزّله. تتضمن المعاينات المجانية علامة مائية؛ ويضيف Pro سجلًا خاصًا وملفات تصدير عالية الدقة بلا علامة مائية.",
       howKeepAlt: "تنزيل ملصق مكتمل من استوديو الملصقات.",
-      pricingCardTitle: "Creator + Studio",
       pricingMonth: "／شهريًا",
       pricingFeature1: "يحصل الزوار على عمليتي إنشاء تجريبية بعلامة مائية",
       pricingFeature2: "تحصل الحسابات الجديدة على 30 رصيدًا ترحيبيًا (مرة واحدة)",
-      pricingFeature3: "تضيف خطتا Creator وStudio أرصدة شهرية",
       pricingFeature4: "تصدير بدقة 1K و2K و4K",
       pricingFeature5: "تشطيبات Medium وHigh وMax",
       pricingFeature6: "سجل خاص بلا علامة مائية",
