@@ -224,6 +224,10 @@ const englishMessages = {
     referenceUploading: "Reference images are still uploading.",
     posterPreview: "Poster preview",
     retryPoster: "Couldn’t load poster. Retry",
+    posterLoading: "Loading poster…",
+    posterUnavailable: "This poster is no longer available",
+    posterUnavailableHint:
+      "It may have been removed after its retention window.",
   },
   pricing: {
     eyebrow: "Simple, weighted credits",
@@ -895,6 +899,9 @@ const translated = {
       dismissBanner: "關閉",
       posterPreview: "海報預覽",
       retryPoster: "無法載入海報，重試",
+      posterLoading: "載入海報中…",
+      posterUnavailable: "此海報已無法使用",
+      posterUnavailableHint: "可能已超過保留期限被移除。",
     },
     pricing: {
       ...englishMessages.pricing,
@@ -1251,6 +1258,9 @@ const translated = {
         "ゲストは2回まで無料で生成できます。ログインするとウェルカムクレジット30を進呈します。",
       posterPreview: "ポスタープレビュー",
       retryPoster: "ポスターを読み込めませんでした。再試行",
+      posterLoading: "ポスターを読み込み中…",
+      posterUnavailable: "このポスターは利用できません",
+      posterUnavailableHint: "保存期間を過ぎて削除された可能性があります。",
     },
     pricing: {
       ...englishMessages.pricing,
@@ -1565,6 +1575,10 @@ const translated = {
         "Los invitados pueden probar 2 generaciones gratis. Inicia sesión para recibir 30 créditos de bienvenida.",
       posterPreview: "Vista previa del póster",
       retryPoster: "No se pudo cargar el póster. Reintentar",
+      posterLoading: "Cargando póster…",
+      posterUnavailable: "Este póster ya no está disponible",
+      posterUnavailableHint:
+        "Es posible que se haya eliminado al vencer su periodo de retención.",
     },
     pricing: {
       ...englishMessages.pricing,
@@ -1871,6 +1885,9 @@ const translated = {
         "يمكن للزوار تجربة عمليتي إنشاء مجانًا. سجّل الدخول للحصول على 30 رصيد ترحيبي.",
       posterPreview: "معاينة الملصق",
       retryPoster: "تعذر تحميل الملصق. إعادة المحاولة",
+      posterLoading: "جارٍ تحميل الملصق…",
+      posterUnavailable: "هذا الملصق لم يعد متاحًا",
+      posterUnavailableHint: "ربما تمت إزالته بعد انتهاء مدة الاحتفاظ.",
     },
     pricing: {
       ...englishMessages.pricing,

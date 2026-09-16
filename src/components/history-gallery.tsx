@@ -53,6 +53,8 @@ export function HistoryGallery({
   const locale = useLocale();
   const t = useTranslations("account");
   const [lightbox, setLightbox] = useState<string | null>(null);
+  // 大图 onLoad 前先显示加载文案（与首页历史预览一致）
+  const [lightboxLoaded, setLightboxLoaded] = useState(false);
 
   // 对挂起任务触发后台推进（重活：查 APIMart + 下载/水印/上传）。
   // 接口幂等 + 120s 超时静默——服务端继续处理，页面 meta refresh 后可见结果。
@@ -129,7 +131,10 @@ export function HistoryGallery({
                 <button
                   type="button"
                   className="history-zoom"
-                  onClick={() => setLightbox(image.url)}
+                  onClick={() => {
+                    setLightboxLoaded(false);
+                    setLightbox(image.url);
+                  }}
                   aria-label={`View ${image.alt} full size`}
                 >
                   <Image
@@ -178,12 +183,20 @@ export function HistoryGallery({
           >
             <X size={20} />
           </button>
+          {lightboxLoaded ? null : (
+            <span className="lightbox-loading" role="status">
+              {t("loadingPoster")}
+            </span>
+          )}
           <Image
             src={lightbox}
             alt={t("posterPreview")}
             width={1024}
             height={1280}
-            className="lightbox-image"
+            className={
+              lightboxLoaded ? "lightbox-image is-loaded" : "lightbox-image"
+            }
+            onLoad={() => setLightboxLoaded(true)}
           />
         </div>
       )}

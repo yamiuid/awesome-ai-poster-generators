@@ -1384,7 +1384,6 @@ function StudioHistoryProgress({
     <div className="studio-history-progress" aria-live="polite">
       <div
         className={`studio-history-progress-media ${isFailure ? "is-failure" : ""}`}
-        style={{ aspectRatio: generation.aspectRatio.replace(":", " / ") }}
       >
         {isFailure ? (
           <div className="studio-history-progress-error" role="alert">
@@ -1491,12 +1490,18 @@ function StudioHistoryPanel({
   const t = useTranslations("studio");
   const locale = promptStudioLocale(useLocale());
   const selected = items.find((item) => item.key === selectedKey);
-  const [loadError, setLoadError] = useState(false);
+  // 预览区固定 16:10（见 globals.css .studio-history-main）：
+  // 图片 onLoad 前显示加载层；加载失败先给「重试」，重试后仍失败降级为「已不可用」。
+  // attempt 用来强制重挂 <img>，否则同 URL 复用节点不会再触发 load/error。
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   const selectedPoster =
     selected?.kind === "poster" ? selected.poster : undefined;
   const selectedFailure =
     selected?.kind === "failure" ? selected.generation : undefined;
+  const posterUnavailable = imageFailed && attempt > 0;
 
   if (activeGeneration) {
     return (
@@ -1561,15 +1566,18 @@ function StudioHistoryPanel({
               : {})}
           />
         ) : selectedPoster ? (
-          loadError ? (
+          posterUnavailable ? (
+            <div className="studio-history-unavailable" role="status">
+              <strong>{t("posterUnavailable")}</strong>
+              <p>{t("posterUnavailableHint")}</p>
+            </div>
+          ) : imageFailed ? (
             <button
               type="button"
               className="studio-history-retry"
-              style={{
-                aspectRatio: selectedPoster.aspectRatio.replace(":", " / "),
-              }}
               onClick={() => {
-                setLoadError(false);
+                setImageFailed(false);
+                setAttempt((value) => value + 1);
                 onRetry(selectedPoster.generationId);
               }}
             >
@@ -1581,17 +1589,28 @@ function StudioHistoryPanel({
               className="studio-history-image-button"
               onClick={() => onZoom(selectedPoster.image.url)}
               aria-label={t("fullSizePreview")}
-              style={{
-                aspectRatio: selectedPoster.aspectRatio.replace(":", " / "),
-              }}
             >
+              {imageLoaded ? null : (
+                <>
+                  <span
+                    className="studio-history-image-skeleton"
+                    aria-hidden="true"
+                  />
+                  <span className="studio-history-loading-text">
+                    {t("posterLoading")}
+                  </span>
+                </>
+              )}
               <Image
+                key={`poster-attempt-${attempt}`}
                 src={selectedPoster.image.url}
                 alt={selectedPoster.image.alt}
                 width={1024}
                 height={1280}
                 sizes="(max-width: 800px) 100vw, 52vw"
-                onError={() => setLoadError(true)}
+                className={imageLoaded ? "is-loaded" : ""}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageFailed(true)}
               />
             </button>
           )
@@ -1612,7 +1631,7 @@ function StudioHistoryPanel({
               type="button"
               className="result-action-button"
               onClick={() => onDownload(selectedPoster.image.url, filename)}
-              disabled={loadError}
+              disabled={imageFailed}
             >
               <ArrowDownToLine size={14} aria-hidden="true" /> {t("download")}
             </button>
@@ -1696,6 +1715,7 @@ export function PosterStudio({
     null,
   );
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightboxLoaded, setLightboxLoaded] = useState(false);
   const [editContentId, setEditContentId] = useState<string | null>(null);
   const [editContentFields, setEditContentFields] =
     useState<BriefFields>(EMPTY_BRIEF_FIELDS);
@@ -1981,6 +2001,7 @@ export function PosterStudio({
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
+    setLightboxLoaded(false);
     setLightbox(url);
   }
 
@@ -3278,12 +3299,20 @@ export function PosterStudio({
             >
               <X size={20} />
             </button>
+            {lightboxLoaded ? null : (
+              <span className="lightbox-loading" role="status">
+                {t("posterLoading")}
+              </span>
+            )}
             <Image
               src={lightbox}
               alt={t("posterPreview")}
               width={1024}
               height={1280}
-              className="lightbox-image"
+              className={
+                lightboxLoaded ? "lightbox-image is-loaded" : "lightbox-image"
+              }
+              onLoad={() => setLightboxLoaded(true)}
             />
           </>
         )}

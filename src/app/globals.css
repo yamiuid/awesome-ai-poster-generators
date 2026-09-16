@@ -13,7 +13,8 @@
   --focus: #174f80;
   --container-max: 82rem;
   --container-gutter: 1.5rem;
-  --studio-media-max-height: 30rem;
+  --studio-media-max-width: 40rem;
+  --studio-media-max-height: 36rem;
   --radius-card: 1.25rem;
   --radius-control: 0.75rem;
   --space-unit: 0.25rem;
@@ -413,6 +414,17 @@ textarea:focus-visible {
   min-height: 38rem;
   border: 1px solid var(--line);
   background: rgba(245, 240, 232, 0.72);
+}
+/* 大屏把左侧控件区放宽：输入框、风格与档位控件更舒展 */
+@media (min-width: 1200px) {
+  .studio-grid {
+    grid-template-columns: minmax(24rem, 0.88fr) minmax(0, 1.12fr);
+  }
+}
+@media (min-width: 1600px) {
+  .studio-grid {
+    grid-template-columns: minmax(28rem, 0.98fr) minmax(0, 1.02fr);
+  }
 }
 .studio-controls {
   container-type: inline-size;
@@ -1489,14 +1501,27 @@ textarea:focus-visible {
   background: var(--paper);
   cursor: pointer;
 }
-.studio-example-image-button img,
-.studio-history-image-button img {
+.studio-example-image-button img {
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 4 / 5;
   object-fit: cover;
   transition: transform 280ms ease;
+}
+/* 历史预览：固定 16:10 画布内 contain 完整展示，onLoad 前用加载层遮住 */
+.studio-history-image-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition:
+    opacity 220ms ease,
+    transform 280ms ease;
+}
+.studio-history-image-button img.is-loaded {
+  opacity: 1;
 }
 .studio-example-image-button:hover img,
 .studio-history-image-button:hover img {
@@ -1600,28 +1625,68 @@ textarea:focus-visible {
   align-items: center;
 }
 .studio-history-main {
-  display: flex;
-  width: min(100%, 24rem);
-  height: min(var(--studio-media-max-height), 70dvh);
-  min-width: 0;
-  min-height: 0;
-  align-items: stretch;
-  justify-content: center;
-  background: var(--paper-deep);
-}
-.studio-history-image-button {
   position: relative;
   display: flex;
-  height: 100%;
+  width: min(100%, var(--studio-media-max-width));
+  aspect-ratio: 16 / 10;
+  max-height: min(var(--studio-media-max-height), 70dvh);
+  min-width: 0;
+  min-height: 0;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   background: var(--paper-deep);
-  border: 0;
 }
-.studio-history-image-button img {
+/* 预览区固定 16:10：切换历史记录时面板尺寸不跳动；图片 contain 居中，整张海报完整可见不裁切 */
+.studio-history-image-button {
+  position: relative;
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  padding: 0;
+  border: 0;
+  background: var(--paper-deep);
+  cursor: zoom-in;
+}
+.studio-history-image-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    var(--paper) 20%,
+    color-mix(in srgb, var(--line) 60%, var(--paper)) 50%,
+    var(--paper) 80%
+  );
+  background-size: 220% 100%;
+  animation: history-progress-sweep 1.8s ease-in-out infinite;
+}
+.studio-history-loading-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.studio-history-unavailable {
+  display: flex;
+  max-width: 20rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+.studio-history-unavailable strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.studio-history-unavailable p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.5;
 }
 .studio-history-retry {
   display: grid;
@@ -1638,7 +1703,7 @@ textarea:focus-visible {
 }
 .studio-history-meta {
   display: flex;
-  width: min(100%, 24rem);
+  width: min(100%, var(--studio-media-max-width));
   height: 3rem;
   align-items: center;
   justify-content: space-between;
@@ -1728,7 +1793,7 @@ textarea:focus-visible {
   border-color: var(--accent);
 }
 .studio-history-note {
-  width: min(100%, 24rem);
+  width: min(100%, var(--studio-media-max-width));
   margin: 0.35rem 0 0;
   color: var(--ink-muted);
   font-size: 0.68rem;
@@ -3298,6 +3363,17 @@ dialog.modal-backdrop:not([open]) {
   border-radius: 0.5rem;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   cursor: default;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.lightbox-image.is-loaded {
+  opacity: 1;
+}
+.lightbox-loading {
+  position: absolute;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 .lightbox-close {
   position: absolute;
