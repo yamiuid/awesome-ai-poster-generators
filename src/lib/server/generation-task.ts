@@ -77,8 +77,9 @@ async function storeTaskImages(
       return false;
     }
     const downloaded = await downloadProviderImage(sourceUrl);
-    const image =
-      generation.mode === "pro" ? downloaded : await bakeWatermark(downloaded);
+    // 只有访客预览打水印；注册用户（免费与订阅）直接拿到干净文件
+    const watermarked = generation.mode === "guest";
+    const image = watermarked ? await bakeWatermark(downloaded) : downloaded;
     await uploadPoster(path, image);
     const { error } = await admin.from("generated_assets").insert({
       generation_id: generation.id,
@@ -86,7 +87,7 @@ async function storeTaskImages(
       guest_key: generation.guest_key,
       storage_path: path,
       alt_text: generation.prompt,
-      watermarked: generation.mode !== "pro",
+      watermarked,
       expires_at:
         generation.mode === "pro"
           ? null

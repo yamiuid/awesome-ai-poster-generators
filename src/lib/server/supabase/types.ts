@@ -71,6 +71,8 @@ export type Database = {
         quality: string;
         image_count: number;
         reference_count: number;
+        /** 迁移 20260916130000 之后才会出现的列，读取时要容错 */
+        reference_urls?: string[];
         mode: string;
         status: string;
         progress: number;

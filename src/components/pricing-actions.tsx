@@ -2,7 +2,7 @@
 
 import ky, { HTTPError } from "ky";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import type { CheckoutPlan, CreditPackPlan } from "@/lib/domain/plans";
 import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
@@ -19,6 +19,15 @@ function isPackPlan(
   plan: CheckoutPlan | CreditPackPlan,
 ): plan is CreditPackPlan {
   return plan.startsWith("pack_");
+}
+
+/**
+ * 所有分支都套同一层 .pricing-action：
+ * 间距由 .plan-card .pricing-action 提供，免费卡片用的是同一个类，
+ * 早期分支直接返回裸按钮会让"Sign in to start"贴住上方文案。
+ */
+function ActionSlot({ children }: Readonly<{ children: ReactNode }>) {
+  return <div className="pricing-action">{children}</div>;
 }
 
 export function PricingAction({
@@ -75,9 +84,11 @@ export function PricingAction({
     (subscriptionState === "active" || subscriptionState === "canceling")
   ) {
     return (
-      <Link className="outline-button" href="/account/billing">
-        {t("manageSubscription")}
-      </Link>
+      <ActionSlot>
+        <Link className="outline-button" href="/account/billing">
+          {t("manageSubscription")}
+        </Link>
+      </ActionSlot>
     );
   }
   if (
@@ -85,31 +96,37 @@ export function PricingAction({
     (subscriptionState === "past_due" || subscriptionState === "stale")
   ) {
     return (
-      <Link className="outline-button" href="/account/billing">
-        {t("billingNeedsAttention")}
-      </Link>
+      <ActionSlot>
+        <Link className="outline-button" href="/account/billing">
+          {t("billingNeedsAttention")}
+        </Link>
+      </ActionSlot>
     );
   }
   if (!isConfigured) {
     return (
-      <button className="outline-button" type="button" disabled>
-        {t("availableSoon")}
-      </button>
+      <ActionSlot>
+        <button className="outline-button" type="button" disabled>
+          {t("availableSoon")}
+        </button>
+      </ActionSlot>
     );
   }
   if (!isSignedIn) {
     return (
-      <Link
-        className="solid-button"
-        href={`/login?next=${encodeURIComponent(localizedPath("/pricing", locale))}`}
-      >
-        {t("signInToStart")}
-      </Link>
+      <ActionSlot>
+        <Link
+          className="solid-button"
+          href={`/login?next=${encodeURIComponent(localizedPath("/pricing", locale))}`}
+        >
+          {t("signInToStart")}
+        </Link>
+      </ActionSlot>
     );
   }
 
   return (
-    <div className="pricing-action">
+    <ActionSlot>
       <button
         className="solid-button"
         type="button"
@@ -172,7 +189,7 @@ export function PricingAction({
           {notice}
         </p>
       )}
-    </div>
+    </ActionSlot>
   );
 }
 

@@ -60,6 +60,7 @@ const generation: GenerationRow = {
   quality: "high",
   image_count: 1,
   reference_count: 0,
+  reference_urls: [],
   mode: "pro",
   status: "submitted",
   progress: 0,
@@ -170,5 +171,28 @@ describe("generation prompt safety integration", () => {
       expect.any(String),
     );
     expect(mocks.settleGenerationCredits).not.toHaveBeenCalled();
+  });
+
+  // 迁移未执行时 generations 还没有 reference_urls 列：补写失败不能影响生图
+  it("keeps the generation when storing reference URLs fails", async () => {
+    mocks.enforcePromptSafety.mockResolvedValue(undefined);
+    mocks.submitGeneration.mockResolvedValue({ taskId: "task-9" });
+    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    mocks.from.mockImplementation(() => ({
+      ...mocks.query,
+      update: (values: Record<string, unknown>) =>
+        "reference_urls" in values
+          ? { eq: () => Promise.resolve({ error: { message: "no column" } }) }
+          : mocks.query,
+    }));
+    const actor = getActorForRequest("user-1", identity, true);
+
+    const created = await createGeneration(actor, {
+      ...request,
+      referenceImageUrls: ["https://example.com/reference.png"],
+    });
+
+    expect(created.id).toBe(generation.id);
+    expect(mocks.submitGeneration).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,7 +1,8 @@
 "use client";
 
 import ky from "ky";
-import { ArrowUpRight, Menu, Sparkles, X } from "lucide-react";
+import { ArrowUpRight, LoaderCircle, Menu, Sparkles, X } from "lucide-react";
+import { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -152,6 +153,27 @@ function HeaderAccount({
   return null;
 }
 
+/**
+ * 导航项文字 + 跳转中的即时反馈。
+ * 页面是动态渲染（每页都要读登录态），点击后要等服务端返回才换页，
+ * 这里用 useLinkStatus 在等待期间给出转圈，避免"点了没反应"的迟滞感。
+ */
+function NavLinkLabel({ label }: Readonly<{ label: string }>) {
+  const { pending } = useLinkStatus();
+  return (
+    <>
+      {label}
+      {pending && (
+        <LoaderCircle
+          size={13}
+          className="spin header-nav-pending"
+          aria-hidden="true"
+        />
+      )}
+    </>
+  );
+}
+
 export function SiteHeader({
   variant = "global",
   initialAuth,
@@ -233,7 +255,7 @@ export function SiteHeader({
                     : undefined
                 }
               >
-                {t(item.key)}
+                <NavLinkLabel label={t(item.key)} />
               </Link>
             ))}
             <LocaleSwitcher />

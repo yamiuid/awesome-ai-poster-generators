@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
+import { referenceImageLimit } from "@/lib/domain/poster";
 import { getAuthContext } from "@/lib/server/auth";
 import { AppError, responseForError } from "@/lib/server/errors";
 import { getGuestIdentity } from "@/lib/server/guest";
@@ -10,14 +11,15 @@ import {
   referenceExtension,
 } from "@/lib/server/uploads";
 
-// 单次请求最多 5 张，与 generationRequestSchema 的 MAX_REFERENCE_IMAGES 对齐
-const MAX_FILES_PER_REQUEST = 5;
-
 export async function POST(request: NextRequest): Promise<Response> {
   try {
     const auth = await getAuthContext();
     const identity = getGuestIdentity(request);
     const actorKey = auth.userId ?? `guest:${identity.key}`;
+    // 单次请求张数按档位限制：访客 1 / 免费 2 / 订阅 5（与生图接口同一套规则）
+    const referenceLimit = referenceImageLimit(
+      auth.userId ? (auth.isPro || auth.hasPack ? "pro" : "free") : "guest",
+    );
     if (isUploadRateLimited(actorKey)) {
       throw new AppError(
         "UPLOAD_RATE_LIMITED",
@@ -37,10 +39,10 @@ export async function POST(request: NextRequest): Promise<Response> {
         400,
       );
     }
-    if (files.length > MAX_FILES_PER_REQUEST) {
+    if (files.length > referenceLimit) {
       throw new AppError(
         "INVALID_REFERENCE_FILE",
-        "Attach at most 5 images per request.",
+        `Attach at most ${referenceLimit} image${referenceLimit === 1 ? "" : "s"} per request.`,
         400,
       );
     }

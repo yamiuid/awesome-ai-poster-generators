@@ -4,6 +4,7 @@ import {
   type GenerationRequest,
   normalizeReferenceImages,
   type ProviderQuality,
+  referenceImageLimit,
 } from "@/lib/domain/poster";
 import { buildPosterPrompt } from "@/lib/domain/prompts";
 import { type ProviderGenerationRequest, submitGeneration } from "./apimart";
@@ -85,6 +86,20 @@ export async function createGeneration(
   const providerInput = providerRequest(request, actor);
   // 参考图（图生图）：每张在文生图基础价上加 1 积分，与档位无关
   const referenceImages = normalizeReferenceImages(request);
+  // 参考图额度按档位限制：访客 1 / 免费 2 / 订阅 5。
+  // 前端已按档位拦截，这里兜底防止直接调 API 绕过。
+  const referenceLimit = referenceImageLimit(actor.mode);
+  if (referenceImages.length > referenceLimit) {
+    throw new AppError(
+      actor.mode === "guest"
+        ? "GUEST_REFERENCE_LIMIT_REACHED"
+        : "REFERENCE_LIMIT_REACHED",
+      actor.mode === "guest"
+        ? "Guests can attach one reference image. Create a free account to attach two."
+        : "Free accounts can attach two reference images. Subscribe to attach up to five.",
+      402,
+    );
+  }
   // 积分按实际生成档位（free 模式可能被降级）计算
   const credits =
     actor.mode === "guest"
@@ -230,6 +245,21 @@ export async function createGeneration(
       .eq("id", inserted.id);
     if (inputTypeError) {
       // 输入类型仅用于分析，写入失败不阻断生成
+    }
+  }
+
+  // 参考图 URL 落库后才能跨设备带回（RPC 只记录张数），
+  // 与 input_type 一样属于补写：失败只影响「再次編輯」能否带回参考图
+  if (referenceImages.length > 0) {
+    const { error: referenceUrlError } = await admin
+      .from("generations")
+      .update({ reference_urls: referenceImages })
+      .eq("id", inserted.id);
+    if (referenceUrlError) {
+      console.error(
+        "Could not store reference image URLs:",
+        referenceUrlError.message,
+      );
     }
   }
 

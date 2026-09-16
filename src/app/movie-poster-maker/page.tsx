@@ -18,11 +18,11 @@ const movieFaqs = [
   ],
   [
     "Is this movie poster generator free?",
-    "Guests can make one watermarked 1K generation per UTC day. A free account gets four poster images per UTC day: four one-poster runs or two two-poster runs. Paid plans add more credits, resolutions, and private history.",
+    "Guests can make 2 watermarked 1K generations and attach 1 reference image without signing in. A free account adds 30 welcome credits, watermark-free downloads, and up to 2 reference images. Paid plans add more credits, higher resolutions, up to 5 reference images, and private history.",
   ],
   [
     "Can I make a movie poster from a photo?",
-    "The current studio starts with text or a public webpage URL. It does not upload a local photo directly; describe the photo, scene, or visual reference in the brief, or use a webpage URL when the source has a usable image.",
+    "Yes. Switch the studio to Image → Poster and upload a photo (JPEG, PNG, or WebP up to 10MB) as a visual reference, then describe what should change. Guests can attach 1 reference image, free accounts 2, and paid plans up to 5. You can also paste a webpage URL when the source page already has a usable image.",
   ],
   [
     "Can I use the movie poster generator online without downloading software?",
@@ -394,10 +394,11 @@ export default async function MoviePosterMakerPage() {
           </h2>
           <p>
             You can test the movie poster generator free before deciding whether
-            it belongs in your production workflow. Guests get one watermarked
-            1K generation per UTC day with no sign-up required. A free account
-            raises that to four poster images per UTC day, while paid plans add
-            monthly credits, higher resolutions, more posters per run, and
+            it belongs in your production workflow. Guests get 2 watermarked 1K
+            generations and 1 reference image with no sign-up required. A free
+            account adds 30 welcome credits, watermark-free downloads, and up to
+            2 reference images, while paid plans add monthly credits, higher
+            resolutions, more posters per run, up to 5 reference images, and
             private history.
           </p>
           <p>
@@ -419,18 +420,20 @@ export default async function MoviePosterMakerPage() {
             Movie Poster Generator from Photo: What Is Supported?
           </h2>
           <p>
-            This page currently generates from a written brief or a public
-            webpage URL. It does not upload a local photo directly or replace a
-            full photo editor. If a public article or project page has a usable
-            preview image, the URL workflow can bring that image into the brief
-            as a reference while the text describes the film and the intended
-            treatment.
+            Switch the studio to Image → Poster and you can upload a still,
+            poster, or location photo (JPEG, PNG, or WebP up to 10MB) as a
+            visual reference, then describe the film and the treatment you want.
+            Guests can attach 1 reference image, free accounts 2, and paid plans
+            up to 5. Pasting a public webpage URL works too when the source page
+            already has a usable preview image.
           </p>
           <p>
-            For a private still, describe the subject, lighting, costume, and
-            camera feeling in the prompt instead. That keeps the first creative
-            direction fast and makes it clear which parts of the poster come
-            from your source material and which parts are generated.
+            A reference image guides the composition; it is not a pixel-exact
+            photo editor. For a private still you would rather not upload,
+            describe the subject, lighting, costume, and camera feeling in the
+            prompt instead — that keeps the first direction fast and makes it
+            clear which parts of the poster come from your material and which
+            parts are generated.
           </p>
         </section>
 

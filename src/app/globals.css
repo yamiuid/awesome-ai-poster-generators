@@ -100,11 +100,24 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
 }
 .header-nav a {
   text-decoration: none;
   color: var(--ink-muted);
+}
+.header-nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+/* 跳转中的指示器绝对定位在条目右侧的间距里，避免把后面的导航项挤开 */
+.header-nav-pending {
+  position: absolute;
+  inset-inline-start: calc(100% + 0.25rem);
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--accent);
 }
 .header-nav a:hover {
   color: var(--ink);
@@ -112,6 +125,20 @@ textarea:focus-visible {
 .header-nav-link.is-active {
   color: var(--ink);
   font-weight: 600;
+}
+/* 桌面端：主导航紧贴 logo 右侧 48px，语言/积分/账户/CTA 留在最右 */
+@media (min-width: 768px) {
+  .site-header {
+    gap: 0;
+    justify-content: flex-start;
+  }
+  .header-nav {
+    flex: 1;
+    margin-inline-start: 3.5rem;
+  }
+  .locale-switcher {
+    margin-inline-start: auto;
+  }
 }
 .header-account-loading {
   display: block;
@@ -895,10 +922,6 @@ textarea:focus-visible {
 .control-block .studio-options {
   margin-top: 0.65rem;
 }
-.control-block > legend.field-label {
-  margin-bottom: 0;
-  font-size: 0.74rem;
-}
 .option-select {
   display: flex;
   align-items: flex-start;
@@ -1220,6 +1243,69 @@ textarea:focus-visible {
 .error-link:hover {
   color: var(--danger);
 }
+/* 全局错误提示：贴在导航栏下方右侧，几秒后自动消失 */
+.error-toast {
+  position: fixed;
+  z-index: 85;
+  inset-block-start: 4.75rem;
+  inset-inline-end: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--danger);
+  border-radius: 0.6rem;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 0.8rem 2rem rgba(29, 26, 23, 0.18);
+  font-size: 0.8rem;
+  animation: error-toast-in 0.18s ease-out;
+}
+.error-toast p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.error-toast-icon {
+  flex: none;
+  margin-top: 0.1rem;
+  color: var(--danger);
+}
+.error-toast-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+.error-toast-close:hover {
+  background: var(--paper-deep);
+  color: var(--ink);
+}
+@keyframes error-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* 窄屏：两侧等距铺满，避免贴着一边 */
+@media (max-width: 560px) {
+  .error-toast {
+    inset-inline: 0.75rem;
+    width: auto;
+  }
+}
 .studio-results {
   display: flex;
   flex-direction: column;
@@ -1453,6 +1539,16 @@ textarea:focus-visible {
 .reference-add-tile:focus-visible {
   border-color: var(--ink);
   color: var(--ink);
+}
+/* 已达当前档位参考图上限：同一个位置换成引导入口（注册 / 订阅） */
+.reference-add-tile.is-locked {
+  border-style: solid;
+  color: var(--accent);
+}
+.reference-add-tile.is-locked:hover,
+.reference-add-tile.is-locked:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent-dark);
 }
 .reference-file-input {
   position: absolute;
@@ -1805,6 +1901,17 @@ textarea:focus-visible {
   font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 0.15rem;
+}
+.studio-history-note button {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 0.15rem;
+  cursor: pointer;
 }
 .studio-history-empty {
   align-items: center;
@@ -3002,7 +3109,7 @@ textarea:focus-visible {
   position: relative;
   display: inline-flex;
   align-items: center;
-  width: 8.5rem;
+  width: 6.5rem;
   min-width: 0;
   color: var(--ink-muted);
   white-space: nowrap;
@@ -3076,6 +3183,41 @@ textarea:focus-visible {
 .locale-suggestion p {
   margin: 0;
 }
+/* 主按钮：黑底，文字直接写明切到哪种语言 */
+.locale-suggestion-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.locale-suggestion-switch:hover {
+  background: var(--accent-dark);
+}
+/* 次按钮：纯文字，保留当前语言 */
+.locale-suggestion-keep {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.locale-suggestion-keep:hover {
+  color: var(--ink);
+}
 .checkout-locale-notice {
   margin-top: 0.75rem;
   padding: 0.75rem;
@@ -3089,17 +3231,6 @@ textarea:focus-visible {
 }
 :where(.checkout-locale-notice) .modal-actions {
   margin-top: 0.65rem;
-}
-.locale-suggestion a,
-.locale-suggestion button {
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  text-decoration: underline;
-  text-underline-offset: 0.15rem;
-  cursor: pointer;
-  white-space: nowrap;
 }
 html[lang="ar"] {
   --font-body: "Segoe UI", Tahoma, Arial, sans-serif;
@@ -3142,10 +3273,14 @@ html[lang="ar"] .wordmark {
 }
 @media (max-width: 520px) {
   .locale-suggestion {
-    grid-template-columns: 1fr auto;
+    /* 两个按钮等宽平分整行，各自撑满所在列 */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .locale-suggestion p {
     grid-column: 1 / -1;
+  }
+  .locale-suggestion-keep {
+    min-height: 2.25rem;
   }
 }
 
@@ -3393,6 +3528,26 @@ dialog.modal-backdrop:not([open]) {
 .lightbox-close:hover {
   background: rgba(255, 255, 255, 0.26);
 }
+/* 灯箱里的「編輯內容」入口：原来的触发点在历史记录按钮行上，现在换到这里 */
+.lightbox-edit {
+  position: absolute;
+  inset-block-end: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lightbox-edit:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -3598,7 +3753,7 @@ dialog.modal-backdrop:not([open]) {
 }
 .plan-card {
   position: relative;
-  padding: clamp(1.3rem, 3vw, 2.2rem);
+  padding: clamp(0.9rem, 2.1vw, 1.6rem);
   border: 1px solid var(--line);
   background: rgba(233, 225, 212, 0.55);
 }

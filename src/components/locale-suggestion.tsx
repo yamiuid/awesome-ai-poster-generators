@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { useEffect, useState } from "react";
 import {
   isUiLocale,
@@ -10,12 +10,12 @@ import {
   localizedPath,
   type UiLocale,
 } from "@/lib/i18n/locale";
+import { LOCALE_BANNER_COPY } from "@/lib/i18n/locale-banner-copy";
 
 export function LocaleSuggestion() {
   const rawLocale = useLocale();
   const pathname = usePathname();
   const currentLocale: UiLocale = isUiLocale(rawLocale) ? rawLocale : "en";
-  const t = useTranslations("banner");
   const [suggestedLocale, setSuggestedLocale] = useState<UiLocale | null>(null);
 
   useEffect(() => {
@@ -44,21 +44,29 @@ export function LocaleSuggestion() {
         : suggestedLocale === "es"
           ? "Español"
           : "العربية";
+  // 建议条整体用目标语言表达，包括两个按钮
+  const copy = LOCALE_BANNER_COPY[suggestedLocale];
+  const text = (template: string): string =>
+    template.replaceAll("{language}", label);
 
   return (
     <aside className="locale-suggestion" role="status">
-      <p>{t("suggestion", { language: label })}</p>
-      <a href={localizedPath("/", suggestedLocale)}>
-        {t("view", { language: label })}
+      <p>{text(copy.suggestion)}</p>
+      <a
+        className="locale-suggestion-switch"
+        href={localizedPath("/", suggestedLocale)}
+      >
+        {text(copy.view)}
       </a>
       <button
         type="button"
+        className="locale-suggestion-keep"
         onClick={() => {
           sessionStorage.setItem("locale-suggestion-dismissed", "1");
           setSuggestedLocale(null);
         }}
       >
-        {t("dismiss")}
+        {copy.dismiss}
       </button>
     </aside>
   );

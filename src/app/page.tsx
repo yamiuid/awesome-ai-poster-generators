@@ -50,7 +50,7 @@ const howToSteps = [
   {
     label: "04 / KEEP",
     title: "Download your favorite direction.",
-    body: "Keep the direction that lands, refine the brief, and download. Free previews are watermarked; Pro adds private history and clean high-definition exports.",
+    body: "Keep the direction that lands, refine the brief, and download. Guest previews are watermarked; a free account downloads clean files, and Pro adds high-definition exports and private history.",
     image: "/how-to/download-poster.svg",
     alt: "A finished poster being downloaded from the poster studio.",
   },

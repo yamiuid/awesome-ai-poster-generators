@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { StyleLandingPage } from "@/components/style-landing-page";
+import { StyleStudioLanding } from "@/components/style-studio-landing";
 import { getStyleLanding } from "@/lib/domain/style-landing";
 import { toUiLocale } from "@/lib/i18n/locale";
 import { pageMeta } from "@/lib/seo";
@@ -19,5 +19,5 @@ export async function generateMetadata() {
 }
 
 export default function VintagePosterMakerPage() {
-  return <StyleLandingPage landing={landing} />;
+  return <StyleStudioLanding landing={landing} />;
 }

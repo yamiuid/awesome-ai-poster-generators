@@ -141,6 +141,8 @@ export function toGenerationResponse(
     .map((asset) => asset.expires_at)
     .filter((expiry): expiry is string => expiry !== null)
     .sort()[0];
+  // 迁移 20260916130000 之前该列不存在，行里不会有这个字段
+  const referenceUrls = value.generation.reference_urls ?? [];
   return {
     id: value.generation.id,
     status,
@@ -158,6 +160,7 @@ export function toGenerationResponse(
       alt: asset.alt_text,
       watermarked: asset.watermarked,
     })),
+    ...(referenceUrls.length > 0 ? { referenceImageUrls: referenceUrls } : {}),
     ...(value.generation.error_message
       ? { error: value.generation.error_message }
       : {}),

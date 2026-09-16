@@ -20,7 +20,7 @@
 
 Turn a written brief — or any web page — into up to four private poster directions in seconds. Describe the subject, mood, audience, or the words you want to see, paste a URL to analyze, or attach a reference image; the studio generates distinct compositions you can compare, keep, and download — no design skills needed.
 
-A paid English-language MVP built with Next.js, Supabase, Cloudflare R2, and GPT Image 2.5 (via APIMart). Guests can try it free (watermarked previews, daily quota), while Creator and Studio plans unlock full resolution, high quality, and private history.
+A paid English-language MVP built with Next.js, Supabase, Cloudflare R2, and GPT Image 2.5 (via APIMart). Guests can try it free (watermarked previews, 2 lifetime generations, 1 reference image); a free account downloads without a watermark and attaches 2 reference images, while Creator and Studio plans unlock full resolution, high quality, up to 5 reference images, and private history.
 
 ### What's inside
 
@@ -30,7 +30,7 @@ A paid English-language MVP built with Next.js, Supabase, Cloudflare R2, and GPT
 - **Up to 4 poster directions per run** — pick 1–4 images; free accounts get 1–2, Pro unlocks up to 4.
 - **17 visual styles** — Auto, Movie, Minimal, Anime, Business, Vintage, Neon (featured) plus Swiss, Typography, Collage, Photography, Illustration, Surreal, Fashion, Brutalist, Art Deco, Y2K.
 - **Flexible formats** — 8 aspect ratios (1:1 → 9:16) and 1K–4K resolutions with Low/Medium/High quality.
-- **Free tier with daily quota** — generate without an account; watermarked previews, salted & hashed guest key (no raw IP/browser tracking).
+- **Free tier without an account** — guests get 2 lifetime watermarked generations, salted & hashed guest key (no raw IP/browser tracking).
 - **Magic-link & Google sign-in** — email verification-code login with resend countdown.
 - **Private history** — every generation saved to your account with large previews, full-size lightbox, one-click download.
 - **Paid plans** — Creator $9.90/mo and Studio $19.90/mo (annual options), billed through Waffo (merchant of record).
@@ -70,14 +70,14 @@ src/app/                 pages + API routes
 src/components/          studio, history gallery, auth forms, url pipeline modal
 src/lib/server/          providers (APIMart, Waffo, Supabase, R2 storage), generation pipeline, auth, rate-limit, prompt-safety
 src/lib/domain/          schemas, pricing/credit rules, styles, brief, url-analyze
-supabase/migrations/     19 SQL migrations (run in filename order)
+supabase/migrations/     SQL migrations (run in filename order)
 scripts/                 migrate-posters-to-r2.mjs
 ```
 
 ## Local setup
 
 1. Copy `.env.example` to `.env.local` and fill Supabase, APIMart, Waffo, R2 (optional), and Umami values.
-2. Run **all 19** SQL migrations in `supabase/migrations/` in filename order. Enable Google OAuth and email Magic Link in Supabase Auth; add your local and preview origins' `/**` paths to Supabase Auth redirect URLs.
+2. Run **every** SQL migration in `supabase/migrations/` in filename order. Enable Google OAuth and email Magic Link in Supabase Auth; add your local and preview origins' `/**` paths to Supabase Auth redirect URLs.
 3. Choose storage: set `STORAGE_PROVIDER=supabase` (bucket `posters` public or signed) or `STORAGE_PROVIDER=r2` with `R2_*` credentials and `R2_PUBLIC_BASE_URL`.
 4. In Waffo Test Mode create the Creator (`$9.90/month`, `$79/year`) and Studio (`$19.90/month`, `$169/year`) products; put their Product IDs in `WAFFO_*_PRODUCT_ID`. Configure test/production webhook URLs to `/api/webhooks/waffo`. Use separate API keys for test and production. In the Waffo dashboard **Webhook settings, enable `subscription.renewed` and `subscription.recovered`** for both environments — renewed is opt-in, and without it a renewal cannot roll the billing period forward.
 5. Test with Waffo card `4576750000000110`, confirm webhook delivery and Pro access.

@@ -110,7 +110,20 @@ export const aspectLabels: Readonly<Record<AspectRatio, string>> = {
 export const OUTPUT_ASPECTS = ["auto", ...ASPECT_RATIOS] as const;
 export type OutputAspect = (typeof OUTPUT_ASPECTS)[number];
 
+/** 协议与存储层的硬上限，同时是订阅用户的额度 */
 export const MAX_REFERENCE_IMAGES = 5;
+/** 注册免费用户的参考图额度 */
+export const FREE_REFERENCE_IMAGES = 2;
+/** 访客的参考图额度 */
+export const GUEST_REFERENCE_IMAGES = 1;
+
+/** 各档位可上传的参考图张数：访客 1 / 免费 2 / 订阅 5 */
+export function referenceImageLimit(mode: GenerationMode): number {
+  if (mode === "pro") {
+    return MAX_REFERENCE_IMAGES;
+  }
+  return mode === "guest" ? GUEST_REFERENCE_IMAGES : FREE_REFERENCE_IMAGES;
+}
 
 // 参考图（图生图）：仅接受 http(s) URL，交给图片模型做视觉参考
 const referenceUrlSchema = z
@@ -185,6 +198,8 @@ export type GenerationResponse = Readonly<{
   createdAt: string;
   expiresAt?: string | undefined;
   images: readonly GenerationImage[];
+  /** 图生图当时用到的参考图 URL，用于「再次編輯」跨设备带回 */
+  referenceImageUrls?: readonly string[] | undefined;
   imageCount: number;
   error?: string | undefined;
   creditsReserved: number;
@@ -216,6 +231,7 @@ export const generationResponseSchema = z.object({
       watermarked: z.boolean(),
     }),
   ),
+  referenceImageUrls: z.array(z.string()).optional(),
   imageCount: z.number().int().min(1).max(4),
   error: z.string().optional(),
   creditsReserved: z.number().int().nonnegative(),

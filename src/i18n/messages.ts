@@ -51,12 +51,6 @@ const englishMessages = {
     aiUse: "AI use",
     legalEnglish: "English legal text",
   },
-  banner: {
-    suggestion:
-      "This browser prefers {language}. View Text to Poster in {language}?",
-    view: "View {language}",
-    dismiss: "Keep English",
-  },
   studio: {
     eyebrow: "AI poster generator from text",
     heading: "Describe your poster.",
@@ -110,8 +104,9 @@ const englishMessages = {
     noSavedPostersBody:
       "Generate a poster and it will appear here for quick comparison.",
     guestHistory: "Guest posters stay in this browser for 24 hours.",
-    signInToKeep: "Sign in to keep 7 days",
+    signInToKeep: "Free account: clean HD file + 30 credits (~15 posters)",
     download: "Download",
+    useAsReference: "Use as reference",
     editAgain: "Edit again",
     startNewBrief: "Start a new brief",
     describeBrief:
@@ -124,9 +119,18 @@ const englishMessages = {
     outputPolicy: "Read the AI use policy.",
     readPolicy: "Read the AI use policy.",
     freeAccount: "Free account",
-    guestLimitTitle: "Try 2 free poster generations.",
+    guestLimitTitle: "Your 2 free previews are used up.",
     guestLimitBody:
-      "Sign in or create a free account to claim 30 welcome credits — they work on every style and quality. Failed generations do not count.",
+      "Create a free account to claim 30 credits — about 15 more 1K posters, no watermark. We’ll run this one right away.",
+    guestOfferTitle: "Get the clean HD file + 30 credits",
+    guestOfferBody:
+      "A free account drops the watermark, keeps your previews, and adds 30 credits — about 15 more 1K posters.",
+    guestReferenceTitle: "Guests can attach 1 reference image.",
+    guestReferenceBody:
+      "Create a free account to attach 2 reference images — plus 30 welcome credits and watermark-free downloads.",
+    referenceLimitTitle: "Free accounts attach 2 reference images.",
+    referenceLimitBody:
+      "Upgrade to Creator or Studio to attach up to 5 reference images per generation.",
     proFeature: "Pro feature",
     insufficientCreditsTitle: "You’re out of credits.",
     proOptions: "These options are Pro only.",
@@ -215,11 +219,13 @@ const englishMessages = {
     describeEditPrompt:
       "e.g. Put the subject in a quiet photo studio and keep the current pose.",
     uploadMore: "Upload",
+    unlockMoreReferences: "Unlock {count} reference images",
     removeImage: "Remove image",
     uploadFailed: "Upload failed. Please try again.",
     fileTooLarge: "That image is larger than 10MB.",
     fileTypeUnsupported: "Only JPG, PNG or WebP images are supported.",
-    tooManyReferences: "You can add up to 5 reference images.",
+    tooManyReferences:
+      "You’ve reached the reference image limit for your plan.",
     needReferenceImage: "Add at least one reference image first.",
     referenceUploading: "Reference images are still uploading.",
     posterPreview: "Poster preview",
@@ -279,7 +285,8 @@ const englishMessages = {
       "30 welcome credits that never expire — enough room to try the studio before paying.",
     freeFeature1: "30 welcome credits (one-time)",
     freeFeature2: "1K output · low / medium quality",
-    freeFeature3: "Watermarked downloads",
+    freeFeature3: "Watermark-free downloads",
+    freeFeatureReferences: "Up to 2 reference images",
     freeFeature4: "7-day account history",
     freeAudience: "Try the studio — free credits on signup.",
     packAudience: "One-time purchase — credits never expire.",
@@ -325,6 +332,7 @@ const englishMessages = {
     mediumHighFinish: "Medium, High, and Max finish",
     highFinish: "High finish for final exports",
     noWatermarkHistory: "No watermark, private history",
+    upToFiveReferences: "Up to 5 reference images per generation",
     fullCreatorAccess: "Same full Creator studio access",
     fullStudioAccess: "Same full Studio access",
     fullScaleAccess: "Same full Scale access",
@@ -339,7 +347,7 @@ const englishMessages = {
       "Create an account and 30 welcome credits land in your balance automatically on your first visit — enough for about 15 standard 1K posters.",
     faq2Question: "How are credits deducted?",
     faq2Answer:
-      "Each generation costs credits based on resolution and quality — a standard 1K poster costs 2 credits, while a 4K Max run costs 115. Each reference image in Image → Poster mode adds 1 credit. Failed generations are never charged.",
+      "Each generation costs credits based on resolution and quality — a standard 1K poster costs 2 credits, while a 4K Max run costs 115. Each reference image in Image → Poster mode adds 1 credit, and how many you can attach depends on your plan: 1 as a guest, 2 with a free account, up to 5 on paid plans. Failed generations are never charged.",
     faq3Question: "Credit packs or subscription — which is right for me?",
     faq3Answer:
       "Packs are one-time purchases whose credits never expire — ideal for occasional posters. Subscriptions unlock 2K/4K resolutions and High–Max quality, and deliver a large monthly credit allowance for regular production.",
@@ -363,7 +371,7 @@ const englishMessages = {
       "Early concepts are fragile. A brief that lives only in your head is hard to share with a client, a team, or your own taste. We wanted a tool that makes a first draft cheap: type a sentence, get one to four directions, and only then decide which one deserves real design time. That is the whole product.",
     howTitle: "How it works",
     howBody:
-      "Your brief is turned into a structured prompt and sent to GPT Image 2.5 through APIMart, our image-generation provider. The studio renders up to four compositions per run, stores them privately in your account, and keeps free runs watermarked so anyone can try it before paying. Creator and Studio plans unlock full resolution, quality presets, and up to four posters per run.",
+      "Your brief is turned into a structured prompt and sent to GPT Image 2.5 through APIMart, our image-generation provider. The studio renders up to four compositions per run, stores them privately in your account, and keeps guest runs watermarked so anyone can try it before signing up. A free account downloads clean files and attaches up to two reference images; Creator, Studio, and Scale plans unlock full resolution, quality presets, up to five reference images, and up to four posters per run.",
     careTitle: "What we care about",
     careBody:
       "Generated images stay private by default — there is no public gallery. Free limits are enforced with a salted, hashed guest key rather than raw IP or browser data, prompts and outputs are never sold or used for advertising profiles, and every paid charge is processed by Waffo as the merchant of record. We publish our privacy policy, terms, refund rule, and AI-use policy in the footer so you can read exactly what happens to your material.",
@@ -461,17 +469,18 @@ const englishMessages = {
     howKeepLabel: "04 / KEEP",
     howKeepTitle: "Download your favorite direction.",
     howKeepBody:
-      "Keep the direction that lands, refine the brief, and download. Free previews are watermarked; Pro adds private history and clean high-definition exports.",
+      "Keep the direction that lands, refine the brief, and download. Guest previews are watermarked; a free account downloads clean, and Pro adds high-definition exports and private history.",
     howKeepAlt: "A finished poster being downloaded from the poster studio.",
     pricingCardTitle: "Creator · Studio · Scale",
     pricingMonth: "/ month",
     pricingFeature1: "Guests get 2 watermarked trial generations",
-    pricingFeature2: "Free accounts get 30 welcome credits, never expire",
+    pricingFeature2:
+      "Free accounts get 30 welcome credits and watermark-free downloads, never expire",
     pricingFeature3:
       "Creator, Studio, and Scale plans add 500–3,000 monthly credits",
     pricingFeature4: "1K, 2K, and 4K exports",
     pricingFeature5: "Medium, High, and Max finishes",
-    pricingFeature6: "Private history with no watermark",
+    pricingFeature6: "Up to 5 reference images per generation",
     pricingFeature7: "One-time credit packs from $4.90 — never expire",
     faqIntro:
       "Start small, learn from the first result, and refine only what needs changing. These answers cover the practical details behind making a poster from text with the free studio.",
@@ -629,7 +638,7 @@ const englishMessages = {
     timedOut: "Timed out",
     noImages: "No images for this run.",
     imagesOnWay: "Images are on their way.",
-    freePreview: "Free preview",
+    freePreview: "Guest preview",
     posterPreview: "Poster preview",
     upgradeToPro: "Upgrade to Pro",
     reserving: "Reserving {credits} credits",
@@ -755,13 +764,6 @@ const translated = {
       aiUse: "AI 使用政策",
       legalEnglish: "英文法律文本",
     },
-    banner: {
-      ...englishMessages.banner,
-      suggestion:
-        "此瀏覽器偏好{language}。要使用{language}版 Text to Poster 嗎？",
-      view: "查看{language}",
-      dismiss: "維持英文",
-    },
     about: {
       ...englishMessages.about,
       eyebrow: "Text to Poster／關於",
@@ -773,7 +775,7 @@ const translated = {
         "早期概念很脆弱。只存在腦中的簡報，很難和客戶、團隊或自己的品味分享。我們想做一個讓第一稿成本很低的工具：輸入一句話，得到一到四個方向，再決定哪個值得投入真正的設計時間。這就是整個產品。",
       howTitle: "如何運作",
       howBody:
-        "你的簡報會被整理成結構化提示詞，透過 APIMart 傳送給 GPT Image 2.5。工作室每次生成最多四種構圖，私下儲存到你的帳戶；免費生成會帶浮水印，讓任何人都能先試用再付款。Creator 與 Studio 方案解鎖完整解析度、品質預設與每次最多四張海報。",
+        "你的簡報會被整理成結構化提示詞，透過 APIMart 傳送給 GPT Image 2.5。工作室每次生成最多四種構圖，私下儲存到你的帳戶；訪客生成會帶浮水印，讓任何人都能先試用再註冊。免費帳戶可下載乾淨檔案並上傳最多兩張參考圖；Creator、Studio 與 Scale 方案解鎖完整解析度、品質預設、最多五張參考圖，以及每次最多四張海報。",
       careTitle: "我們重視的事",
       careBody:
         "生成圖片預設為私人，不設公開圖庫。免費限制使用加鹽雜湊的訪客識別碼，而不是原始 IP 或瀏覽器資料；提示詞與輸出不會被出售或用於廣告輪廓；所有付款由 Waffo 作為記錄商處理。頁尾提供隱私權政策、條款、退款規則與 AI 使用政策，讓你清楚了解素材如何被處理。",
@@ -934,7 +936,8 @@ const translated = {
       freeDescription: "30 點歡迎點數、永不過期——先充分體驗工作室再付費。",
       freeFeature1: "30 點歡迎點數（一次性）",
       freeFeature2: "1K 輸出 · low／medium 品質",
-      freeFeature3: "帶浮水印下載",
+      freeFeature3: "無浮水印下載",
+      freeFeatureReferences: "最多 2 張參考圖",
       freeFeature4: "保留 7 天紀錄",
       freeAudience: "體驗海報生成，註冊即送點數。",
       packAudience: "一次性購買，點數永不過期。",
@@ -990,6 +993,7 @@ const translated = {
       mediumHighFinish: "中等、高與最高品質",
       highFinish: "最終匯出的高品質",
       noWatermarkHistory: "無浮水印、私人紀錄",
+      upToFiveReferences: "每次生成最多 5 張參考圖",
       fullCreatorAccess: "完整 Creator 工作室功能",
       fullStudioAccess: "完整 Studio 工作室功能",
       monthlyReset: "點數每月重設，不累積",
@@ -1035,7 +1039,7 @@ const translated = {
       failed: "失敗",
       noImages: "這次生成沒有圖片。",
       imagesOnWay: "圖片正在路上。",
-      freePreview: "免費預覽",
+      freePreview: "訪客預覽",
       posterPreview: "海報預覽",
       reserving: "保留 {credits} 點",
       released: "釋放 {credits} 點",
@@ -1133,13 +1137,6 @@ const translated = {
       aiUse: "AI利用ポリシー",
       legalEnglish: "英語の法的文書",
     },
-    banner: {
-      ...englishMessages.banner,
-      suggestion:
-        "このブラウザは{language}を優先しています。Text to Posterを{language}で表示しますか？",
-      view: "{language}で表示",
-      dismiss: "英語のまま",
-    },
     about: {
       ...englishMessages.about,
       eyebrow: "Text to Poster／概要",
@@ -1151,7 +1148,7 @@ const translated = {
         "初期のアイデアは繊細です。頭の中だけにあるブリーフは、クライアントやチーム、自分の感覚と共有しにくいもの。1文を入力して1〜4案を得てから、本当にデザイン時間をかける案を選べるツールを目指しました。それがこのプロダクトのすべてです。",
       howTitle: "仕組み",
       howBody:
-        "ブリーフを構造化したプロンプトに変換し、画像生成プロバイダーのAPIMartを通してGPT Image 2.5へ送ります。1回につき最大4つの構図を生成し、アカウントに非公開で保存します。無料生成には透かしが入り、CreatorとStudioではフル解像度や品質設定、最大4枚生成が使えます。",
+        "ブリーフを構造化したプロンプトに変換し、画像生成プロバイダーのAPIMartを通してGPT Image 2.5へ送ります。1回につき最大4つの構図を生成し、アカウントに非公開で保存します。ゲストの生成には透かしが入り、どなたでも登録前に試せます。無料アカウントは透かしなしでダウンロードでき、参照画像は2枚まで。Creator・Studio・Scaleではフル解像度、品質設定、参照画像5枚、最大4枚生成が使えます。",
       careTitle: "大切にしていること",
       careBody:
         "生成画像はデフォルトで非公開です。無料制限には生のIPやブラウザ情報ではなく、ソルト付きハッシュのゲストキーを使います。プロンプトや出力を販売したり広告プロフィールに使ったりせず、支払いは記録上の販売者であるWaffoが処理します。プライバシー、規約、返金、AI利用ポリシーを公開しています。",
@@ -1291,7 +1288,8 @@ const translated = {
       freeCadence: "／永久",
       freeDescription:
         "期限なしのウェルカムクレジット30。支払い前にスタジオを存分に試せます。",
-      freeFeature3: "透かし付きダウンロード",
+      freeFeature3: "透かしなしダウンロード",
+      freeFeatureReferences: "参照画像は最大2枚",
       freeFeature4: "7日間の履歴",
       creatorMonthlyEyebrow: "Creator／月額",
       creatorYearlyEyebrow: "Creator／年額",
@@ -1313,6 +1311,7 @@ const translated = {
       mediumHighFinish: "Medium／High／Max品質",
       highFinish: "最終出力向けHigh品質",
       noWatermarkHistory: "透かしなし、非公開履歴",
+      upToFiveReferences: "1回の生成で参照画像は最大5枚",
       fullCreatorAccess: "Creatorの全機能",
       fullStudioAccess: "Studioの全機能",
       monthlyReset: "クレジットは毎月更新、繰り越しなし",
@@ -1356,7 +1355,7 @@ const translated = {
       failed: "失敗",
       noImages: "この実行には画像がありません。",
       imagesOnWay: "画像を生成中です。",
-      freePreview: "無料プレビュー",
+      freePreview: "ゲストプレビュー",
       posterPreview: "ポスタープレビュー",
       reserving: "{credits}クレジットを確保中",
       released: "{credits}クレジットを返却",
@@ -1448,13 +1447,6 @@ const translated = {
       aiUse: "Uso de IA",
       legalEnglish: "Texto legal en inglés",
     },
-    banner: {
-      ...englishMessages.banner,
-      suggestion:
-        "Este navegador prefiere {language}. ¿Ver Text to Poster en {language}?",
-      view: "Ver en {language}",
-      dismiss: "Mantener inglés",
-    },
     about: {
       ...englishMessages.about,
       eyebrow: "Text to Poster／acerca de",
@@ -1467,7 +1459,7 @@ const translated = {
         "Los primeros conceptos son frágiles. Un brief que solo vive en tu cabeza cuesta compartirlo con un cliente, un equipo o incluso con tu propio criterio. Queríamos abaratar el primer borrador: escribe una frase, recibe de una a cuatro direcciones y decide después cuál merece tiempo de diseño real. Ese es todo el producto.",
       howTitle: "Cómo funciona",
       howBody:
-        "Tu brief se convierte en un prompt estructurado y se envía a GPT Image 2.5 mediante APIMart. El estudio genera hasta cuatro composiciones por ejecución y las guarda de forma privada en tu cuenta. Las ejecuciones gratuitas llevan marca de agua; Creator y Studio desbloquean resolución completa, ajustes de calidad y hasta cuatro pósters por ejecución.",
+        "Tu brief se convierte en un prompt estructurado y se envía a GPT Image 2.5 mediante APIMart. El estudio genera hasta cuatro composiciones por ejecución y las guarda de forma privada en tu cuenta. Las ejecuciones de invitado llevan marca de agua para que cualquiera pueda probarlo antes de registrarse. Una cuenta gratuita descarga archivos limpios y adjunta hasta dos imágenes de referencia; los planes Creator, Studio y Scale desbloquean resolución completa, ajustes de calidad, hasta cinco imágenes de referencia y hasta cuatro pósteres por ejecución.",
       careTitle: "Lo que nos importa",
       careBody:
         "Las imágenes generadas son privadas por defecto. Los límites gratuitos usan una clave de invitado cifrada con salt, no la IP ni datos directos del navegador; los prompts y resultados no se venden ni se usan para perfiles publicitarios; Waffo procesa cada cobro como vendedor registrado. Publicamos nuestras políticas para que sepas qué ocurre con tu material.",
@@ -1602,7 +1594,8 @@ const translated = {
       freeCadence: "／para siempre",
       freeDescription:
         "30 créditos de bienvenida que nunca caducan para probar el estudio antes de pagar.",
-      freeFeature3: "Descargas con marca de agua",
+      freeFeature3: "Descargas sin marca de agua",
+      freeFeatureReferences: "Hasta 2 imágenes de referencia",
       freeFeature4: "Historial de 7 días",
       creatorMonthlyEyebrow: "Creator／mensual",
       creatorYearlyEyebrow: "Creator／anual",
@@ -1624,6 +1617,7 @@ const translated = {
       mediumHighFinish: "Acabados Medium, High y Max",
       highFinish: "Acabado High para exportaciones finales",
       noWatermarkHistory: "Sin marca de agua, historial privado",
+      upToFiveReferences: "Hasta 5 imágenes de referencia por generación",
       fullCreatorAccess: "Acceso completo al estudio Creator",
       fullStudioAccess: "Acceso completo al estudio Studio",
       monthlyReset: "Los créditos se renuevan cada mes y no se acumulan",
@@ -1667,7 +1661,7 @@ const translated = {
       failed: "Fallido",
       noImages: "No hay imágenes para esta ejecución.",
       imagesOnWay: "Las imágenes están en camino.",
-      freePreview: "Vista previa gratuita",
+      freePreview: "Vista previa de invitado",
       posterPreview: "Vista previa del póster",
       reserving: "Reservando {credits} créditos",
       released: "Liberando {credits} créditos",
@@ -1762,13 +1756,6 @@ const translated = {
       aiUse: "استخدام الذكاء الاصطناعي",
       legalEnglish: "النص القانوني بالإنجليزية",
     },
-    banner: {
-      ...englishMessages.banner,
-      suggestion:
-        "يفضّل هذا المتصفح {language}. هل تريد عرض Text to Poster باللغة {language}؟",
-      view: "العرض باللغة {language}",
-      dismiss: "البقاء بالإنجليزية",
-    },
     about: {
       ...englishMessages.about,
       eyebrow: "Text to Poster／حول الأداة",
@@ -1780,7 +1767,7 @@ const translated = {
         "الأفكار الأولى حساسة. من الصعب مشاركة وصف لا يعيش إلا في ذهنك مع عميل أو فريق أو حتى ذوقك الخاص. أردنا أداة تجعل المسودة الأولى منخفضة التكلفة: اكتب جملة، واحصل على اتجاه إلى أربعة اتجاهات، ثم قرر ما يستحق وقت التصميم الحقيقي. هذا هو المنتج كله.",
       howTitle: "كيف تعمل",
       howBody:
-        "يُحوّل وصفك إلى طلب منظم ويُرسل إلى GPT Image 2.5 عبر APIMart. ينشئ الاستوديو ما يصل إلى أربع تركيبات في كل عملية ويحفظها بشكل خاص في حسابك. تحمل العمليات المجانية علامة مائية، بينما تفتح خطتا Creator وStudio الدقة الكاملة وإعدادات الجودة وإنشاء ما يصل إلى أربعة ملصقات.",
+        "يُحوّل وصفك إلى طلب منظم ويُرسل إلى GPT Image 2.5 عبر APIMart. ينشئ الاستوديو ما يصل إلى أربع تركيبات في كل عملية ويحفظها بشكل خاص في حسابك. تحمل عمليات الزوار علامة مائية ليتمكن أي شخص من التجربة قبل التسجيل. الحساب المجاني يتيح تنزيل ملفات نظيفة وإرفاق صورتين مرجعيتين، بينما تفتح خطط Creator وStudio وScale الدقة الكاملة وإعدادات الجودة وما يصل إلى 5 صور مرجعية وأربعة ملصقات في كل عملية.",
       careTitle: "ما نهتم به",
       careBody:
         "تبقى الصور المُنشأة خاصة افتراضيًا. تُفرض الحدود المجانية باستخدام مفتاح زائر مجزأ مع إضافة salt بدلًا من عنوان IP أو بيانات المتصفح الخام؛ ولا تُباع الطلبات والنتائج أو تُستخدم لملفات إعلانية؛ وتعالج Waffo كل دفعة بصفتها التاجر المسجل. ننشر سياسات الخصوصية والشروط والاسترداد واستخدام الذكاء الاصطناعي بوضوح.",
@@ -1911,7 +1898,8 @@ const translated = {
       freeCadence: "／دائمًا",
       freeDescription:
         "30 رصيدًا ترحيبيًا عند التسجيل — جرّب الاستوديو قبل الدفع.",
-      freeFeature3: "تنزيلات بعلامة مائية",
+      freeFeature3: "تنزيلات بلا علامة مائية",
+      freeFeatureReferences: "حتى صورتين مرجعيتين",
       freeFeature4: "سجل لمدة 7 أيام",
       creatorMonthlyEyebrow: "Creator／شهري",
       creatorYearlyEyebrow: "Creator／سنوي",
@@ -1933,6 +1921,7 @@ const translated = {
       mediumHighFinish: "جودة متوسطة وعالية وقصوى",
       highFinish: "جودة عالية للتصدير النهائي",
       noWatermarkHistory: "من دون علامة مائية، سجل خاص",
+      upToFiveReferences: "حتى 5 صور مرجعية في كل عملية إنشاء",
       fullCreatorAccess: "الوصول الكامل إلى استوديو Creator",
       fullStudioAccess: "الوصول الكامل إلى استوديو Studio",
       monthlyReset: "تتجدد الأرصدة شهريًا ولا تُرحّل",
@@ -1977,7 +1966,7 @@ const translated = {
       failed: "فشل",
       noImages: "لا توجد صور لهذه العملية.",
       imagesOnWay: "الصور قيد الإنشاء.",
-      freePreview: "معاينة مجانية",
+      freePreview: "معاينة الزائر",
       posterPreview: "معاينة الملصق",
       reserving: "جارٍ حجز {credits} رصيد",
       released: "تم تحرير {credits} رصيد",
@@ -2078,16 +2067,26 @@ const coverageTranslations = {
       noSavedPosters: "還沒有已儲存的海報",
       noSavedPostersBody: "生成海報後，就能在這裡快速比較。",
       guestHistory: "訪客海報會保留在此瀏覽器 24 小時。",
-      signInToKeep: "登入即可保留 7 天",
+      signInToKeep: "免費帳戶：無水印高清檔 + 30 點（約 15 張）",
       download: "下載",
+      useAsReference: "作為參考圖",
       editAgain: "再次編輯",
       startNewBrief: "開始新的簡報",
       describeBrief: "描述你想要的海報：主題、氣氛或文案。",
       waitForCurrent: "請等待目前的生成完成，再開始下一次。",
       outputPolicy: "閱讀 AI 使用政策。",
-      guestLimitTitle: "免費試用 2 次海報生成。",
+      guestLimitTitle: "2 次免費預覽已用完。",
       guestLimitBody:
-        "登入或建立免費帳戶即可獲贈 30 點歡迎點數——適用所有風格與品質。失敗的生成不計入次數。",
+        "建立免費帳戶即可獲得 30 點——約可再生成 15 張 1K 海報，且不含水印。我們會立刻為你重跑這一張。",
+      guestOfferTitle: "取得無水印高清檔 + 30 點",
+      guestOfferBody:
+        "免費帳戶可移除水印、保留你的預覽紀錄，並贈送 30 點——約可再生成 15 張 1K 海報。",
+      guestReferenceTitle: "訪客僅能上傳 1 張參考圖。",
+      guestReferenceBody:
+        "建立免費帳戶即可上傳 2 張參考圖，並獲得 30 點歡迎點數與無浮水印下載。",
+      referenceLimitTitle: "免費帳戶最多可上傳 2 張參考圖。",
+      referenceLimitBody:
+        "升級 Creator 或 Studio 方案，每次生成最多可上傳 5 張參考圖。",
       insufficientCreditsTitle: "你的點數已用完。",
       proOptions: "這些選項僅限 Pro 使用。",
       insufficientCreditsBody:
@@ -2144,11 +2143,12 @@ const coverageTranslations = {
       describeEditLabel: "描述你想修改的內容",
       describeEditPrompt: "例如：將主體放到安靜的攝影棚中，並保留目前姿勢。",
       uploadMore: "上傳",
+      unlockMoreReferences: "解鎖 {count} 張參考圖",
       removeImage: "移除圖片",
       uploadFailed: "上傳失敗，請重試。",
       fileTooLarge: "這張圖片超過 10MB。",
       fileTypeUnsupported: "僅支援 JPG、PNG 或 WebP 圖片。",
-      tooManyReferences: "最多可加入 5 張參考圖。",
+      tooManyReferences: "已達你目前方案的參考圖上限。",
       needReferenceImage: "請先加入至少一張參考圖。",
       referenceUploading: "參考圖還在上傳中。",
     },
@@ -2166,7 +2166,7 @@ const coverageTranslations = {
         "建立帳戶後，30 點歡迎點數會在首次開啟網站時自動入帳——約可生成 15 張標準 1K 海報。",
       faq2Question: "點數是怎麼扣的？",
       faq2Answer:
-        "每次生成依解析度與品質扣點：標準 1K 海報每張 2 點，4K 最高品質每張 115 點。圖生圖模式每張參考圖加 1 點。生成失敗不扣點。",
+        "每次生成依解析度與品質扣點：標準 1K 海報每張 2 點，4K 最高品質每張 115 點。圖生圖模式每張參考圖加 1 點，可上傳張數依方案而定：訪客 1 張、免費帳戶 2 張、付費方案最多 5 張。生成失敗不扣點。",
       faq3Question: "點數包和訂閱哪個適合我？",
       faq3Answer:
         "點數包一次購買、點數永不過期，適合偶爾生成；訂閱解鎖 2K／4K 解析度與高品質，每月發放大量點數，適合持續出圖。",
@@ -2237,16 +2237,16 @@ const coverageTranslations = {
       howKeepLabel: "04／保留",
       howKeepTitle: "下載你最喜歡的方向。",
       howKeepBody:
-        "保留最有感覺的方向，調整簡報後下載。免費預覽會有浮水印；Pro 提供私人紀錄與乾淨的高畫質匯出。",
+        "保留最有感覺的方向，調整簡報後下載。訪客預覽會有浮水印；免費帳戶可直接下載乾淨檔案，Pro 另提供高畫質匯出與私人紀錄。",
       howKeepAlt: "從海報工作室下載完成的海報。",
       pricingCardTitle: "Creator · Studio · Scale",
       pricingMonth: "／月",
       pricingFeature1: "訪客可免費試用 2 次帶浮水印的生成",
-      pricingFeature2: "免費帳戶獲贈 30 點永不過期的歡迎點數",
+      pricingFeature2: "免費帳戶獲贈 30 點永不過期的歡迎點數與無浮水印下載",
       pricingFeature3: "Creator、Studio 與 Scale 方案每月提供 500–3,000 點",
       pricingFeature4: "1K、2K 與 4K 匯出",
       pricingFeature5: "中等、高與最高完成度",
-      pricingFeature6: "無浮水印的私人紀錄",
+      pricingFeature6: "每次生成最多 5 張參考圖",
       pricingFeature7: "一次性點數包 $4.90 起——點數永不過期",
       faqIntro:
         "從小處開始，從第一個結果學習，只調整真正需要改變的地方。以下回答文字製作海報與免費工作室的實際問題。",
@@ -2408,17 +2408,27 @@ const coverageTranslations = {
       noSavedPosters: "保存されたポスターはまだありません",
       noSavedPostersBody: "ポスターを生成すると、ここで簡単に比較できます。",
       guestHistory: "ゲストのポスターはこのブラウザに24時間保存されます。",
-      signInToKeep: "ログインすると7日間保存できます",
+      signInToKeep: "無料アカウント：透かしなしHD + 30クレジット（約15枚）",
       download: "ダウンロード",
+      useAsReference: "参考画像にする",
       editAgain: "もう一度編集",
       startNewBrief: "新しいブリーフを始める",
       describeBrief:
         "作りたいポスターを、テーマ・雰囲気・コピーで説明してください。",
       waitForCurrent: "現在の生成が終わるまでお待ちください。",
       outputPolicy: "AI 利用ポリシーを読む。",
-      guestLimitTitle: "無料で2回ポスター生成をお試しください。",
+      guestLimitTitle: "無料プレビュー2回を使い切りました。",
       guestLimitBody:
-        "ログインまたは無料アカウントを作成すると、ウェルカムクレジット30を進呈します。すべてのスタイルと品質に使えます。失敗した生成はカウントされません。",
+        "無料アカウントを作成すると30クレジットを進呈します。1Kポスター約15枚分で、透かしも消えます。この1枚はすぐに再生成します。",
+      guestOfferTitle: "透かしなしHDと30クレジットを取得",
+      guestOfferBody:
+        "無料アカウントで透かしが消え、プレビューが保存され、30クレジット（1Kポスター約15枚分）が付きます。",
+      guestReferenceTitle: "ゲストは参照画像を1枚まで添付できます。",
+      guestReferenceBody:
+        "無料アカウントを作成すると参照画像を2枚まで添付でき、ウェルカムクレジット30と透かしなしダウンロードも付きます。",
+      referenceLimitTitle: "無料アカウントの参照画像は2枚までです。",
+      referenceLimitBody:
+        "Creator または Studio にアップグレードすると、1回の生成で参照画像を最大5枚まで添付できます。",
       insufficientCreditsTitle: "クレジットを使い切りました。",
       proOptions: "これらのオプションは Pro 限定です。",
       insufficientCreditsBody:
@@ -2477,11 +2487,12 @@ const coverageTranslations = {
       describeEditPrompt:
         "例：被写体を静かな撮影スタジオに置き、現在のポーズは維持してください。",
       uploadMore: "アップロード",
+      unlockMoreReferences: "参照画像を{count}枚まで解放",
       removeImage: "画像を削除",
       uploadFailed: "アップロードに失敗しました。もう一度お試しください。",
       fileTooLarge: "その画像は10MBを超えています。",
       fileTypeUnsupported: "JPG・PNG・WebP画像のみ対応しています。",
-      tooManyReferences: "参照画像は最大5枚です。",
+      tooManyReferences: "現在のプランの参照画像上限に達しました。",
       needReferenceImage: "参照画像を1枚以上追加してください。",
       referenceUploading: "参照画像をアップロード中です。",
     },
@@ -2554,16 +2565,16 @@ const coverageTranslations = {
       howKeepLabel: "04／保存",
       howKeepTitle: "お気に入りの方向をダウンロードします。",
       howKeepBody:
-        "気に入った方向を残し、ブリーフを整えてダウンロードします。無料プレビューには透かしが入り、Pro では非公開履歴と高解像度のクリーンな書き出しが使えます。",
+        "気に入った方向を残し、ブリーフを整えてダウンロードします。ゲストのプレビューには透かしが入りますが、無料アカウントなら透かしなしで書き出せます。Pro では高解像度出力と非公開履歴も使えます。",
       howKeepAlt:
         "ポスタースタジオから完成したポスターをダウンロードしている画面。",
       pricingMonth: "／月",
       pricingFeature1: "ゲストは透かし付き生成を2回試用可能",
       pricingFeature2:
-        "新規アカウントには期限なしのウェルカムクレジット30を進呈",
+        "新規アカウントには期限なしのウェルカムクレジット30と透かしなしダウンロード",
       pricingFeature4: "1K、2K、4K の書き出し",
       pricingFeature5: "Medium・High・Max の仕上がり",
-      pricingFeature6: "透かしなしの非公開履歴",
+      pricingFeature6: "1回の生成で参照画像は最大5枚",
       faqIntro:
         "まず小さく始め、最初の結果から学び、変えるべき部分だけを整えます。以下では無料スタジオでテキストからポスターを作る際の実用的な疑問に答えます。",
       faq1Question: "本当に無料ですか？",
@@ -2754,8 +2765,10 @@ const coverageTranslations = {
         "Genera un póster y aparecerá aquí para compararlo rápidamente.",
       guestHistory:
         "Los pósteres de invitados permanecen en este navegador durante 24 horas.",
-      signInToKeep: "Inicia sesión para conservarlos 7 días",
+      signInToKeep:
+        "Cuenta gratis: archivo HD sin marca + 30 créditos (~15 pósteres)",
       download: "Descargar",
+      useAsReference: "Usar como referencia",
       editAgain: "Editar de nuevo",
       startNewBrief: "Iniciar un brief nuevo",
       describeBrief:
@@ -2763,9 +2776,20 @@ const coverageTranslations = {
       waitForCurrent:
         "Espera a que termine la generación actual antes de iniciar otra.",
       outputPolicy: "Leer la política de uso de IA.",
-      guestLimitTitle: "Prueba 2 generaciones de póster gratis.",
+      guestLimitTitle: "Tus 2 previsualizaciones gratis se agotaron.",
       guestLimitBody:
-        "Inicia sesión o crea una cuenta gratuita para recibir 30 créditos de bienvenida: funcionan con cualquier estilo y calidad. Las generaciones fallidas no cuentan.",
+        "Crea una cuenta gratuita para recibir 30 créditos: unos 15 pósteres 1K más y sin marca de agua. Volveremos a generar este ahora mismo.",
+      guestOfferTitle: "Consigue el HD sin marca de agua + 30 créditos",
+      guestOfferBody:
+        "Una cuenta gratuita quita la marca de agua, conserva tus previsualizaciones y añade 30 créditos: unos 15 pósteres 1K más.",
+      guestReferenceTitle:
+        "Los invitados pueden adjuntar 1 imagen de referencia.",
+      guestReferenceBody:
+        "Crea una cuenta gratuita para adjuntar 2 imágenes de referencia, con 30 créditos de bienvenida y descargas sin marca de agua.",
+      referenceLimitTitle:
+        "Las cuentas gratuitas admiten 2 imágenes de referencia.",
+      referenceLimitBody:
+        "Mejora a Creator o Studio para adjuntar hasta 5 imágenes de referencia por generación.",
       insufficientCreditsTitle: "Te has quedado sin créditos.",
       proOptions: "Estas opciones son exclusivas de Pro.",
       insufficientCreditsBody:
@@ -2827,11 +2851,13 @@ const coverageTranslations = {
       describeEditPrompt:
         "p. ej.: Coloca al sujeto en un estudio fotográfico tranquilo y mantén la pose actual.",
       uploadMore: "Subir",
+      unlockMoreReferences: "Desbloquea {count} imágenes de referencia",
       removeImage: "Quitar imagen",
       uploadFailed: "Error al subir. Inténtalo de nuevo.",
       fileTooLarge: "Esa imagen supera los 10MB.",
       fileTypeUnsupported: "Solo se admiten imágenes JPG, PNG o WebP.",
-      tooManyReferences: "Puedes añadir hasta 5 imágenes de referencia.",
+      tooManyReferences:
+        "Has alcanzado el límite de imágenes de referencia de tu plan.",
       needReferenceImage: "Añade al menos una imagen de referencia.",
       referenceUploading: "Las imágenes de referencia aún se están subiendo.",
     },
@@ -2918,16 +2944,16 @@ const coverageTranslations = {
       howKeepLabel: "04／CONSERVAR",
       howKeepTitle: "Descarga tu dirección favorita.",
       howKeepBody:
-        "Conserva la dirección que funciona, ajusta el brief y descarga. Las vistas previas gratuitas llevan marca de agua; Pro añade historial privado y exportaciones limpias en alta definición.",
+        "Conserva la dirección que funciona, ajusta el brief y descarga. Las vistas previas de invitado llevan marca de agua; con una cuenta gratuita descargas el archivo limpio, y Pro añade exportaciones en alta definición e historial privado.",
       howKeepAlt: "Un póster terminado que se descarga desde el estudio.",
       pricingMonth: "／mes",
       pricingFeature1:
         "Los invitados obtienen dos generaciones de prueba con marca de agua",
       pricingFeature2:
-        "Las cuentas nuevas reciben 30 créditos de bienvenida que nunca caducan",
+        "Las cuentas nuevas reciben 30 créditos de bienvenida que nunca caducan y descargas sin marca de agua",
       pricingFeature4: "Exportaciones 1K, 2K y 4K",
       pricingFeature5: "Acabados Medium, High y Max",
-      pricingFeature6: "Historial privado sin marca de agua",
+      pricingFeature6: "Hasta 5 imágenes de referencia por generación",
       faqIntro:
         "Empieza con algo pequeño, aprende del primer resultado y ajusta solo lo que necesite cambiar. Estas respuestas cubren los detalles prácticos de crear un póster desde texto con el estudio gratuito.",
       faq1Question: "¿De verdad es gratis?",
@@ -3118,16 +3144,27 @@ const coverageTranslations = {
       noSavedPosters: "لا توجد ملصقات محفوظة بعد",
       noSavedPostersBody: "أنشئ ملصقًا وسيظهر هنا للمقارنة السريعة.",
       guestHistory: "تبقى ملصقات الزائر في هذا المتصفح لمدة 24 ساعة.",
-      signInToKeep: "سجّل الدخول للاحتفاظ بها 7 أيام",
+      signInToKeep:
+        "حساب مجاني: ملف HD بدون علامة مائية + 30 رصيدًا (نحو 15 ملصقًا)",
       download: "تنزيل",
+      useAsReference: "استخدامه كصورة مرجعية",
       editAgain: "تعديل مرة أخرى",
       startNewBrief: "بدء موجز جديد",
       describeBrief: "صف الملصق الذي تريده: موضوعًا أو مزاجًا أو نصًا.",
       waitForCurrent: "انتظر انتهاء العملية الحالية قبل بدء عملية أخرى.",
       outputPolicy: "اقرأ سياسة استخدام الذكاء الاصطناعي.",
-      guestLimitTitle: "جرّب عمليتي إنشاء ملصقات مجانًا.",
+      guestLimitTitle: "لقد استُهلكت المعاينتان المجانيتان.",
       guestLimitBody:
-        "سجّل الدخول أو أنشئ حسابًا مجانيًا للحصول على 30 رصيد ترحيبي — تعمل مع كل الأنماط والجودات. لا تُحتسب العمليات الفاشلة.",
+        "أنشئ حسابًا مجانيًا للحصول على 30 رصيدًا — نحو 15 ملصقًا إضافيًا بدقة 1K وبدون علامة مائية. سنعيد إنشاء هذا الملصق فورًا.",
+      guestOfferTitle: "احصل على ملف HD بدون علامة مائية + 30 رصيدًا",
+      guestOfferBody:
+        "الحساب المجاني يزيل العلامة المائية، ويحفظ معايناتك، ويضيف 30 رصيدًا — نحو 15 ملصقًا بدقة 1K.",
+      guestReferenceTitle: "يمكن للزائر إرفاق صورة مرجعية واحدة.",
+      guestReferenceBody:
+        "أنشئ حسابًا مجانيًا لإرفاق صورتين مرجعيتين، مع 30 رصيدًا ترحيبيًا وتنزيلات بلا علامة مائية.",
+      referenceLimitTitle: "الحسابات المجانية تسمح بصورتين مرجعيتين.",
+      referenceLimitBody:
+        "قم بالترقية إلى Creator أو Studio لإرفاق ما يصل إلى 5 صور مرجعية في كل عملية إنشاء.",
       insufficientCreditsTitle: "لقد استهلكت أرصدتك.",
       proOptions: "هذه الخيارات متاحة في Pro فقط.",
       insufficientCreditsBody:
@@ -3186,11 +3223,12 @@ const coverageTranslations = {
       describeEditPrompt:
         "مثال: ضع الهدف في استوديو تصوير هادئ مع الحفاظ على الوضعية الحالية.",
       uploadMore: "تحميل",
+      unlockMoreReferences: "افتح {count} صور مرجعية",
       removeImage: "إزالة الصورة",
       uploadFailed: "فشل التحميل. حاول مرة أخرى.",
       fileTooLarge: "هذه الصورة أكبر من 10 ميجابايت.",
       fileTypeUnsupported: "الصور المدعومة هي JPG أو PNG أو WebP فقط.",
-      tooManyReferences: "يمكنك إضافة حتى 5 صور مرجعية.",
+      tooManyReferences: "لقد بلغت حد الصور المرجعية في خطتك الحالية.",
       needReferenceImage: "أضف صورة مرجعية واحدة على الأقل أولًا.",
       referenceUploading: "لا تزال الصور المرجعية قيد التحميل.",
     },
@@ -3270,14 +3308,15 @@ const coverageTranslations = {
       howKeepLabel: "04／احتفاظ",
       howKeepTitle: "نزّل الاتجاه المفضل لديك.",
       howKeepBody:
-        "احتفظ بالاتجاه المناسب ونقّح الموجز ثم نزّله. تتضمن المعاينات المجانية علامة مائية؛ ويضيف Pro سجلًا خاصًا وملفات تصدير عالية الدقة بلا علامة مائية.",
+        "احتفظ بالاتجاه المناسب ونقّح الموجز ثم نزّله. تتضمن معاينات الزوار علامة مائية، أما الحساب المجاني فيتيح تنزيل الملف النظيف، ويضيف Pro تصديرًا عالي الدقة وسجلًا خاصًا.",
       howKeepAlt: "تنزيل ملصق مكتمل من استوديو الملصقات.",
       pricingMonth: "／شهريًا",
       pricingFeature1: "يحصل الزوار على عمليتي إنشاء تجريبية بعلامة مائية",
-      pricingFeature2: "تحصل الحسابات الجديدة على 30 رصيدًا ترحيبيًا (مرة واحدة)",
+      pricingFeature2:
+        "تحصل الحسابات الجديدة على 30 رصيدًا ترحيبيًا (مرة واحدة) وتنزيلات بلا علامة مائية",
       pricingFeature4: "تصدير بدقة 1K و2K و4K",
       pricingFeature5: "تشطيبات Medium وHigh وMax",
-      pricingFeature6: "سجل خاص بلا علامة مائية",
+      pricingFeature6: "حتى 5 صور مرجعية في كل عملية إنشاء",
       faqIntro:
         "ابدأ بخطوة صغيرة، وتعلّم من النتيجة الأولى، ونقّح ما يحتاج إلى تغيير فقط. تغطي هذه الإجابات التفاصيل العملية لإنشاء ملصق من النص باستخدام الاستوديو المجاني.",
       faq1Question: "هل الخدمة مجانية حقًا؟",

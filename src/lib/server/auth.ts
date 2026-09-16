@@ -51,11 +51,22 @@ export async function getAuthContext(): Promise<AuthContext> {
     };
   }
 
-  const { data: subscription, error } = await client
-    .from("subscriptions")
-    .select("status, period_end, tier")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // 订阅与积分包两查互不依赖，并行发以少一次往返（每个页面渲染都要走这段）
+  const [subscriptionResult, packResult] = await Promise.all([
+    client
+      .from("subscriptions")
+      .select("status, period_end, tier")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    // 积分包购买记录：有则解锁全档位 / 无水印 / 180 天保留（按 pro 模式生成）
+    client
+      .from("credit_grants")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("source", "credit_pack")
+      .limit(1),
+  ]);
+  const { data: subscription, error } = subscriptionResult;
   if (error) {
     throw new AppError(
       "SUBSCRIPTION_READ_FAILED",
@@ -63,14 +74,7 @@ export async function getAuthContext(): Promise<AuthContext> {
       503,
     );
   }
-
-  // 积分包购买记录：有则解锁全档位 / 无水印 / 180 天保留（按 pro 模式生成）
-  const { data: packGrant } = await client
-    .from("credit_grants")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("source", "credit_pack")
-    .limit(1);
+  const packGrant = packResult.data;
 
   const subscriptionState = lifecycleState(
     subscription

@@ -20,6 +20,7 @@ const generation: GenerationRow = {
   quality: "high",
   image_count: 4,
   reference_count: 0,
+  reference_urls: [],
   mode: "pro",
   status: "succeeded",
   progress: 100,
@@ -132,3 +133,16 @@ describe("generation creation contract", () => {
     });
   });
 });
+  it("tolerates a row from before the reference-urls migration", () => {
+    // 迁移未执行时 PostgREST 不会返回该列，历史记录接口不能因此 500
+    const legacyGeneration = { ...generation };
+    delete legacyGeneration.reference_urls;
+
+    const response = toGenerationResponse(
+      { generation: legacyGeneration, assets: [] },
+      [],
+    );
+
+    expect(response.id).toBe(generation.id);
+    expect(response.referenceImageUrls).toBeUndefined();
+  });

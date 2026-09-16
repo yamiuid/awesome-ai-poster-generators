@@ -52,6 +52,7 @@ import {
   ASPECT_RATIOS,
   type AspectRatio,
   type GenerationResponse,
+  FREE_REFERENCE_IMAGES,
   generationAcceptedSchema,
   generationCreatedSchema,
   generationResponseSchema,
@@ -63,12 +64,14 @@ import {
   type PosterStyle,
   QUALITIES,
   type Quality,
+  referenceImageLimit,
   RESOLUTIONS,
   type Resolution,
   recentGenerationsSchema,
   STYLES,
 } from "@/lib/domain/poster";
 import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
+import { notifyError } from "./error-toast";
 import { LoginForm } from "./login-form";
 import { UrlPipelineModal } from "./url-pipeline-modal";
 
@@ -838,7 +841,13 @@ function readApiSubmitError(error: unknown): ApiSubmitError | null {
   return { code: body.code };
 }
 
-function generationLimitKind(error: unknown): "guest" | "credits" | null {
+type GenerationLimitKind =
+  | "guest"
+  | "guest-reference"
+  | "reference"
+  | "credits";
+
+function generationLimitKind(error: unknown): GenerationLimitKind | null {
   const parsed = readApiSubmitError(error);
   if (!parsed) {
     return null;
@@ -846,6 +855,11 @@ function generationLimitKind(error: unknown): "guest" | "credits" | null {
   switch (parsed.code) {
     case "GUEST_LIMIT_REACHED":
       return "guest";
+    // 参考图额度是服务端兜底：前端已按档位拦住，直接调 API 才会走到这里
+    case "GUEST_REFERENCE_LIMIT_REACHED":
+      return "guest-reference";
+    case "REFERENCE_LIMIT_REACHED":
+      return "reference";
     case "INSUFFICIENT_CREDITS":
       return "credits";
     default:
@@ -912,6 +926,56 @@ async function downloadImage(url: string, filename: string): Promise<void> {
 function downloadTrackedImage(url: string, filename: string): void {
   track("download_completed");
   void downloadImage(url, filename);
+}
+
+// 访客撞到免试上限时，把这一次的生成参数暂存下来：注册成功后自动续跑，
+// 用户不需要回来重新输入一遍。Google 登录会整页回跳，只有 localStorage 能跨过这一步。
+// 30 分钟过期，避免记录久留后在下次登录时误触发。
+const GUEST_RESUME_KEY = "ttp-guest-resume";
+const GUEST_RESUME_TTL_MS = 30 * 60 * 1000;
+
+function writeGuestResume(overrides: GenerateOverrides): void {
+  try {
+    window.localStorage.setItem(
+      GUEST_RESUME_KEY,
+      JSON.stringify({ at: Date.now(), overrides }),
+    );
+  } catch {
+    // localStorage 不可用时放弃续跑，不影响主流程
+  }
+}
+
+function readGuestResume(): GenerateOverrides | null {
+  try {
+    const raw = window.localStorage.getItem(GUEST_RESUME_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as {
+      at?: unknown;
+      overrides?: GenerateOverrides;
+    };
+    if (!parsed.overrides?.prompt) {
+      return null;
+    }
+    if (
+      typeof parsed.at !== "number" ||
+      Date.now() - parsed.at > GUEST_RESUME_TTL_MS
+    ) {
+      return null;
+    }
+    return parsed.overrides;
+  } catch {
+    return null;
+  }
+}
+
+function clearGuestResume(): void {
+  try {
+    window.localStorage.removeItem(GUEST_RESUME_KEY);
+  } catch {
+    // 忽略
+  }
 }
 
 type StudioTab = "examples" | "history";
@@ -1065,21 +1129,29 @@ const REFERENCE_INPUT_ID = "reference-image-input";
 
 function ReferenceUploader({
   images,
+  limit,
+  nextLimit,
   disabled = false,
   onFiles,
   onRemove,
+  onUnlockMore,
 }: Readonly<{
   images: readonly ReferenceImage[];
+  /** 当前档位可上传张数：访客 1 / 免费 2 / 订阅 5 */
+  limit: number;
+  /** 升一档后的张数；null 表示已到硬上限，不再引导 */
+  nextLimit: number | null;
   disabled?: boolean;
   onFiles: (files: readonly File[]) => void;
   onRemove: (id: string) => void;
+  onUnlockMore: () => void;
 }>): JSX.Element {
   const t = useTranslations("studio");
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   // 上传中的占位项已在 images 内（url === null），不重复计数
   const occupied = images.length;
-  const slotsLeft = MAX_REFERENCE_IMAGES - occupied;
+  const slotsLeft = limit - occupied;
 
   function openPicker(): void {
     if (!disabled) {
@@ -1109,7 +1181,7 @@ function ReferenceUploader({
           {t("referenceImages")}
         </span>
         <span className="reference-count">
-          {occupied}/{MAX_REFERENCE_IMAGES}
+          {occupied}/{limit}
         </span>
       </div>
       {/* biome-ignore lint/a11y/noStaticElementInteractions: 拖拽上传区域，可交互入口在内部按钮 */}
@@ -1164,7 +1236,7 @@ function ReferenceUploader({
                 )}
               </div>
             ))}
-            {slotsLeft > 0 && !disabled && (
+            {!disabled && slotsLeft > 0 && (
               <button
                 type="button"
                 className="reference-add-tile"
@@ -1173,6 +1245,17 @@ function ReferenceUploader({
               >
                 <Upload size={18} aria-hidden="true" />
                 <span>{t("uploadMore")}</span>
+              </button>
+            )}
+            {!disabled && slotsLeft <= 0 && nextLimit !== null && (
+              <button
+                type="button"
+                className="reference-add-tile is-locked"
+                onClick={onUnlockMore}
+                aria-label={t("unlockMoreReferences", { count: nextLimit })}
+              >
+                <LockKeyhole size={16} aria-hidden="true" />
+                <span>{t("unlockMoreReferences", { count: nextLimit })}</span>
               </button>
             )}
           </>
@@ -1472,6 +1555,8 @@ function StudioHistoryPanel({
   onDownload,
   onEdit,
   onRetry,
+  onUseAsReference,
+  onRequestAccount,
   dismissibleFailureIds,
   onDismissFailure,
 }: Readonly<{
@@ -1484,6 +1569,8 @@ function StudioHistoryPanel({
   onDownload: (url: string, filename: string) => void;
   onEdit: (generationId: string) => void;
   onRetry: (generationId: string) => void;
+  onUseAsReference: (url: string, name: string) => void;
+  onRequestAccount: () => void;
   dismissibleFailureIds: ReadonlySet<string>;
   onDismissFailure: (generationId: string) => void;
 }>): JSX.Element {
@@ -1523,9 +1610,9 @@ function StudioHistoryPanel({
         {isGuest && (
           <p className="studio-history-note">
             {t("guestHistory")} ·{" "}
-            <a href={localizedPath("/login?next=/%23studio", locale)}>
+            <button type="button" onClick={onRequestAccount}>
               {t("signInToKeep")}
-            </a>
+            </button>
           </p>
         )}
       </div>
@@ -1638,6 +1725,19 @@ function StudioHistoryPanel({
             <button
               type="button"
               className="result-action-button"
+              onClick={() =>
+                onUseAsReference(
+                  selectedPoster.image.url,
+                  selectedPoster.image.alt,
+                )
+              }
+              disabled={imageFailed}
+            >
+              <ImagePlus size={14} aria-hidden="true" /> {t("useAsReference")}
+            </button>
+            <button
+              type="button"
+              className="result-action-button"
               onClick={() => onEdit(selectedPoster.generationId)}
             >
               <Pencil size={13} aria-hidden="true" /> {t("editAgain")}
@@ -1653,9 +1753,9 @@ function StudioHistoryPanel({
       {isGuest && (
         <p className="studio-history-note">
           {t("guestHistory")} ·{" "}
-          <a href={localizedPath("/login?next=/%23studio", locale)}>
+          <button type="button" onClick={onRequestAccount}>
             {t("signInToKeep")}
-          </a>
+          </button>
         </p>
       )}
     </div>
@@ -1671,6 +1771,14 @@ export function PosterStudio({
 }: Props) {
   // 积分包用户与订阅用户同享全档位 / 无水印 / 长保留期
   const paid = isPro || hasPack;
+  const accountMode = isGuest ? "guest" : paid ? "pro" : "free";
+  // 参考图额度：访客 1 / 免费 2 / 订阅 5；订阅用户到 5 张后不再引导
+  const referenceLimit = referenceImageLimit(accountMode);
+  const nextReferenceLimit = isGuest
+    ? FREE_REFERENCE_IMAGES
+    : paid
+      ? null
+      : MAX_REFERENCE_IMAGES;
   const t = useTranslations("studio");
   const styles = useTranslations("styles");
   const commonT = useTranslations("common");
@@ -1690,13 +1798,16 @@ export function PosterStudio({
   const [recentGenerations, setRecentGenerations] = useState<
     GenerationResponse[]
   >([]);
-  const [error, setError] = useState<string | null>(null);
   // 积分不足时点击 Generate 的提示（订阅用户余额充足时不触发）
   const [upgradePrompt, setUpgradePrompt] = useState(false);
   const [upgradePromptReason, setUpgradePromptReason] = useState<
-    "credits" | "options"
+    "credits" | "options" | "reference"
   >("credits");
   const [guestLimitPrompt, setGuestLimitPrompt] = useState(false);
+  // 访客弹窗的两种语境：撞到免试上限 / 主动点结果区的价值入口
+  const [guestPromptReason, setGuestPromptReason] = useState<
+    "limit" | "offer" | "reference"
+  >("offer");
   // 登录用户的积分余额（null = 未加载/加载失败，此时放行由服务端 402 兜底）
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [welcomeGrant, setWelcomeGrant] = useState<{
@@ -1769,6 +1880,40 @@ export function PosterStudio({
         });
       }
     });
+  }, [isGuest]);
+
+  // 注册成功后自动续跑访客被拦下的那次生成：
+  // 邮箱验证码是同页完成、Google 登录是整页回跳，两条路径都以 isGuest 翻转作为触发点。
+  const guestResumeHandled = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 只在登录态翻转时续跑一次
+  useEffect(() => {
+    if (isGuest || guestResumeHandled.current) {
+      return;
+    }
+    guestResumeHandled.current = true;
+    const resume = readGuestResume();
+    if (!resume) {
+      return;
+    }
+    clearGuestResume();
+    setPrompt(resume.prompt ?? "");
+    if (resume.style) {
+      setStyle(resume.style);
+    }
+    if (resume.aspectRatio) {
+      setAspectRatio(resume.aspectRatio);
+    }
+    if (resume.resolution) {
+      setResolution(resume.resolution);
+    }
+    if (resume.quality) {
+      setQuality(resume.quality);
+    }
+    if (resume.imageCount) {
+      setImageCount(resume.imageCount);
+    }
+    track("guest_resume_after_signup");
+    void generate(resume);
   }, [isGuest]);
 
   useEffect(() => {
@@ -1885,34 +2030,125 @@ export function PosterStudio({
     setUploadingCount(0);
   }
 
+  // 参考图额度用尽时的引导：访客 → 注册免费账号；免费用户 → 订阅
+  function requestMoreReferences(): void {
+    const focus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    if (isGuest) {
+      guestLimitPreviousFocus.current = focus;
+      setGuestPromptReason("reference");
+      setGuestLimitPrompt(true);
+      return;
+    }
+    if (paid) {
+      return;
+    }
+    upgradePreviousFocus.current = focus;
+    setUpgradePromptReason("reference");
+    setUpgradePrompt(true);
+  }
+
+  function changeMode(next: GenerationMode): void {
+    if (next === mode) {
+      return;
+    }
+    setMode(next);
+    // 图生图参数只有比例+分辨率：默认匹配原图、1 张、风格 auto；
+    // 切回文生图时把比例从 auto 还原为可用值
+    if (next === "image") {
+      setAspectRatio("auto");
+      setStyle("auto");
+      setImageCount(1);
+    } else {
+      setAspectRatio((current) => (current === "auto" ? "2:3" : current));
+    }
+    track(next === "image" ? "image_mode_on" : "image_mode_off");
+  }
+
+  // 历史记录 → 左侧工作区：填回当时的提示词，有参考图就一并带回图生图
+  function reuseHistoryGeneration(generationId: string): void {
+    const generation = generationById.current.get(generationId);
+    if (!generation) {
+      return;
+    }
+    // 参考图 URL 由服务端随生成记录返回，因此换设备登录也能带回来
+    const references = (generation.referenceImageUrls ?? []).slice(
+      0,
+      referenceLimit,
+    );
+    setPrompt(generation.prompt);
+    if (references.length > 0) {
+      changeMode("image");
+      setReferenceImages(
+        references.map((url, index) => ({
+          id: `history-${generationId}-${index}`,
+          url,
+          previewUrl: url,
+          name: `reference-${index + 1}`,
+        })),
+      );
+    } else {
+      changeMode("text");
+    }
+    setMobileStudioTab("create");
+    window.requestAnimationFrame(() => promptFieldRef.current?.focus());
+    track("history_prompt_reuse");
+  }
+
+  // 把生成结果直接放进图生图的参考图
+  function usePosterAsReference(url: string, name: string): void {
+    setMobileStudioTab("create");
+    if (referenceImages.some((image) => image.url === url)) {
+      changeMode("image");
+      return;
+    }
+    if (referenceImages.length >= referenceLimit) {
+      requestMoreReferences();
+      return;
+    }
+    changeMode("image");
+    setReferenceImages((prev) => [
+      ...prev,
+      {
+        id: `poster-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        url,
+        previewUrl: url,
+        name,
+      },
+    ]);
+    track("poster_used_as_reference");
+  }
+
   function handleReferenceFiles(files: readonly File[]): void {
     if (files.length === 0) {
       return;
     }
-    const slotsLeft = MAX_REFERENCE_IMAGES - referenceImages.length;
+    const slotsLeft = referenceLimit - referenceImages.length;
     if (slotsLeft <= 0) {
-      setError(t("tooManyReferences"));
+      // 已达当前档位上限：引导注册（访客）或订阅（免费）
+      requestMoreReferences();
       return;
     }
     const accepted: File[] = [];
     for (const file of files.slice(0, slotsLeft)) {
       if (!REFERENCE_ACCEPTED_TYPES.has(file.type)) {
-        setError(t("fileTypeUnsupported"));
+        notifyError(t("fileTypeUnsupported"));
         continue;
       }
       if (file.size > REFERENCE_MAX_FILE_BYTES) {
-        setError(t("fileTooLarge"));
+        notifyError(t("fileTooLarge"));
         continue;
       }
       accepted.push(file);
     }
     if (files.length > slotsLeft) {
-      setError(t("tooManyReferences"));
+      notifyError(t("tooManyReferences"));
     }
     if (accepted.length === 0) {
       return;
     }
-    setError(null);
     const pending: ReferenceImage[] = accepted.map((file) => ({
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       url: null,
@@ -1971,11 +2207,12 @@ export function PosterStudio({
           if (!failedIds.has(image.id)) {
             return true;
           }
-          URL.revokeObjectURL(image.previewUrl);
+      URL.revokeObjectURL(image.previewUrl);
           return false;
         }),
       );
-      setError(t("uploadFailed"));
+      // 上传失败属于操作级故障：走全局提示，避免只在小字里提示
+      notifyError(t("uploadFailed"));
     } finally {
       setUploadingCount((count) => Math.max(0, count - files.length));
     }
@@ -2124,7 +2361,7 @@ export function PosterStudio({
         prev.map((generation) => (generation.id === id ? next : generation)),
       );
     } catch {
-      setError(t("refreshFailed"));
+      notifyError(t("refreshFailed"));
     }
   }
 
@@ -2264,7 +2501,6 @@ export function PosterStudio({
     setImageCount(1);
     setMode("text");
     clearReferenceImages();
-    setError(null);
     setUpgradePrompt(false);
     setGuestLimitPrompt(false);
     setLightbox(null);
@@ -2430,7 +2666,7 @@ export function PosterStudio({
       if (error instanceof HTTPError || error instanceof TimeoutError) {
         return;
       }
-      setError(t("restoreFailed"));
+      notifyError(t("restoreFailed"));
     }
   }
 
@@ -2518,7 +2754,6 @@ export function PosterStudio({
   }
 
   async function generate(overrides?: GenerateOverrides): Promise<void> {
-    setError(null);
     setUpgradePrompt(false);
     setGuestLimitPrompt(false);
     const generationPrompt = (overrides?.prompt ?? prompt).trim();
@@ -2532,7 +2767,7 @@ export function PosterStudio({
               ? [overrides.referenceImageUrl]
               : []),
           ]),
-        ].slice(0, MAX_REFERENCE_IMAGES)
+        ].slice(0, referenceLimit)
       : mode === "image"
         ? uploadedReferenceUrls
         : [];
@@ -2543,7 +2778,7 @@ export function PosterStudio({
     const generationImageCount = overrides?.imageCount ?? imageCount;
     // 按钮默认启用（对爬虫友好：HTML 中不显示 disabled），无输入时在提交前校验提示
     if (generationPrompt.length < 3) {
-      setError(t("describeBrief"));
+      notifyError(t("describeBrief"));
       return;
     }
     // 图生图模式必须有至少一张已上传完成的参考图
@@ -2552,7 +2787,7 @@ export function PosterStudio({
       !overrides &&
       generationReferenceUrls.length === 0
     ) {
-      setError(
+      notifyError(
         uploadingCount > 0 ? t("referenceUploading") : t("needReferenceImage"),
       );
       return;
@@ -2575,7 +2810,7 @@ export function PosterStudio({
       return;
     }
     if (!paid && anyWorking) {
-      setError(t("waitForCurrent"));
+      notifyError(t("waitForCurrent"));
       return;
     }
     setActiveTab("history");
@@ -2705,18 +2940,39 @@ export function PosterStudio({
         });
       } else if (limitKind === "guest") {
         guestLimitPreviousFocus.current = generateButtonRef.current;
+        writeGuestResume({
+          prompt: submission.prompt,
+          inputType: generationType,
+          style: generationStyle,
+          aspectRatio: generationAspectRatio,
+          resolution: generationResolution,
+          quality: generationQuality,
+          imageCount: generationImageCount,
+          ...(generationReferenceUrls.length > 0
+            ? { referenceImageUrls: generationReferenceUrls }
+            : {}),
+        });
+        setGuestPromptReason("limit");
         setGuestLimitPrompt(true);
+        track("guest_limit_reached");
+      } else if (limitKind === "guest-reference") {
+        // 访客参考图额度用尽：同一个访客弹窗，换成参考图语境
+        guestLimitPreviousFocus.current = generateButtonRef.current;
+        setGuestPromptReason("reference");
+        setGuestLimitPrompt(true);
+      } else if (limitKind === "reference") {
+        // 免费用户参考图额度用尽：引导订阅
+        upgradePreviousFocus.current = generateButtonRef.current;
+        setUpgradePromptReason("reference");
+        setUpgradePrompt(true);
       } else if (limitKind === "credits") {
         upgradePreviousFocus.current = generateButtonRef.current;
         setUpgradePromptReason("credits");
         setUpgradePrompt(true);
         refreshCreditBalance();
-      } else if (submitError instanceof HTTPError) {
-        setError(t("startFailed"));
-      } else if (submitError instanceof Error) {
-        setError(t("startFailed"));
       } else {
-        setError(t("startFailed"));
+        // 其余失败（网络/超时/服务端）统一走全局提示
+        notifyError(t("startFailed"));
       }
       track("generation_failed");
     } finally {
@@ -2778,6 +3034,17 @@ export function PosterStudio({
       return true;
     });
   }, [generations, recentGenerations]);
+  // 灯箱里要能定位到这张图属于哪一次生成，「編輯內容」才有目标
+  const lightboxGeneration = useMemo(() => {
+    if (!lightbox) {
+      return null;
+    }
+    return (
+      [...generations, ...recentGenerations].find((generation) =>
+        generation.images.some((image) => image.url === lightbox),
+      ) ?? null
+    );
+  }, [generations, lightbox, recentGenerations]);
   const historyFailures = useMemo(() => {
     const byId = new Map<string, GenerationResponse>();
     for (const generation of [...recentGenerations, ...generations]) {
@@ -2887,29 +3154,17 @@ export function PosterStudio({
         >
           <ModeSwitch
             mode={mode}
-            onChange={(next) => {
-              setMode(next);
-              setError(null);
-              // 图生图参数只有比例+分辨率：默认匹配原图、1 张、风格 auto；
-              // 切回文生图时把比例从 auto 还原为可用值
-              if (next === "image") {
-                setAspectRatio("auto");
-                setStyle("auto");
-                setImageCount(1);
-              } else {
-                setAspectRatio((current) =>
-                  current === "auto" ? "2:3" : current,
-                );
-              }
-              track(next === "image" ? "image_mode_on" : "image_mode_off");
-            }}
+            onChange={changeMode}
           />
           {mode === "image" && (
             <ReferenceUploader
               images={referenceImages}
+              limit={referenceLimit}
+              nextLimit={nextReferenceLimit}
               disabled={isSubmitting}
               onFiles={handleReferenceFiles}
               onRemove={removeReference}
+              onUnlockMore={requestMoreReferences}
             />
           )}
           <label className="field-label" htmlFor="poster-prompt">
@@ -2936,8 +3191,8 @@ export function PosterStudio({
             <span>{prompt.length}/1500</span>
           </div>
 
-          <fieldset className="control-block">
-            <legend className="field-label">{t("outputSettings")}</legend>
+          {/* 分组标题不在界面上显示，保留给屏幕阅读器的分组名 */}
+          <fieldset className="control-block" aria-label={t("outputSettings")}>
             {mode === "image" ? (
               // 图生图：只暴露比例（含匹配原图）与分辨率，一行两等分撑满
               <div className="studio-options studio-options--image">
@@ -3100,11 +3355,6 @@ export function PosterStudio({
             {t("aiDisclosure")}{" "}
             <a href={localizedPath("/ai-policy", locale)}>{t("readPolicy")}</a>
           </p>
-          {error && (
-            <p className="error-message" role="alert">
-              <CircleAlert size={16} /> {error}
-            </p>
-          )}
         </div>
 
         <div
@@ -3132,12 +3382,14 @@ export function PosterStudio({
                 onSelect={setSelectedHistoryKey}
                 onZoom={openLightbox}
                 onDownload={downloadTrackedImage}
-                onEdit={(generationId) => {
-                  const generation = generationById.current.get(generationId);
-                  if (generation) {
-                    openEditContent(generation);
-                  }
+                onRequestAccount={() => {
+                  setGuestPromptReason("offer");
+                  setGuestLimitPrompt(true);
                 }}
+                onEdit={(generationId) => {
+                  reuseHistoryGeneration(generationId);
+                }}
+                onUseAsReference={usePosterAsReference}
                 onRetry={(id) => void retryGenerationImage(id)}
                 dismissibleFailureIds={dismissibleFailureIds}
                 onDismissFailure={dismissGeneration}
@@ -3195,9 +3447,19 @@ export function PosterStudio({
             <X size={18} />
           </button>
           <p className="eyebrow">{t("freeAccount")}</p>
-          <h3 id="guest-limit-title">{t("guestLimitTitle")}</h3>
+          <h3 id="guest-limit-title">
+            {guestPromptReason === "limit"
+              ? t("guestLimitTitle")
+              : guestPromptReason === "reference"
+                ? t("guestReferenceTitle")
+                : t("guestOfferTitle")}
+          </h3>
           <p className="modal-note" id="guest-limit-note">
-            {t("guestLimitBody")}
+            {guestPromptReason === "limit"
+              ? t("guestLimitBody")
+              : guestPromptReason === "reference"
+                ? t("guestReferenceBody")
+                : t("guestOfferBody")}
           </p>
           <LoginForm
             next={localizedPath("/#studio", locale)}
@@ -3239,12 +3501,16 @@ export function PosterStudio({
           <h3 id="upgrade-title">
             {upgradePromptReason === "credits"
               ? t("insufficientCreditsTitle")
-              : t("proOptions")}
+              : upgradePromptReason === "reference"
+                ? t("referenceLimitTitle")
+                : t("proOptions")}
           </h3>
           <p className="modal-note" id="upgrade-note">
             {upgradePromptReason === "credits"
               ? t("insufficientCreditsBody")
-              : t("proOptionsBody")}
+              : upgradePromptReason === "reference"
+                ? t("referenceLimitBody")
+                : t("proOptionsBody")}
           </p>
           <div className="modal-actions">
             <button
@@ -3314,6 +3580,19 @@ export function PosterStudio({
               }
               onLoad={() => setLightboxLoaded(true)}
             />
+            {lightboxGeneration && (
+              <button
+                type="button"
+                className="lightbox-edit"
+                onClick={() => {
+                  const generation = lightboxGeneration;
+                  setLightbox(null);
+                  openEditContent(generation);
+                }}
+              >
+                <Pencil size={14} aria-hidden="true" /> {t("editContent")}
+              </button>
+            )}
           </>
         )}
       </dialog>

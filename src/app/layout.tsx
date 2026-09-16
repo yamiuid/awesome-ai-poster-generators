@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import Script from "next/script";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { ErrorToast } from "@/components/error-toast";
 import { LocaleSuggestion } from "@/components/locale-suggestion";
 import { siteUrl } from "@/lib/seo";
 import "./globals.css";
@@ -99,6 +100,7 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <ErrorToast />
           <LocaleSuggestion />
           {children}
         </NextIntlClientProvider>
