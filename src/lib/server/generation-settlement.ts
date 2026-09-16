@@ -14,8 +14,11 @@ export async function settleGenerationCredits(
     p_generation_id: generationId,
     p_successful_images: successfulImages,
     p_cost_per_image: costPerImage,
-    // 参考图加价（每张 1 积分），仅在结算消费时收取
-    ...(surcharge > 0 ? { p_surcharge: surcharge } : {}),
+    // 参考图加价（每张 1 积分），仅在结算消费时收取。
+    // 必须始终显式传参：库里曾因 create-or-replace 换签名而同时存在 3 参/4 参两个重载，
+    // 少传一个参数会让 PostgREST 报 PGRST203「Could not choose the best candidate function」
+    // （2026-09-16 事故：文生图全部结算失败、图片已生成却被标记 failed）。
+    p_surcharge: surcharge,
   });
   if (error) {
     throw new AppError(
