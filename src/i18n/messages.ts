@@ -843,6 +843,8 @@ const translated = {
       vintage: "復古",
       neon: "霓虹",
       eyebrow: "Text to Poster／{style}",
+      posterPreview: "海報預覽",
+      retryPoster: "無法載入海報，重試",
       exampleMoviePrompt:
         "獨立電影首映，一輪紅月下的孤獨身影，充滿藝術電影的張力。",
       exampleMinimalPrompt: "設計展覽，嚴謹幾何形體，暖奶油色紙張，黑與紅。",
@@ -1269,6 +1271,10 @@ const translated = {
       maybeLater: "後で",
       upgradeToPro: "Proにアップグレード",
       fullSizePreview: "原寸プレビュー",
+      creditBalance: "利用可能 {credits} クレジット",
+      welcomeBanner:
+        "ようこそ！{credits}クレジットを進呈しました——どのスタイル・品質にも使えます。",
+      dismissBanner: "閉じる",
       closePreview: "プレビューを閉じる",
       editContent: "内容を編集",
       updatePosterCopy: "ポスターの文言を更新",
@@ -1325,15 +1331,35 @@ const translated = {
       freeCadence: "／永久",
       freeDescription:
         "期限なしのウェルカムクレジット20。支払い前にスタジオを存分に試せます。",
+      freeFeature1: "ウェルカムクレジット20（一度きり）",
+      freeFeature2: "1K出力・低／中品質",
       freeFeature3: "透かしなしダウンロード",
       freeFeatureReferences: "参照画像は最大2枚",
       freeFeature4: "7日間の履歴",
+      freeAudience: "スタジオを無料で試せます——登録するとクレジットを進呈。",
+      packAudience: "都度購入——クレジットは期限なし。",
+      welcomeCreditsLine: "クレジット20・一度きりのウェルカム",
+      packCreditsLine: "購入時に{credits}クレジット",
+      creditsNoteMonthly: "毎月最大約{count}枚の1K画像。",
+      creditsNoteOnce: "合計で約{count}枚の1K画像。",
       creatorMonthlyEyebrow: "Creator／月額",
       creatorYearlyEyebrow: "Creator／年額",
       studioMonthlyEyebrow: "Studio／月額",
       studioYearlyEyebrow: "Studio／年額",
+      scaleMonthlyEyebrow: "Scale／月額",
+      scaleYearlyEyebrow: "Scale／年額",
       monthCadence: "／月",
       yearCadence: "／年",
+      creatorAudience: "個人クリエイター向けの月額プラン。",
+      studioAudience: "キャンペーンを継続的に制作するプロ向け。",
+      scaleAudience: "チームや大量制作のワークフロー向け。",
+      yearlyNote: "年額{yearly}請求 — {savings}お得",
+      creditsPerMonth: "毎月{credits}クレジット",
+      creditsNote: "クレジットは解像度と品質に応じて生成ごとに消費されます。",
+      currentPlan: "現在のプラン",
+      popularBadge: "人気No.1",
+      longTermHistory: "契約中は履歴をすべて保存",
+      commercialUse: "商用プロジェクトに利用可能（モデル提供元の規約に準じます）",
       creatorMonthlyDescription:
         "毎月{credits}クレジット。継続的なポスター制作に。",
       creatorYearlyDescription:
@@ -1342,6 +1368,10 @@ const translated = {
         "毎月{credits}クレジット。キャンペーンや印刷制作にも余裕があります。",
       studioYearlyDescription:
         "毎月の期間に{credits}クレジット。高頻度の制作に最適です。",
+      scaleMonthlyDescription:
+        "毎月{credits}クレジット。代理店や大量キャンペーン向けの上位プランです。",
+      scaleYearlyDescription:
+        "毎月の期間に{credits}クレジット。年額で最も余裕のあるプランです。",
       monthlyCredits: "毎月{credits}クレジット",
       monthlyWindowCredits: "毎月の期間に{credits}クレジット",
       outputOptions: "1K／2K／4K出力",
@@ -1351,9 +1381,45 @@ const translated = {
       upToFiveReferences: "1回の生成で参照画像は最大5枚",
       fullCreatorAccess: "Creatorの全機能",
       fullStudioAccess: "Studioの全機能",
+      fullScaleAccess: "Scaleの全機能",
       monthlyReset: "クレジットは毎月更新、繰り越しなし",
       prioritySupport: "優先請求サポート",
       lowerAnnualPrice: "{amount}お得",
+      packTab: "クレジットパック",
+      packsEyebrow: "都度購入のクレジットパック",
+      packsHeading: "もっと必要ならクレジットパックを。",
+      packsIntro:
+        "都度購入でサブスクリプション不要。パックのクレジットはアカウントに残り、期限はありません。",
+      packEyebrow: "クレジットパック",
+      packCadence: "一度きり",
+      packDescription: "{credits}クレジットの都度購入パック。",
+      packFeatureCredits: "購入時に{credits}クレジット",
+      packFeatureNoExpiry: "クレジットは期限なし",
+      packFeatureNoWatermark: "透かしなし",
+      packFeatureHistory: "180日間の履歴",
+      buyPackStarter: "100クレジットを購入",
+      buyPackStandard: "300クレジットを購入",
+      buyPackValue: "600クレジットを購入",
+      faqTitle: "料金に関するFAQ",
+      faqIntro: "クレジット、パック、サブスクリプションについての簡単な回答。",
+      faq1Question: "無料クレジットはどうやって受け取りますか？",
+      faq1Answer:
+        "アカウントを作成すると、初回アクセス時にウェルカムクレジット20が自動で残高に入ります。標準的な1Kポスター約10枚分です。",
+      faq2Question: "クレジットはどう差し引かれますか？",
+      faq2Answer:
+        "生成ごとに解像度と品質に応じてクレジットが消費されます。標準の1Kポスターは2クレジット、4K Maxは115クレジットです。Image → Posterモードでは参照画像1枚につき1クレジットが加算され、添付できる枚数はプランによって異なります（ゲスト1枚、無料アカウント2枚、有料プランは最大5枚）。失敗した生成には課金されません。",
+      faq3Question: "クレジットパックとサブスクリプション、どちらが良いですか？",
+      faq3Answer:
+        "パックは期限なしのクレジットを都度購入する形式で、時々ポスターを作る方に向いています。サブスクリプションでは2K／4K解像度とHigh〜Max品質が使えるようになり、定期的な制作に十分な毎月のクレジットが付きます。",
+      faq4Question: "クレジットに有効期限はありますか？",
+      faq4Answer:
+        "パックのクレジットは期限なしです。サブスクリプションのクレジットは毎月リセットされ、繰り越されません。ウェルカムクレジットは一度だけ付与され、使うまで残高に残ります。",
+      faq5Question: "サブスクリプションはいつでも解約できますか？",
+      faq5Answer:
+        "はい。現在の請求期間の終了まですべての機能を利用でき、以降の請求はありません。再開したいときはいつでも再登録できます。",
+      faq6Question: "ポスターは商用利用できますか？",
+      faq6Answer:
+        "サブスクリプションで作成したポスターは商用プロジェクトに利用できます（モデル提供元の規約に準じます）。透かし付きの試用ポスターは個人利用のみです。",
     },
     auth: {
       ...englishMessages.auth,
@@ -1594,6 +1660,11 @@ const translated = {
       maybeLater: "Quizá después",
       upgradeToPro: "Pasar a Pro",
       fullSizePreview: "Vista previa completa",
+      getCredits: "Comprar créditos",
+      creditBalance: "{credits} créditos disponibles",
+      welcomeBanner:
+        "¡Bienvenido! Han llegado {credits} créditos gratis a tu cuenta: úsalos con cualquier estilo o calidad.",
+      dismissBanner: "Cerrar",
       closePreview: "Cerrar vista previa",
       editContent: "Editar contenido",
       updatePosterCopy: "Actualizar el texto del póster",
@@ -1644,15 +1715,37 @@ const translated = {
       freeCadence: "／para siempre",
       freeDescription:
         "20 créditos de bienvenida que nunca caducan para probar el estudio antes de pagar.",
+      freeFeature1: "20 créditos de bienvenida (una sola vez)",
+      freeFeature2: "Salida 1K · calidad baja / media",
       freeFeature3: "Descargas sin marca de agua",
       freeFeatureReferences: "Hasta 2 imágenes de referencia",
       freeFeature4: "Historial de 7 días",
+      freeAudience: "Prueba el estudio: créditos gratis al registrarte.",
+      packAudience: "Compra única: los créditos nunca caducan.",
+      welcomeCreditsLine: "20 créditos · bienvenida única",
+      packCreditsLine: "{credits} créditos al comprar",
+      creditsNoteMonthly: "Hasta unos {count} pósters 1K al mes.",
+      creditsNoteOnce: "Unos {count} pósters 1K en total.",
       creatorMonthlyEyebrow: "Creator／mensual",
       creatorYearlyEyebrow: "Creator／anual",
       studioMonthlyEyebrow: "Studio／mensual",
       studioYearlyEyebrow: "Studio／anual",
+      scaleMonthlyEyebrow: "Scale／mensual",
+      scaleYearlyEyebrow: "Scale／anual",
       monthCadence: "／mes",
       yearCadence: "／año",
+      creatorAudience: "Una asignación mensual ligera para creadores individuales.",
+      studioAudience: "Para creadores profesionales que lanzan campañas con regularidad.",
+      scaleAudience: "Para equipos y producción de alto volumen.",
+      yearlyNote: "Facturado {yearly} al año — ahorras {savings}",
+      creditsPerMonth: "{credits} créditos / mes",
+      creditsNote:
+        "Los créditos se descuentan por generación según la resolución y la calidad.",
+      currentPlan: "Plan actual",
+      popularBadge: "El más elegido",
+      longTermHistory: "Historial completo mientras la suscripción esté activa",
+      commercialUse:
+        "Apto para proyectos comerciales, según los términos del proveedor del modelo",
       creatorMonthlyDescription:
         "{credits} créditos cada mes para crear pósters con regularidad.",
       creatorYearlyDescription:
@@ -1661,6 +1754,10 @@ const translated = {
         "{credits} créditos cada mes para campañas, rondas con clientes e impresión.",
       studioYearlyDescription:
         "{credits} créditos en cada periodo mensual para una práctica creativa de alto volumen.",
+      scaleMonthlyDescription:
+        "{credits} créditos cada mes: el plan más potente para agencias y campañas de gran volumen.",
+      scaleYearlyDescription:
+        "{credits} créditos en cada periodo mensual, con el mejor precio anual.",
       monthlyCredits: "{credits} créditos cada mes",
       monthlyWindowCredits: "{credits} créditos en cada periodo mensual",
       outputOptions: "Salida 1K / 2K / 4K",
@@ -1670,9 +1767,45 @@ const translated = {
       upToFiveReferences: "Hasta 5 imágenes de referencia por generación",
       fullCreatorAccess: "Acceso completo al estudio Creator",
       fullStudioAccess: "Acceso completo al estudio Studio",
+      fullScaleAccess: "Acceso completo al estudio Scale",
       monthlyReset: "Los créditos se renuevan cada mes y no se acumulan",
       prioritySupport: "Soporte de facturación prioritario",
       lowerAnnualPrice: "Ahorra {amount}",
+      packTab: "Paquetes de créditos",
+      packsEyebrow: "Paquetes de créditos de pago único",
+      packsHeading: "¿Necesitas más? Lleva un paquete de créditos.",
+      packsIntro:
+        "Compras únicas, sin suscripción. Los créditos del paquete se quedan en tu cuenta y nunca caducan.",
+      packEyebrow: "Paquete de créditos",
+      packCadence: "pago único",
+      packDescription: "Un paquete de {credits} créditos de pago único.",
+      packFeatureCredits: "{credits} créditos al comprar",
+      packFeatureNoExpiry: "Los créditos nunca caducan",
+      packFeatureNoWatermark: "Sin marca de agua",
+      packFeatureHistory: "Historial de 180 días",
+      buyPackStarter: "Consigue 100 créditos",
+      buyPackStandard: "Consigue 300 créditos",
+      buyPackValue: "Consigue 600 créditos",
+      faqTitle: "Preguntas sobre precios",
+      faqIntro: "Respuestas rápidas sobre créditos, paquetes y suscripciones.",
+      faq1Question: "¿Cómo consigo mis créditos gratis?",
+      faq1Answer:
+        "Crea una cuenta y los 20 créditos de bienvenida entran automáticamente en tu saldo en la primera visita: suficientes para unos 10 pósters 1K estándar.",
+      faq2Question: "¿Cómo se descuentan los créditos?",
+      faq2Answer:
+        "Cada generación cuesta créditos según la resolución y la calidad: un póster 1K estándar cuesta 2 créditos y una ejecución 4K Max cuesta 115. Cada imagen de referencia en el modo Imagen → Póster añade 1 crédito, y cuántas puedes adjuntar depende de tu plan: 1 como invitado, 2 con una cuenta gratuita y hasta 5 en los planes de pago. Las generaciones fallidas nunca se cobran.",
+      faq3Question: "¿Paquete de créditos o suscripción?",
+      faq3Answer:
+        "Los paquetes son compras únicas cuyos créditos nunca caducan: ideales para pósters ocasionales. Las suscripciones desbloquean resoluciones 2K/4K y calidad High–Max, y entregan una gran asignación mensual de créditos para producción regular.",
+      faq4Question: "¿Caducan los créditos?",
+      faq4Answer:
+        "Los créditos de los paquetes nunca caducan. Los de la suscripción se renuevan cada mes y no se acumulan. Los créditos de bienvenida se conceden una sola vez y permanecen en tu saldo hasta que los gastes.",
+      faq5Question: "¿Puedo cancelar la suscripción cuando quiera?",
+      faq5Answer:
+        "Sí. Mantienes todas las ventajas hasta el final del periodo de facturación actual, no se te vuelve a cobrar y puedes volver a suscribirte cuando quieras.",
+      faq6Question: "¿Puedo usar los pósters comercialmente?",
+      faq6Answer:
+        "Los pósters de la suscripción pueden usarse en proyectos comerciales, según los términos del proveedor del modelo. Los pósters de prueba con marca de agua son solo para uso personal.",
     },
     auth: {
       ...englishMessages.auth,
@@ -1912,6 +2045,10 @@ const translated = {
       maybeLater: "ربما لاحقًا",
       upgradeToPro: "الترقية إلى Pro",
       fullSizePreview: "معاينة بالحجم الكامل",
+      creditBalance: "{credits} رصيد متاح",
+      welcomeBanner:
+        "مرحبًا! أُضيفت {credits} رصيدًا مجانيًا إلى حسابك — استخدمها مع أي نمط أو جودة.",
+      dismissBanner: "إغلاق",
       closePreview: "إغلاق المعاينة",
       editContent: "تعديل المحتوى",
       updatePosterCopy: "تحديث نص الملصق",
@@ -1961,15 +2098,35 @@ const translated = {
       freeCadence: "／دائمًا",
       freeDescription:
         "20 رصيدًا ترحيبيًا عند التسجيل — جرّب الاستوديو قبل الدفع.",
+      freeFeature1: "20 رصيدًا ترحيبيًا (مرة واحدة)",
+      freeFeature2: "إخراج 1K · جودة منخفضة / متوسطة",
       freeFeature3: "تنزيلات بلا علامة مائية",
       freeFeatureReferences: "حتى صورتين مرجعيتين",
       freeFeature4: "سجل لمدة 7 أيام",
+      freeAudience: "جرّب الاستوديو — أرصدة مجانية عند التسجيل.",
+      packAudience: "شراء لمرة واحدة — الأرصدة لا تنتهي صلاحيتها.",
+      welcomeCreditsLine: "20 رصيدًا · ترحيب لمرة واحدة",
+      packCreditsLine: "{credits} رصيدًا عند الشراء",
+      creditsNoteMonthly: "حتى نحو {count} ملصقًا بدقة 1K كل شهر.",
+      creditsNoteOnce: "نحو {count} ملصقًا بدقة 1K إجمالًا.",
       creatorMonthlyEyebrow: "Creator／شهري",
       creatorYearlyEyebrow: "Creator／سنوي",
       studioMonthlyEyebrow: "Studio／شهري",
       studioYearlyEyebrow: "Studio／سنوي",
+      scaleMonthlyEyebrow: "Scale／شهري",
+      scaleYearlyEyebrow: "Scale／سنوي",
       monthCadence: "／شهر",
       yearCadence: "／سنة",
+      creatorAudience: "رصيد شهري خفيف للمبدعين الأفراد.",
+      studioAudience: "للمبدعين المحترفين الذين يطلقون حملات بانتظام.",
+      scaleAudience: "للفرق وأعمال الإنتاج عالية الحجم.",
+      yearlyNote: "تُفوتر {yearly} سنويًا — توفّر {savings}",
+      creditsPerMonth: "{credits} رصيد / شهر",
+      creditsNote: "تُخصم الأرصدة لكل عملية إنشاء حسب الدقة والجودة.",
+      currentPlan: "الخطة الحالية",
+      popularBadge: "الأكثر اختيارًا",
+      longTermHistory: "يُحفظ السجل كاملًا خلال مدة الاشتراك",
+      commercialUse: "صالح للمشاريع التجارية وفق شروط مزوّد النموذج",
       creatorMonthlyDescription:
         "{credits} رصيد كل شهر لبناء الملصقات بانتظام.",
       creatorYearlyDescription:
@@ -1978,6 +2135,10 @@ const translated = {
         "{credits} رصيد كل شهر للحملات وجولات العملاء وأعمال الطباعة.",
       studioYearlyDescription:
         "{credits} رصيد في كل فترة شهرية للممارسة الإبداعية عالية الاستخدام.",
+      scaleMonthlyDescription:
+        "{credits} رصيد كل شهر — الخطة الأقوى للوكالات والحملات كبيرة الحجم.",
+      scaleYearlyDescription:
+        "{credits} رصيد في كل فترة شهرية — أوسع رصيد بأفضل سعر سنوي.",
       monthlyCredits: "{credits} رصيد كل شهر",
       monthlyWindowCredits: "{credits} رصيد في كل فترة شهرية",
       outputOptions: "إخراج 1K / 2K / 4K",
@@ -1987,10 +2148,46 @@ const translated = {
       upToFiveReferences: "حتى 5 صور مرجعية في كل عملية إنشاء",
       fullCreatorAccess: "الوصول الكامل إلى استوديو Creator",
       fullStudioAccess: "الوصول الكامل إلى استوديو Studio",
+      fullScaleAccess: "الوصول الكامل إلى استوديو Scale",
       monthlyReset: "تتجدد الأرصدة شهريًا ولا تُرحّل",
       prioritySupport: "دعم فوترة ذو أولوية",
       lowerAnnualPrice: "وفّر {amount}",
       continueToCheckout: "المتابعة إلى الدفع",
+      packTab: "حزم الأرصدة",
+      packsEyebrow: "حزم أرصدة لمرة واحدة",
+      packsHeading: "تحتاج المزيد؟ احصل على حزمة أرصدة.",
+      packsIntro:
+        "شراء لمرة واحدة بلا اشتراك. تبقى أرصدة الحزمة في حسابك ولا تنتهي صلاحيتها.",
+      packEyebrow: "حزمة أرصدة",
+      packCadence: "مرة واحدة",
+      packDescription: "حزمة {credits} رصيدًا تُشترى لمرة واحدة.",
+      packFeatureCredits: "{credits} رصيدًا عند الشراء",
+      packFeatureNoExpiry: "الأرصدة لا تنتهي صلاحيتها",
+      packFeatureNoWatermark: "بلا علامة مائية",
+      packFeatureHistory: "سجل لمدة 180 يومًا",
+      buyPackStarter: "احصل على 100 رصيد",
+      buyPackStandard: "احصل على 300 رصيد",
+      buyPackValue: "احصل على 600 رصيد",
+      faqTitle: "أسئلة شائعة عن الأسعار",
+      faqIntro: "أجوبة سريعة عن الأرصدة والحزم والاشتراكات.",
+      faq1Question: "كيف أحصل على أرصدتي المجانية؟",
+      faq1Answer:
+        "أنشئ حسابًا وستُضاف 20 رصيدًا ترحيبيًا تلقائيًا إلى رصيدك عند أول زيارة — تكفي نحو 10 ملصقات بدقة 1K القياسية.",
+      faq2Question: "كيف تُخصم الأرصدة؟",
+      faq2Answer:
+        "تكلّف كل عملية إنشاء أرصدة حسب الدقة والجودة: ملصق 1K القياسي يكلّف رصيدين، وتشغيل 4K Max يكلّف 115. كل صورة مرجعية في وضع Image → Poster تضيف رصيدًا واحدًا، وعدد الصور التي يمكنك إرفاقها يعتمد على خطتك: صورة واحدة كزائر، وصورتان بحساب مجاني، وحتى 5 في الخطط المدفوعة. لا تُحتسب عمليات الإنشاء الفاشلة.",
+      faq3Question: "حزم الأرصدة أم الاشتراك — أيهما أنسب لي؟",
+      faq3Answer:
+        "الحزم عمليات شراء لمرة واحدة لا تنتهي صلاحية أرصدتها — مناسبة للملصقات العرضية. أما الاشتراكات فتفتح دقتي 2K و4K وجودة High إلى Max، وتمنح رصيدًا شهريًا كبيرًا للإنتاج المنتظم.",
+      faq4Question: "هل تنتهي صلاحية الأرصدة؟",
+      faq4Answer:
+        "أرصدة الحزم لا تنتهي صلاحيتها. أما أرصدة الاشتراك فتتجدد شهريًا ولا تُرحّل. والأرصدة الترحيبية تُمنح مرة واحدة وتبقى في رصيدك حتى تنفقها.",
+      faq5Question: "هل يمكنني إلغاء الاشتراك في أي وقت؟",
+      faq5Answer:
+        "نعم. تحتفظ بكل المزايا حتى نهاية فترة الفوترة الحالية، ولن تُفوتر مرة أخرى، ويمكنك إعادة الاشتراك متى شئت.",
+      faq6Question: "هل يمكنني استخدام الملصقات تجاريًا؟",
+      faq6Answer:
+        "يمكن استخدام ملصقات الاشتراك في المشاريع التجارية وفق شروط مزوّد النموذج. أما ملصقات التجربة ذات العلامة المائية فهي للاستخدام الشخصي فقط.",
     },
     auth: {
       ...englishMessages.auth,
@@ -2379,6 +2576,7 @@ const coverageTranslations = {
       free: "免費",
       creator: "Creator",
       studio: "Studio",
+      scale: "Scale",
       signedIn: "已登入",
       accountForEmail: "{email} 的帳戶選單",
       creditActivity: "點數活動",
@@ -2461,7 +2659,10 @@ const coverageTranslations = {
       editAgain: "もう一度編集",
       readPolicy: "AI 利用ポリシーを読む。",
     },
-    header: { primaryNavigation: "メインナビゲーション" },
+    header: {
+      primaryNavigation: "メインナビゲーション",
+      creditsBalance: "利用可能 {credits} クレジット",
+    },
     studio: {
       posterResults: "ポスター結果",
       posterStudio: "ポスタースタジオ",
@@ -2662,12 +2863,16 @@ const coverageTranslations = {
       howKeepAlt:
         "ポスタースタジオから完成したポスターをダウンロードしている画面。",
       pricingMonth: "／月",
+      pricingCardTitle: "Creator・Studio・Scale",
       pricingFeature1: "ゲストは透かし付き生成を2回試用可能",
       pricingFeature2:
         "新規アカウントには期限なしのウェルカムクレジット20と透かしなしダウンロード",
+      pricingFeature3:
+        "Creator・Studio・Scaleプランでは毎月500〜3,000クレジット",
       pricingFeature4: "1K、2K、4K の書き出し",
       pricingFeature5: "Medium・High・Max の仕上がり",
       pricingFeature6: "1回の生成で参照画像は最大5枚",
+      pricingFeature7: "$4.90からの都度購入クレジットパック——期限なし",
       faqIntro:
         "まず小さく始め、最初の結果から学び、変えるべき部分だけを整えます。以下では無料スタジオでテキストからポスターを作る際の実用的な疑問に答えます。",
       faq1Question: "本当に無料ですか？",
@@ -2720,11 +2925,19 @@ const coverageTranslations = {
       free: "無料",
       creator: "Creator",
       studio: "Studio",
+      scale: "Scale",
       signedIn: "ログイン中",
       accountForEmail: "{email} のアカウントメニュー",
+      proStudio: "Proスタジオ／透かしなし",
+      freeHistory: "無料アカウント／7日間の履歴",
       creditActivity: "クレジット履歴",
       trackEveryRun: "各生成のコストを確認できます。",
       noCreditsSpent: "まだクレジットを使っていません。",
+      creditActivityEmpty: "ここに生成ごとの正確なコストが表示されます。",
+      permanentBalanceMeta:
+        "ウェルカム／パックの{credits}クレジット・期限なし",
+      subscriptionBalanceMeta: "{tier}・{periodStart} → {periodEnd}・{credits}付与",
+      menuCredits: "残り{credits}クレジット",
       date: "日付",
       prompt: "プロンプト",
       mode: "モード",
@@ -2793,6 +3006,8 @@ const coverageTranslations = {
       vintage: "ヴィンテージ",
       neon: "ネオン",
       eyebrow: "Text to Poster／{style}",
+      posterPreview: "ポスタープレビュー",
+      retryPoster: "ポスターを読み込めませんでした。再試行",
       exampleMoviePrompt:
         "インディーズ映画のプレミア。赤い月の下に立つ人物、アートハウスの緊張感。",
       exampleMinimalPrompt:
@@ -2828,7 +3043,10 @@ const coverageTranslations = {
       editAgain: "Editar de nuevo",
       readPolicy: "Leer la política de uso de IA.",
     },
-    header: { primaryNavigation: "Navegación principal" },
+    header: {
+      primaryNavigation: "Navegación principal",
+      creditsBalance: "{credits} créditos disponibles",
+    },
     studio: {
       posterResults: "Resultados de póster",
       posterStudio: "Estudio de póster",
@@ -3052,13 +3270,18 @@ const coverageTranslations = {
         "Conserva la dirección que funciona, ajusta el brief y descarga. Las vistas previas de invitado llevan marca de agua; con una cuenta gratuita descargas el archivo limpio, y Pro añade exportaciones en alta definición e historial privado.",
       howKeepAlt: "Un póster terminado que se descarga desde el estudio.",
       pricingMonth: "／mes",
+      pricingCardTitle: "Creator · Studio · Scale",
       pricingFeature1:
         "Los invitados obtienen dos generaciones de prueba con marca de agua",
       pricingFeature2:
         "Las cuentas nuevas reciben 20 créditos de bienvenida que nunca caducan y descargas sin marca de agua",
+      pricingFeature3:
+        "Los planes Creator, Studio y Scale añaden entre 500 y 3.000 créditos al mes",
       pricingFeature4: "Exportaciones 1K, 2K y 4K",
       pricingFeature5: "Acabados Medium, High y Max",
       pricingFeature6: "Hasta 5 imágenes de referencia por generación",
+      pricingFeature7:
+        "Paquetes de créditos de pago único desde $4.90 — nunca caducan",
       faqIntro:
         "Empieza con algo pequeño, aprende del primer resultado y ajusta solo lo que necesite cambiar. Estas respuestas cubren los detalles prácticos de crear un póster desde texto con el estudio gratuito.",
       faq1Question: "¿De verdad es gratis?",
@@ -3112,11 +3335,21 @@ const coverageTranslations = {
       free: "Gratis",
       creator: "Creator",
       studio: "Studio",
+      scale: "Scale",
       signedIn: "Sesión iniciada",
       accountForEmail: "Menú de cuenta de {email}",
+      proStudio: "Estudio Pro / sin marca de agua",
+      freeHistory: "Cuenta gratis / historial de siete días",
       creditActivity: "Actividad de créditos",
       trackEveryRun: "Consulta el costo de cada generación.",
       noCreditsSpent: "Todavía no has gastado créditos.",
+      creditActivityEmpty:
+        "Tu actividad de créditos aparecerá aquí con el costo exacto de cada generación.",
+      permanentBalanceMeta:
+        "{credits} créditos de bienvenida y de paquetes · nunca caducan",
+      subscriptionBalanceMeta:
+        "{tier} · {periodStart} → {periodEnd} · {credits} concedidos",
+      menuCredits: "Quedan {credits} créditos",
       date: "Fecha",
       prompt: "Prompt",
       mode: "Modo",
@@ -3186,6 +3419,8 @@ const coverageTranslations = {
       vintage: "Vintage",
       neon: "Neón",
       eyebrow: "Text to Poster／{style}",
+      posterPreview: "Vista previa del póster",
+      retryPoster: "No se pudo cargar el póster. Reintentar",
       exampleMoviePrompt:
         "Estreno de cine independiente, una figura bajo una luna roja, tensión de cine de autor.",
       exampleMinimalPrompt:
@@ -3221,7 +3456,10 @@ const coverageTranslations = {
       editAgain: "تعديل مرة أخرى",
       readPolicy: "اقرأ سياسة استخدام الذكاء الاصطناعي.",
     },
-    header: { primaryNavigation: "التنقل الرئيسي" },
+    header: {
+      primaryNavigation: "التنقل الرئيسي",
+      creditsBalance: "{credits} رصيد متاح",
+    },
     studio: {
       posterResults: "نتائج الملصقات",
       posterStudio: "استوديو الملصقات",
@@ -3428,12 +3666,17 @@ const coverageTranslations = {
         "احتفظ بالاتجاه المناسب ونقّح الموجز ثم نزّله. تتضمن معاينات الزوار علامة مائية، أما الحساب المجاني فيتيح تنزيل الملف النظيف، ويضيف Pro تصديرًا عالي الدقة وسجلًا خاصًا.",
       howKeepAlt: "تنزيل ملصق مكتمل من استوديو الملصقات.",
       pricingMonth: "／شهريًا",
+      pricingCardTitle: "Creator · Studio · Scale",
       pricingFeature1: "يحصل الزوار على عمليتي إنشاء تجريبية بعلامة مائية",
       pricingFeature2:
         "تحصل الحسابات الجديدة على 20 رصيدًا ترحيبيًا (مرة واحدة) وتنزيلات بلا علامة مائية",
+      pricingFeature3:
+        "تضيف خطط Creator وStudio وScale ما بين 500 و3,000 رصيد شهريًا",
       pricingFeature4: "تصدير بدقة 1K و2K و4K",
       pricingFeature5: "تشطيبات Medium وHigh وMax",
       pricingFeature6: "حتى 5 صور مرجعية في كل عملية إنشاء",
+      pricingFeature7:
+        "حزم أرصدة لمرة واحدة تبدأ من $4.90 — لا تنتهي صلاحيتها",
       faqIntro:
         "ابدأ بخطوة صغيرة، وتعلّم من النتيجة الأولى، ونقّح ما يحتاج إلى تغيير فقط. تغطي هذه الإجابات التفاصيل العملية لإنشاء ملصق من النص باستخدام الاستوديو المجاني.",
       faq1Question: "هل الخدمة مجانية حقًا؟",
@@ -3485,11 +3728,21 @@ const coverageTranslations = {
       free: "مجاني",
       creator: "Creator",
       studio: "Studio",
+      scale: "Scale",
       signedIn: "تم تسجيل الدخول",
       accountForEmail: "قائمة حساب {email}",
+      proStudio: "استوديو Pro / بلا علامة مائية",
+      freeHistory: "حساب مجاني / سجل سبعة أيام",
       creditActivity: "نشاط الأرصدة",
       trackEveryRun: "تتبّع تكلفة كل عملية.",
       noCreditsSpent: "لم تُنفق أي أرصدة بعد.",
+      creditActivityEmpty:
+        "سيظهر نشاط أرصدتك هنا مع التكلفة الدقيقة لكل عملية إنشاء.",
+      permanentBalanceMeta:
+        "{credits} رصيد ترحيبي وأرصدة حزم · لا تنتهي صلاحيتها",
+      subscriptionBalanceMeta:
+        "{tier} · {periodStart} → {periodEnd} · {credits} مُمنَح",
+      menuCredits: "بقي {credits} رصيد",
       date: "التاريخ",
       prompt: "المطالبة",
       mode: "الوضع",
@@ -3557,6 +3810,8 @@ const coverageTranslations = {
       vintage: "عتيق",
       neon: "نيون",
       eyebrow: "Text to Poster／{style}",
+      posterPreview: "معاينة الملصق",
+      retryPoster: "تعذر تحميل الملصق. إعادة المحاولة",
       exampleMoviePrompt:
         "العرض الأول لفيلم مستقل، وشخص وحيد تحت قمر أحمر، وتوتر سينمائي فني.",
       exampleMinimalPrompt:
