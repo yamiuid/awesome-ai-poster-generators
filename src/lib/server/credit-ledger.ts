@@ -12,6 +12,14 @@ export type AccountBalance = Readonly<{
   periodStart: string | null;
   periodEnd: string | null;
   tier: string;
+  /** 订阅档位，含已经结束的订阅（账户页文案要用），没订阅过为 null */
+  planTier: string | null;
+  /** 上个订阅周期没花完、但已经用不了的点数 */
+  expired: Readonly<{
+    tier: string;
+    available: number;
+    periodEnd: string;
+  }> | null;
   /** 永久桶的赠送明细（welcome / 各笔积分包），订阅桶为空数组 */
   grants: ReadonlyArray<{
     source: string;
@@ -50,6 +58,69 @@ export function computeAvailable(
   return granted - reserved - consumed;
 }
 
+type BalancePeriodRow = Readonly<{
+  id: string;
+  period_start: string;
+  period_end: string;
+  credits_granted: number;
+  bucket: string;
+}>;
+
+type BalanceSubscriptionRow = Readonly<{
+  status: string;
+  period_end: string;
+  tier: string | null;
+}>;
+
+export type BalancePeriodSelection = Readonly<{
+  /** 计入「可用余额」的周期；订阅已结束时退回永久桶 */
+  primary: BalancePeriodRow | null;
+  /** 订阅周期里的遗留点数：可以展示，但 reserve_credits 不会再动它们 */
+  expired: Readonly<{
+    tier: string;
+    periodId: string;
+    periodEnd: string;
+    creditsGranted: number;
+  }> | null;
+}>;
+
+/**
+ * 决定余额该看哪个桶。
+ *
+ * reserve_credits 只在 `status in (active, canceling) and period_end > now()`
+ * 时才从订阅桶扣，否则一律走永久桶——订阅一到期，订阅桶里剩的点数就用不了了。
+ * 账户页必须用同一套判断，否则会显示一个「看得见却花不掉」的数字。
+ */
+export function selectBalancePeriod(
+  periods: readonly BalancePeriodRow[],
+  subscription: BalanceSubscriptionRow | null,
+  now: Date = new Date(),
+): BalancePeriodSelection {
+  const permanent = periods.find((row) => row.bucket === "permanent") ?? null;
+  const subscriptionPeriod =
+    periods.find((row) => row.bucket !== "permanent") ?? null;
+  const subscriptionActive =
+    subscription !== null &&
+    (subscription.status === "active" || subscription.status === "canceling") &&
+    new Date(subscription.period_end).getTime() > now.getTime();
+
+  if (subscriptionActive) {
+    return { primary: subscriptionPeriod ?? permanent, expired: null };
+  }
+  return {
+    primary: permanent,
+    expired:
+      subscriptionPeriod && subscription?.tier
+        ? {
+            tier: subscription.tier,
+            periodId: subscriptionPeriod.id,
+            periodEnd: subscriptionPeriod.period_end,
+            creditsGranted: subscriptionPeriod.credits_granted,
+          }
+        : null,
+  };
+}
+
 /**
  * 当前可用余额：granted − 进行中的预约 − 已消耗。
  *
@@ -65,24 +136,62 @@ export async function getAccountBalance(
   client: SupabaseClient<Database>,
   userId: string,
 ): Promise<AccountBalance | null> {
-  const { data: periods } = await client
-    .from("entitlement_periods")
-    .select("id, period_start, period_end, credits_granted, bucket")
-    .eq("user_id", userId)
-    .order("period_start", { ascending: false });
+  const [{ data: periods }, { data: subscription }] = await Promise.all([
+    client
+      .from("entitlement_periods")
+      .select("id, period_start, period_end, credits_granted, bucket")
+      .eq("user_id", userId)
+      .order("period_start", { ascending: false }),
+    client
+      .from("subscriptions")
+      .select("status, period_end, tier")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
   const rows = periods ?? [];
-  const permanentPeriod = rows.find((row) => row.bucket === "permanent");
-  const subscriptionPeriod = rows.find((row) => row.bucket !== "permanent");
-  const period = subscriptionPeriod ?? permanentPeriod;
-  if (!period) {
+  if (rows.length === 0) {
     return null;
+  }
+  const selection = selectBalancePeriod(rows, subscription ?? null);
+  const expired = selection.expired;
+  const period = selection.primary;
+  const planTier = subscription?.tier ?? null;
+  if (!period) {
+    // 只剩一个已经结束的订阅周期：可用余额是 0（reserve_credits 会懒建永久桶），
+    // 但要把那批失效点数如实告诉用户。
+    const expiredAvailable = expired
+      ? await periodAvailable(
+          client,
+          userId,
+          expired.periodId,
+          expired.creditsGranted,
+        )
+      : 0;
+    return {
+      granted: 0,
+      reserved: 0,
+      consumed: 0,
+      available: 0,
+      bucket: "permanent",
+      periodStart: null,
+      periodEnd: null,
+      tier: "",
+      planTier,
+      expired: expired
+        ? {
+            tier: expired.tier,
+            available: expiredAvailable,
+            periodEnd: expired.periodEnd,
+          }
+        : null,
+      grants: [],
+    };
   }
   const isPermanent = period.bucket === "permanent";
 
   const [
     { data: reservations },
     { data: transactions },
-    { data: subs },
     { data: grants },
   ] = await Promise.all([
     client
@@ -98,15 +207,6 @@ export async function getAccountBalance(
       .eq("period_id", period.id)
       .eq("kind", "consume"),
     isPermanent
-      ? Promise.resolve({ data: [] })
-      : client
-          .from("subscriptions")
-          .select("tier")
-          .eq("user_id", userId)
-          .in("status", ["active", "canceling"])
-          .order("activated_at", { ascending: false })
-          .limit(1),
-    isPermanent
       ? client
           .from("credit_grants")
           .select("source, amount, created_at")
@@ -117,6 +217,14 @@ export async function getAccountBalance(
 
   const reserved = sumAmounts(reservations ?? []);
   const consumed = sumAmounts(transactions ?? []);
+  const expiredAvailable = expired
+    ? await periodAvailable(
+        client,
+        userId,
+        expired.periodId,
+        expired.creditsGranted,
+      )
+    : 0;
   return {
     granted: period.credits_granted,
     reserved,
@@ -125,13 +233,49 @@ export async function getAccountBalance(
     bucket: isPermanent ? "permanent" : "subscription",
     periodStart: isPermanent ? null : period.period_start,
     periodEnd: isPermanent ? null : period.period_end,
-    tier: isPermanent ? "" : (subs?.[0]?.tier ?? ""),
+    tier: isPermanent ? "" : (planTier ?? ""),
+    planTier,
+    expired: expired
+      ? {
+          tier: expired.tier,
+          available: expiredAvailable,
+          periodEnd: expired.periodEnd,
+        }
+      : null,
     grants: (grants ?? []).map((grant) => ({
       source: grant.source,
       amount: grant.amount,
       createdAt: grant.created_at,
     })),
   };
+}
+
+/** 某个周期还剩多少点数（授予 − 已预约 − 已消耗）。 */
+async function periodAvailable(
+  client: SupabaseClient<Database>,
+  userId: string,
+  periodId: string,
+  granted: number,
+): Promise<number> {
+  const [{ data: reservations }, { data: transactions }] = await Promise.all([
+    client
+      .from("credit_reservations")
+      .select("amount")
+      .eq("user_id", userId)
+      .eq("period_id", periodId)
+      .eq("status", "reserved"),
+    client
+      .from("credit_transactions")
+      .select("amount")
+      .eq("user_id", userId)
+      .eq("period_id", periodId)
+      .eq("kind", "consume"),
+  ]);
+  return computeAvailable(
+    granted,
+    sumAmounts(reservations ?? []),
+    sumAmounts(transactions ?? []),
+  );
 }
 
 /**

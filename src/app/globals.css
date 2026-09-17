@@ -4051,6 +4051,22 @@ dialog.modal-backdrop:not([open]) {
   font-size: 0.72rem;
   line-height: 1.5;
 }
+.account-balance-expired {
+  grid-column: 1 / -1;
+  margin: 0.7rem 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+.account-balance-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
 .account-tabs {
   display: flex;
   gap: 0.4rem;

@@ -143,6 +143,23 @@ export default async function AccountPage({ searchParams }: PageProps) {
   });
 
   const tab = rawSearch.tab === "credits" ? "credits" : "generations";
+  // 订阅档位名称直接复用 account 命名空间里的 creator / studio / scale
+  const planTierLabel =
+    balance?.planTier === "creator" ||
+    balance?.planTier === "studio" ||
+    balance?.planTier === "scale"
+      ? t(balance.planTier)
+      : null;
+  const expiredTierLabel =
+    balance?.expired?.tier === "creator" ||
+    balance?.expired?.tier === "studio" ||
+    balance?.expired?.tier === "scale"
+      ? t(balance.expired.tier)
+      : null;
+  const formatDate = (value: string): string =>
+    new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+      new Date(value),
+    );
   return (
     <main className="account-page">
       {hasPendingGeneration && <meta httpEquiv="refresh" content="5" />}
@@ -154,7 +171,11 @@ export default async function AccountPage({ searchParams }: PageProps) {
         </div>
         <p>
           {auth.email ? `${auth.email} · ` : ""}
-          {auth.isPro ? t("proStudio") : t("freeHistory")}
+          {auth.isPro
+            ? t("proStudio")
+            : planTierLabel && balance?.expired
+              ? t("planEnded", { tier: planTierLabel })
+              : t("freeHistory")}
         </p>
       </section>
       {balance && (
@@ -175,6 +196,27 @@ export default async function AccountPage({ searchParams }: PageProps) {
               })}
             </p>
           )}
+          {balance.expired && (
+            <p className="account-balance-expired">
+              {t("expiredPlanCredits", {
+                tier: expiredTierLabel ?? "",
+                credits: balance.expired.available,
+                date: formatDate(balance.expired.periodEnd),
+              })}
+            </p>
+          )}
+          <div className="account-balance-actions">
+            {!auth.isPro && (
+              <Link className="solid-button" href="/pricing">
+                {auth.subscriptionState === "none"
+                  ? t("upgradePlan")
+                  : t("renewPlan")}
+              </Link>
+            )}
+            <Link className="outline-button" href="/pricing#credit-packs">
+              {t("buyCredits")}
+            </Link>
+          </div>
         </div>
       )}
       <AccountTabs

@@ -36,3 +36,43 @@ describe("locale message parity", () => {
     });
   }
 });
+
+/**
+ * 账户页的「方案已结束」文案：parity 测试只比较 key 集合，
+ * 而 locale 会回退到英文基线，所以 key 是否真能解析必须单独断言。
+ */
+describe("account plan-ended copy", () => {
+  const keys = [
+    "planEnded",
+    "expiredPlanCredits",
+    "renewPlan",
+    "upgradePlan",
+    "buyCredits",
+  ] as const;
+
+  const accountMessage = (
+    locale: (typeof UI_LOCALES)[number],
+    key: (typeof keys)[number],
+  ): string => {
+    const tree = messagesForLocale(locale);
+    const account =
+      typeof tree === "object" && tree !== null
+        ? (tree["account"] as MessageNode | undefined)
+        : undefined;
+    const value =
+      typeof account === "object" && account !== null ? account[key] : undefined;
+    return typeof value === "string" ? value : "";
+  };
+
+  for (const locale of UI_LOCALES) {
+    it(`${locale} resolves the plan-ended strings`, () => {
+      for (const key of keys) {
+        expect(accountMessage(locale, key).length).toBeGreaterThan(0);
+      }
+      expect(accountMessage(locale, "planEnded")).toContain("{tier}");
+      expect(accountMessage(locale, "expiredPlanCredits")).toContain(
+        "{credits}",
+      );
+    });
+  }
+});
