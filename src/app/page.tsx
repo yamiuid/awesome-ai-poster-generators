@@ -2,16 +2,17 @@ import { ArrowUpRight, MoveDown } from "lucide-react";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { PosterStudio } from "@/components/poster-studio";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Link } from "@/i18n/navigation";
-import { isPosterStyle } from "@/lib/domain/poster";
+import { isPosterStyle, type PosterStyle } from "@/lib/domain/poster";
 import { POSTER_EXAMPLES } from "@/lib/domain/poster-examples";
 import { STYLE_LANDINGS } from "@/lib/domain/style-landing";
 import { isUiLocale, localizedPath } from "@/lib/i18n/locale";
 import { pageMeta, siteUrl } from "@/lib/seo";
-import { getAuthContext } from "@/lib/server/auth";
+import { getAuthContextCached } from "@/lib/server/auth";
 
 export async function generateMetadata() {
   const rawLocale = await getLocale();
@@ -56,6 +57,51 @@ const howToSteps = [
   },
 ] as const;
 
+/**
+ * 登录态相关的两块各自流式输出。
+ * 以前整页 await getAuthContext()（Supabase auth + 订阅 + 积分包三查），
+ * hero 和所有静态内容都被这一次查询卡住；现在先吐静态骨架，auth 到了再补齐。
+ */
+async function HeaderWithAuth() {
+  const auth = await getAuthContextCached();
+  return <SiteHeader initialAuth={auth} />;
+}
+
+async function StudioWithAuth({
+  initialStyle,
+}: Readonly<{ initialStyle: PosterStyle | undefined }>) {
+  const auth = await getAuthContextCached();
+  return (
+    <PosterStudio
+      isPro={auth.isPro}
+      hasPack={auth.hasPack}
+      isGuest={!auth.userId}
+      {...(initialStyle ? { initialStyle } : {})}
+    />
+  );
+}
+
+/** 生图区占位：形状对齐真实布局，auth 到达时不会明显跳动 */
+function StudioPlaceholder() {
+  return (
+    <section className="studio-shell" id="studio" aria-hidden="true">
+      <div className="studio-header">
+        <div className="skeleton-title" />
+      </div>
+      <div className="studio-grid">
+        <div className="studio-controls">
+          <div className="skeleton-sub" />
+          <div className="skeleton-prompt" />
+          <div className="skeleton-sub" />
+        </div>
+        <div className="studio-results">
+          <div className="pending-tile" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default async function Home({
   searchParams,
 }: {
@@ -79,7 +125,6 @@ export default async function Home({
   }
   const initialStyle =
     params.style && isPosterStyle(params.style) ? params.style : undefined;
-  const auth = await getAuthContext();
   const localizedFaqs = [
     [t("faq1Question"), t("faq1Answer")],
     [t("faq2Question"), t("faq2Answer")],
@@ -171,7 +216,10 @@ export default async function Home({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <SiteHeader initialAuth={auth} />
+      {/* 登录态自己流式到达：首屏 hero 不再等 Supabase 的 auth 查询 */}
+      <Suspense fallback={<SiteHeader />}>
+        <HeaderWithAuth />
+      </Suspense>
 
       <section className="hero" aria-labelledby="hero-heading">
         <div className="hero-grid">
@@ -202,12 +250,9 @@ export default async function Home({
         </div>
       </section>
 
-      <PosterStudio
-        isPro={auth.isPro}
-        hasPack={auth.hasPack}
-        isGuest={!auth.userId}
-        {...(initialStyle ? { initialStyle } : {})}
-      />
+      <Suspense fallback={<StudioPlaceholder />}>
+        <StudioWithAuth initialStyle={initialStyle} />
+      </Suspense>
 
       <section
         className="content-section use-cases-section"
