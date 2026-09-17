@@ -1,30 +1,43 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { generationRequestSchema } from "@/lib/domain/poster";
 import { getAuthContext } from "@/lib/server/auth";
-import { responseForError } from "@/lib/server/errors";
+import { AppError, responseForError } from "@/lib/server/errors";
 import {
   createGeneration,
   getActorForRequest,
 } from "@/lib/server/generation-create";
 import { toGenerationAcceptedResponse } from "@/lib/server/generation-types";
-import { GUEST_COOKIE, getGuestIdentity } from "@/lib/server/guest";
+import { getGuestIdentity, withGuestCookie } from "@/lib/server/guest";
+import { isGuestGenerationRateLimited } from "@/lib/server/guest-throttle";
 
 export async function POST(request: NextRequest): Promise<Response> {
+  // 身份在进入 try 之前就确定：失败路径同样要把它固化到响应上
+  const identity = getGuestIdentity(request);
   try {
     const body: unknown = await request.json();
     const parsed = generationRequestSchema.safeParse(body);
     if (!parsed.success) {
-      return Response.json(
-        {
-          error: "Please check your poster description and options.",
-          code: "INVALID_GENERATION_REQUEST",
-        },
-        { status: 400 },
+      return withGuestCookie(
+        NextResponse.json(
+          {
+            error: "Please check your poster description and options.",
+            code: "INVALID_GENERATION_REQUEST",
+          },
+          { status: 400 },
+        ),
+        request,
+        identity,
       );
     }
 
     const auth = await getAuthContext();
-    const identity = getGuestIdentity(request);
+    if (!auth.userId && isGuestGenerationRateLimited(request)) {
+      throw new AppError(
+        "GUEST_RATE_LIMITED",
+        "Too many guest generations from this network. Sign in or try again later.",
+        429,
+      );
+    }
     // 积分包用户与订阅用户同享全档位 / 无水印 / 长保留期（pro 模式），
     // 点数仍从对应桶扣减，余额不足时由 reserve_credits 拒绝。
     const actor = getActorForRequest(
@@ -39,17 +52,16 @@ export async function POST(request: NextRequest): Promise<Response> {
         status: 201,
       },
     );
-    if (!request.cookies.has(GUEST_COOKIE)) {
-      response.cookies.set(GUEST_COOKIE, identity.cookieValue, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 24 * 365,
-        path: "/",
-      });
-    }
-    return response;
+    return withGuestCookie(response, request, identity);
   } catch (error) {
-    return responseForError(error);
+    const failure = responseForError(error);
+    return withGuestCookie(
+      new NextResponse(failure.body, {
+        status: failure.status,
+        headers: failure.headers,
+      }),
+      request,
+      identity,
+    );
   }
 }

@@ -1,6 +1,6 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { describe, expect, it, vi } from "vitest";
-import { getGuestIdentity } from "./guest";
+import { getGuestIdentity, withGuestCookie } from "./guest";
 
 vi.mock("./env", () => ({
   getServerEnv: vi.fn(() => ({ RATE_LIMIT_PEPPER: "p".repeat(32) })),
@@ -29,5 +29,35 @@ describe("guest identity", () => {
 
     expect(first.key).toBe(second.key);
     expect(first.limitKey).toBe(second.limitKey);
+  });
+
+  it("hands the identity to a visitor that has no cookie yet", () => {
+    const request = new NextRequest("https://example.com/api/generations");
+    const identity = getGuestIdentity(request);
+
+    const response = withGuestCookie(
+      NextResponse.json({ ok: true }),
+      request,
+      identity,
+    );
+
+    const cookie = response.headers.get("set-cookie") ?? "";
+    expect(cookie).toContain(`tp_guest=${identity.cookieValue}`);
+    expect(cookie).toContain("HttpOnly");
+  });
+
+  it("leaves an existing identity untouched", () => {
+    const request = new NextRequest("https://example.com/api/generations", {
+      headers: { cookie: "tp_guest=guest-cookie" },
+    });
+    const identity = getGuestIdentity(request);
+
+    const response = withGuestCookie(
+      NextResponse.json({ ok: true }),
+      request,
+      identity,
+    );
+
+    expect(response.headers.get("set-cookie")).toBeNull();
   });
 });

@@ -3,7 +3,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { referenceImageLimit } from "@/lib/domain/poster";
 import { getAuthContext } from "@/lib/server/auth";
 import { AppError, responseForError } from "@/lib/server/errors";
-import { getGuestIdentity } from "@/lib/server/guest";
+import { getGuestIdentity, withGuestCookie } from "@/lib/server/guest";
+import { isGuestUploadRateLimited } from "@/lib/server/guest-throttle";
 import { createReferenceUrl, uploadReference } from "@/lib/server/storage";
 import {
   assertReferenceImage,
@@ -12,14 +13,21 @@ import {
 } from "@/lib/server/uploads";
 
 export async function POST(request: NextRequest): Promise<Response> {
+  const identity = getGuestIdentity(request);
   try {
     const auth = await getAuthContext();
-    const identity = getGuestIdentity(request);
     const actorKey = auth.userId ?? `guest:${identity.key}`;
     // 单次请求张数按档位限制：访客 1 / 免费 2 / 订阅 5（与生图接口同一套规则）
     const referenceLimit = referenceImageLimit(
       auth.userId ? (auth.isPro || auth.hasPack ? "pro" : "free") : "guest",
     );
+    if (!auth.userId && isGuestUploadRateLimited(request)) {
+      throw new AppError(
+        "UPLOAD_RATE_LIMITED",
+        "Too many uploads from this network. Please try again later.",
+        429,
+      );
+    }
     if (isUploadRateLimited(actorKey)) {
       throw new AppError(
         "UPLOAD_RATE_LIMITED",
@@ -69,8 +77,20 @@ export async function POST(request: NextRequest): Promise<Response> {
       uploaded.push(await createReferenceUrl(path));
     }
 
-    return NextResponse.json({ urls: uploaded }, { status: 201 });
+    return withGuestCookie(
+      NextResponse.json({ urls: uploaded }, { status: 201 }),
+      request,
+      identity,
+    );
   } catch (error) {
-    return responseForError(error);
+    const failure = responseForError(error);
+    return withGuestCookie(
+      new NextResponse(failure.body, {
+        status: failure.status,
+        headers: failure.headers,
+      }),
+      request,
+      identity,
+    );
   }
 }
