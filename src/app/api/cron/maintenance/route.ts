@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerEnv } from "@/lib/server/env";
 import { recoverGeneration } from "@/lib/server/generation-poll";
 import {
-  deleteReference,
   deletePoster,
+  deleteReference,
   listStaleReferences,
 } from "@/lib/server/storage";
 import { createSupabaseAdminClient } from "@/lib/server/supabase/admin";
@@ -38,10 +38,14 @@ export async function GET(request: Request): Promise<Response> {
       );
   }
 
+  // 订阅结束后的图片保留：文档承诺「Pro 图片在订阅有效期内保留，取消后 30 天宽限期」。
+  // 必须把 canceling 也算进来：到期未续费的订阅会一直停在 canceling
+  // （reconcileExpiredSubscriptions 只会延长周期，不会把它改成 canceled），
+  // 只筛 canceled/refunded 会让这批用户的图片永久留在存储里。
   const { data: canceledSubscriptions } = await admin
     .from("subscriptions")
     .select("user_id, period_end")
-    .in("status", ["canceled", "refunded"])
+    .in("status", ["canceled", "refunded", "canceling"])
     .limit(200);
   for (const subscription of canceledSubscriptions ?? []) {
     const retentionEnd = new Date(
