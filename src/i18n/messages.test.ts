@@ -53,6 +53,7 @@ describe("account plan-ended copy", () => {
     "deleteCancel",
     "deleting",
     "deleteFailed",
+    "imagesExpired",
   ] as const;
 
   const accountMessage = (

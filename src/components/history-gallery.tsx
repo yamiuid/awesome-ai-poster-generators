@@ -145,7 +145,11 @@ export function HistoryGallery({
               <div className="history-no-images">
                 {item.status === "failed" || item.status === "timed_out"
                   ? t("noImages")
-                  : t("imagesOnWay")}
+                  : item.status === "succeeded" ||
+                      item.status === "partially_succeeded"
+                    ? // 成功过的生成一定写过资产；这里没有图就是保留期到了被清理
+                      t("imagesExpired")
+                    : t("imagesOnWay")}
               </div>
             )}
             {item.images.map((image) => (

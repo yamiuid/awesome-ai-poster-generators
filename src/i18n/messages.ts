@@ -625,6 +625,8 @@ const englishMessages = {
     deleteCancel: "Cancel",
     deleting: "Deleting…",
     deleteFailed: "Could not delete that poster. Please try again.",
+    imagesExpired:
+      "The images for this poster passed their retention window and are no longer stored.",
     availableCredits: "Available credits",
     generations: "Generations",
     credits: "Credits",
@@ -1056,6 +1058,7 @@ const translated = {
       deleteCancel: "取消",
       deleting: "刪除中…",
       deleteFailed: "無法刪除這張海報，請再試一次。",
+      imagesExpired: "這張海報的圖片已超過保留期限，不再保留。",
       availableCredits: "可用點數",
       generations: "生成紀錄",
       credits: "點數",
@@ -1384,6 +1387,8 @@ const translated = {
       deleteCancel: "キャンセル",
       deleting: "削除しています…",
       deleteFailed: "ポスターを削除できませんでした。もう一度お試しください。",
+      imagesExpired:
+        "このポスターの画像は保存期間を過ぎたため、保持されていません。",
       generations: "生成履歴",
       credits: "クレジット",
       nothingHere: "まだありません",
@@ -1701,6 +1706,8 @@ const translated = {
       deleteCancel: "Cancelar",
       deleting: "Eliminando…",
       deleteFailed: "No se pudo eliminar el póster. Inténtalo de nuevo.",
+      imagesExpired:
+        "Las imágenes de este póster superaron su periodo de retención y ya no se conservan.",
       generations: "Generaciones",
       credits: "Créditos",
       nothingHere: "Todavía no hay nada",
@@ -2017,6 +2024,8 @@ const translated = {
       deleteCancel: "إلغاء",
       deleting: "جارٍ الحذف…",
       deleteFailed: "تعذر حذف الملصق. حاول مرة أخرى.",
+      imagesExpired:
+        "تجاوزت صور هذا الملصق مدة الاحتفاظ ولم تعد محفوظة.",
       generations: "عمليات الإنشاء",
       credits: "الأرصدة",
       nothingHere: "لا يوجد شيء هنا بعد",
