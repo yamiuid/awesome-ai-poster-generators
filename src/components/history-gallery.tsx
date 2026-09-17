@@ -1,7 +1,7 @@
 "use client";
 
 import ky from "ky";
-import { ArrowDownToLine, X } from "lucide-react";
+import { ArrowDownToLine, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
@@ -55,6 +55,25 @@ export function HistoryGallery({
   const [lightbox, setLightbox] = useState<string | null>(null);
   // 大图 onLoad 前先显示加载文案（与首页历史预览一致）
   const [lightboxLoaded, setLightboxLoaded] = useState(false);
+  // 已删除的卡片直接从列表里摘掉，不必等整页刷新
+  const [deletedIds, setDeletedIds] = useState<readonly string[]>([]);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteErrorId, setDeleteErrorId] = useState<string | null>(null);
+
+  async function removeGeneration(id: string): Promise<void> {
+    setDeletingId(id);
+    setDeleteErrorId(null);
+    try {
+      await ky.delete(`/api/generations/${id}`, { timeout: 30_000 });
+      setDeletedIds((previous) => [...previous, id]);
+      setConfirmingId(null);
+    } catch {
+      setDeleteErrorId(id);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   // 对挂起任务触发后台推进（重活：查 APIMart + 下载/水印/上传）。
   // 接口幂等 + 120s 超时静默——服务端继续处理，页面 meta refresh 后可见结果。
@@ -87,9 +106,12 @@ export function HistoryGallery({
     };
   }, [lightbox]);
 
+  // 手动删掉的卡片立刻从列表消失，不必等整页刷新
+  const visibleItems = items.filter((item) => !deletedIds.includes(item.id));
+
   return (
     <section className="history-grid" aria-label={t("generationHistory")}>
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <article className="history-card" key={item.id}>
           <div className="history-card-head">
             <span>
@@ -116,6 +138,49 @@ export function HistoryGallery({
                       : item.status === "timed_out"
                         ? t("timedOut")
                         : item.status}
+              {item.status !== "submitted" && item.status !== "processing" && (
+                <span className="history-delete">
+                  {confirmingId === item.id ? (
+                    <>
+                      <span className="history-delete-question">
+                        {t("deleteConfirm")}
+                      </span>
+                      <button
+                        type="button"
+                        className="history-delete-confirm"
+                        disabled={deletingId === item.id}
+                        onClick={() => void removeGeneration(item.id)}
+                      >
+                        {deletingId === item.id
+                          ? t("deleting")
+                          : t("deletePoster")}
+                      </button>
+                      <button
+                        type="button"
+                        className="history-delete-cancel"
+                        onClick={() => setConfirmingId(null)}
+                      >
+                        {t("deleteCancel")}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="history-delete-button"
+                      aria-label={t("deletePoster")}
+                      onClick={() => {
+                        setDeleteErrorId(null);
+                        setConfirmingId(item.id);
+                      }}
+                    >
+                      <Trash2 size={13} aria-hidden="true" />
+                      <span className="history-delete-label">
+                        {t("deletePoster")}
+                      </span>
+                    </button>
+                  )}
+                </span>
+              )}
             </span>
           </div>
           <div className="history-thumbs">
@@ -160,6 +225,11 @@ export function HistoryGallery({
             ))}
           </div>
           <p className="history-prompt">{item.prompt}</p>
+          {deleteErrorId === item.id && (
+            <p className="history-delete-error" role="alert">
+              {t("deleteFailed")}
+            </p>
+          )}
         </article>
       ))}
       {lightbox && (

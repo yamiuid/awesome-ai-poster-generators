@@ -48,6 +48,11 @@ describe("account plan-ended copy", () => {
     "renewPlan",
     "upgradePlan",
     "buyCredits",
+    "deletePoster",
+    "deleteConfirm",
+    "deleteCancel",
+    "deleting",
+    "deleteFailed",
   ] as const;
 
   const accountMessage = (
