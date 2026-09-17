@@ -1,5 +1,7 @@
+import { HTTPError, type NormalizedOptions } from "ky";
 import { describe, expect, it, vi } from "vitest";
 import {
+  isMissingProviderTaskError,
   isRecoverableTimedOutGeneration,
   recentHistoryWindow,
 } from "./generation-poll";
@@ -11,12 +13,44 @@ describe("generation recovery", () => {
     const generation = {
       status: "timed_out",
       provider_task_id: "task-1",
-      poll_failures: 4,
+      poll_failures: 11,
       error_message:
         "The image service stopped responding and your credits were returned.",
     };
 
     expect(isRecoverableTimedOutGeneration(generation)).toBe(true);
+  });
+
+  it("leaves rows retried a few times alone", () => {
+    expect(
+      isRecoverableTimedOutGeneration({
+        status: "timed_out",
+        provider_task_id: "task-1",
+        poll_failures: 3,
+        error_message:
+          "The image service stopped responding and your credits were returned.",
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("isMissingProviderTaskError", () => {
+  const httpError = (status: number): HTTPError =>
+    new HTTPError(
+      new Response(null, { status }),
+      new Request("https://api.apimart.ai/v1/tasks/task-1"),
+      {} as NormalizedOptions,
+    );
+
+  it("treats a vanished task as terminal", () => {
+    expect(isMissingProviderTaskError(httpError(400))).toBe(true);
+    expect(isMissingProviderTaskError(httpError(404))).toBe(true);
+  });
+
+  it("keeps other failures retryable", () => {
+    expect(isMissingProviderTaskError(httpError(503))).toBe(false);
+    expect(isMissingProviderTaskError(new Error("socket hang up"))).toBe(false);
+    expect(isMissingProviderTaskError(null)).toBe(false);
   });
 });
 

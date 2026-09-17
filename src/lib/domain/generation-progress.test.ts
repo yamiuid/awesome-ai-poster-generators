@@ -4,6 +4,7 @@ import {
   FINALIZING_PROGRESS,
   generationAction,
   generationFailureMessage,
+  generationFailureMessageKey,
   generationFailureStatus,
   generationOverlayLabel,
   generationPhase,
@@ -11,6 +12,7 @@ import {
   generationStagePhase,
   mergeGenerationResponse,
   monotonicWorkingProgress,
+  serverPollBackoffMs,
 } from "./generation-progress";
 import type { GenerationResponse } from "./poster";
 
@@ -37,6 +39,31 @@ describe("generation progress", () => {
 
   it("keeps provider polling exhaustion as timed out", () => {
     expect(generationFailureStatus("provider_poll", 5, 5)).toBe("timed_out");
+  });
+
+  it("backs server polling off instead of hammering the provider", () => {
+    expect(serverPollBackoffMs(0)).toBe(4_000);
+    expect(serverPollBackoffMs(1)).toBe(8_000);
+    expect(serverPollBackoffMs(2)).toBe(16_000);
+    expect(serverPollBackoffMs(3)).toBe(32_000);
+    expect(serverPollBackoffMs(4)).toBe(60_000);
+    expect(serverPollBackoffMs(11)).toBe(60_000);
+  });
+
+  it("maps failure reason codes to localised copy", () => {
+    expect(
+      generationFailureMessageKey({ errorCode: "PROVIDER_CONTENT_POLICY" }),
+    ).toBe("providerContentRejected");
+    expect(
+      generationFailureMessageKey({ errorCode: "PROVIDER_TIMEOUT" }),
+    ).toBe("providerTimeout");
+    expect(
+      generationFailureMessageKey({ errorCode: "PROMPT_SAFETY_BLOCKED" }),
+    ).toBe("safetyReviewFailed");
+    expect(generationFailureMessageKey({})).toBeNull();
+    expect(
+      generationFailureMessageKey({ errorCode: "FINALIZATION_FAILED" }),
+    ).toBeNull();
   });
 
   it("keeps the backend failure detail for the poster-ratio error state", () => {

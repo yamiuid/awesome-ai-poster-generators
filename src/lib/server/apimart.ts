@@ -20,16 +20,32 @@ const imageSchema = z.object({
   url: z.array(z.string().url()).min(1),
 });
 
-const taskSchema = z.object({
-  id: z.string(),
-  status: z.enum(["pending", "processing", "completed", "failed", "cancelled"]),
-  progress: z.number().int().min(0).max(100).optional(),
-  result: z.object({ images: z.array(imageSchema) }).optional(),
-  error: z
-    .object({ code: z.number().optional(), message: z.string() })
-    .optional(),
-  estimated_time: z.number().optional(),
-});
+/**
+ * provider 的错误对象：code 既可能是数字（旧接口）也可能是字符串
+ * （如 "task_failed"），只有 message 是稳定字段；param / type 等额外字段
+ * 必须忽略。2026-09-17 事故：内容安全拒绝返回 code: "task_failed"，
+ * 解析被 code 类型打挂，任务被误判成「服务无响应」超时。
+ */
+const providerErrorSchema = z
+  .object({
+    code: z.union([z.string(), z.number()]).optional(),
+    message: z.string(),
+  })
+  .catchall(z.unknown());
+
+const taskSchema = z
+  .object({
+    id: z.string(),
+    // 刻意不用 enum：provider 新增状态时若解析直接失败，会被计成
+    // poll_failures 并让仍在出图的任务被判超时。未知状态交给
+    // providerTaskPhase 按「仍在处理」处理，由硬超时兜底。
+    status: z.string(),
+    progress: z.number().int().min(0).max(100).optional(),
+    result: z.object({ images: z.array(imageSchema) }).optional(),
+    error: providerErrorSchema.optional(),
+    estimated_time: z.number().optional(),
+  })
+  .catchall(z.unknown());
 
 const taskResponseSchema = z.object({ code: z.number(), data: taskSchema });
 
@@ -40,6 +56,12 @@ const chatCompletionSchema = z.object({
 });
 
 export type ProviderTask = z.infer<typeof taskSchema>;
+export type ProviderTaskPhase =
+  | "working"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | "unknown";
 export type ProviderGenerationRequest = Omit<GenerationRequest, "quality"> &
   Readonly<{ quality: ProviderQuality }>;
 export type ChatMessage = Readonly<{
@@ -47,11 +69,79 @@ export type ChatMessage = Readonly<{
   content: string;
 }>;
 
+export function providerTaskPhase(status: string): ProviderTaskPhase {
+  switch (status) {
+    case "pending":
+    case "processing":
+      return "working";
+    case "completed":
+      return "completed";
+    case "failed":
+      return "failed";
+    case "cancelled":
+      return "cancelled";
+    default:
+      return "unknown";
+  }
+}
+
+/**
+ * provider 的内容审核拒绝统一返回 code: "task_failed"，只能靠 message 分辨。
+ * 归一到稳定码，前端文案与后台聚合都只认这个码。
+ */
+const CONTENT_POLICY_PATTERN = /content safety|content policy|safety system/i;
+
+/** 任务失败时写进 generations.error_code 的归因码，用于按原因聚合与告警。 */
+export function providerErrorCode(task: ProviderTask): string {
+  if (CONTENT_POLICY_PATTERN.test(task.error?.message ?? "")) {
+    return "PROVIDER_CONTENT_POLICY";
+  }
+  const code = task.error?.code;
+  if (typeof code === "string" && code.trim().length > 0) {
+    return code.trim().slice(0, 64);
+  }
+  if (typeof code === "number") {
+    return `code_${code}`;
+  }
+  return task.status === "cancelled" ? "TASK_CANCELLED" : "TASK_FAILED";
+}
+
+function summarizePayload(payload: unknown): string {
+  try {
+    return JSON.stringify(payload).slice(0, 500);
+  } catch {
+    return String(payload).slice(0, 500);
+  }
+}
+
+/** 解析任务响应；失败返回 null，由调用方决定日志与错误语义。 */
+export function parseProviderTaskResponse(
+  payload: unknown,
+): ProviderTask | null {
+  const parsed = taskResponseSchema.safeParse(payload);
+  return parsed.success ? parsed.data.data : null;
+}
+
 export class ApimartError extends AppError {
-  constructor(message: string, status = 502) {
-    super("APIMART_ERROR", message, status);
+  constructor(message: string, status = 502, code = "APIMART_ERROR") {
+    super(code, message, status);
     this.name = "ApimartError";
   }
+}
+
+/** 提交阶段被 provider 拒绝时，用响应体判断是不是内容审核。 */
+function submitRejectionCode(data: unknown): string {
+  if (typeof data === "string") {
+    return CONTENT_POLICY_PATTERN.test(data)
+      ? "PROVIDER_CONTENT_POLICY"
+      : "APIMART_ERROR";
+  }
+  if (data && typeof data === "object") {
+    return CONTENT_POLICY_PATTERN.test(JSON.stringify(data))
+      ? "PROVIDER_CONTENT_POLICY"
+      : "APIMART_ERROR";
+  }
+  return "APIMART_ERROR";
 }
 
 let proxyDispatcher: Dispatcher | undefined;
@@ -166,6 +256,15 @@ export async function submitGeneration(
           429,
         );
       }
+      // 内容审核拒绝也是 4xx，但归因完全不同：用户改提示词/参考图就能过，
+      // 不该被当成「服务异常」计数。
+      if (submitRejectionCode(error.data) === "PROVIDER_CONTENT_POLICY") {
+        throw new ApimartError(
+          "The image service rejected this prompt or reference image on content policy grounds.",
+          422,
+          "PROVIDER_CONTENT_POLICY",
+        );
+      }
       throw new ApimartError("The image provider rejected this request.", 502);
     }
     throw error;
@@ -176,11 +275,17 @@ export async function getTask(taskId: string): Promise<ProviderTask> {
   const response = await client()
     .get(`tasks/${encodeURIComponent(taskId)}`)
     .json<unknown>();
-  const parsed = taskResponseSchema.safeParse(response);
-  if (!parsed.success) {
+  const task = parseProviderTaskResponse(response);
+  if (!task) {
+    // 解析失败必须留痕：否则只会体现为 poll_failures 累加后的「服务无响应」，
+    // 真实原因（provider 改了响应结构）无从排查。
+    console.error("APIMart returned an unexpected task response", {
+      taskId,
+      payload: summarizePayload(response),
+    });
     throw new ApimartError("APIMart returned an unexpected task response.");
   }
-  return parsed.data.data;
+  return task;
 }
 
 export async function submitChatCompletion(input: {

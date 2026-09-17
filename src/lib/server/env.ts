@@ -40,6 +40,8 @@ const serverEnvSchema = z
     R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),
     R2_BUCKET: z.string().min(1).optional(),
     R2_PUBLIC_BASE_URL: z.string().url().optional(), // 无尾斜杠，如 https://images.texttoposter.com
+    // 运维告警 webhook（Slack / Discord / 飞书自定义机器人均可）；不配则只打日志
+    ALERT_WEBHOOK_URL: z.string().url().optional(),
   })
   .superRefine((env, ctx) => {
     if (env.STORAGE_PROVIDER !== "r2") {

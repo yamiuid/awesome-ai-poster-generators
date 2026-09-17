@@ -5,6 +5,8 @@ export const PROVIDER_PROGRESS_CEILING = FINALIZING_PROGRESS - 1;
 const ACTIVE_POLL_MS = 4_000;
 const HIDDEN_POLL_MS = 20_000;
 const MAX_POLL_MS = 30_000;
+const SERVER_POLL_BASE_MS = 4_000;
+const SERVER_POLL_MAX_MS = 60_000;
 
 export type GenerationPhase =
   | "submitting"
@@ -157,6 +159,45 @@ export function generationFailureStatus(
     return "retry";
   }
   return source === "finalization" ? "failed" : "timed_out";
+}
+
+/**
+ * 服务端推进失败后的重试间隔：4s、8s、16s、32s，之后封顶 60s。
+ * 退避是为了让「对方抖一下」不至于在几十秒内就把仍在出图的任务判死。
+ */
+export function serverPollBackoffMs(failures: number): number {
+  return Math.min(
+    SERVER_POLL_BASE_MS * 2 ** Math.max(0, failures),
+    SERVER_POLL_MAX_MS,
+  );
+}
+
+export type GenerationFailureMessageKey =
+  | "providerContentRejected"
+  | "providerTimeout"
+  | "safetyReviewFailed";
+
+/**
+ * 把失败归因码映射到本地化文案 key；没有映射时返回 null，
+ * 由调用方回退到服务端返回的原始错误信息。
+ */
+export function generationFailureMessageKey(
+  snapshot: Pick<GenerationResponse, "errorCode">,
+): GenerationFailureMessageKey | null {
+  switch (snapshot.errorCode) {
+    case "PROVIDER_CONTENT_POLICY":
+      return "providerContentRejected";
+    case "PROVIDER_TIMEOUT":
+    case "PROVIDER_UNRESPONSIVE":
+    case "GENERATION_TIMEOUT":
+      return "providerTimeout";
+    case "PROMPT_SAFETY_BLOCKED":
+    case "PROMPT_SAFETY_REVIEW_REQUIRED":
+    case "PROMPT_SAFETY_UNAVAILABLE":
+      return "safetyReviewFailed";
+    default:
+      return null;
+  }
 }
 
 export function generationAction(

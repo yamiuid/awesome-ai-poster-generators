@@ -1,7 +1,12 @@
+import { HTTPError } from "ky";
 import { z } from "zod";
-import type { GenerationMode } from "@/lib/domain/poster";
 import { isVisibleGuestRecent } from "@/lib/domain/generation-history";
-import { generationFailureStatus } from "@/lib/domain/generation-progress";
+import {
+  generationFailureStatus,
+  serverPollBackoffMs,
+} from "@/lib/domain/generation-progress";
+import type { GenerationMode } from "@/lib/domain/poster";
+import { sendAlert } from "./alerts";
 import { getTask } from "./apimart";
 import { AppError } from "./errors";
 import { applyProviderTask, failGeneration } from "./generation-task";
@@ -14,11 +19,14 @@ import {
 import { createPosterUrls } from "./storage";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
-const POLL_DELAY_MS = 4_000;
 const MAX_GENERATION_MS = 15 * 60 * 1_000;
-const MAX_POLL_FAILURES = 5;
+// 12 次退避重试 ≈ 9 分钟（末段每次 60s），仍在 15 分钟硬超时以内。
+// 原值 5 配合 4s 固定间隔只有约 50 秒，对方网络抖一下就会把仍在出图的任务判死。
+const MAX_POLL_FAILURES = 12;
 const PROVIDER_TIMEOUT_MESSAGE =
   "The image service stopped responding and your credits were returned.";
+const PROVIDER_TASK_MISSING_MESSAGE =
+  "The image service no longer has this generation. Please try again.";
 const DAY_MS = 24 * 60 * 60 * 1_000;
 /**
  * 首页历史窗口必须覆盖资产保留期（见 generation-task.ts 写入的 expires_at）：
@@ -68,8 +76,19 @@ export function isRecoverableTimedOutGeneration(
   );
 }
 
-function nextPollAt(): string {
-  return new Date(Date.now() + POLL_DELAY_MS).toISOString();
+function nextPollAt(failures = 0): string {
+  return new Date(Date.now() + serverPollBackoffMs(failures)).toISOString();
+}
+
+/**
+ * provider 明确表示任务不存在（400/404，例如任务已过期被清理）：
+ * 重试不会有结果，直接定论，不必等轮询次数耗尽。
+ */
+export function isMissingProviderTaskError(error: unknown): boolean {
+  return (
+    error instanceof HTTPError &&
+    (error.response.status === 400 || error.response.status === 404)
+  );
 }
 
 async function readGeneration(generationId: string): Promise<GenerationRow> {
@@ -299,6 +318,7 @@ async function advanceGeneration(
       generation,
       "This generation took too long and your credits were returned.",
       "timed_out",
+      "GENERATION_TIMEOUT",
     );
   }
   if (!generation.provider_task_id) {
@@ -312,6 +332,14 @@ async function advanceGeneration(
   try {
     task = await getTask(generation.provider_task_id);
   } catch (error) {
+    if (isMissingProviderTaskError(error)) {
+      return failGeneration(
+        generation,
+        PROVIDER_TASK_MISSING_MESSAGE,
+        "failed",
+        "PROVIDER_TASK_MISSING",
+      );
+    }
     const failures = (generation.poll_failures ?? 0) + 1;
     const outcome = generationFailureStatus(
       "provider_poll",
@@ -319,11 +347,23 @@ async function advanceGeneration(
       MAX_POLL_FAILURES,
     );
     if (outcome === "timed_out") {
-      return failGeneration(generation, PROVIDER_TIMEOUT_MESSAGE, "timed_out");
+      // 这里以前是完全静默的：任务被判超时，但没有任何日志可查
+      await sendAlert("generation.poll_exhausted", {
+        generationId: generation.id,
+        taskId: generation.provider_task_id,
+        pollFailures: failures,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return failGeneration(
+        generation,
+        PROVIDER_TIMEOUT_MESSAGE,
+        "timed_out",
+        "PROVIDER_TIMEOUT",
+      );
     }
     await createSupabaseAdminClient()
       .from("generations")
-      .update({ poll_failures: failures, next_poll_at: nextPollAt() })
+      .update({ poll_failures: failures, next_poll_at: nextPollAt(failures) })
       .eq("id", generation.id);
     throw error;
   }
@@ -351,6 +391,7 @@ async function advanceGeneration(
         generation,
         "The poster was generated, but we could not save it. Please try again.",
         "failed",
+        "FINALIZATION_FAILED",
       );
     }
     await createSupabaseAdminClient()
@@ -409,7 +450,18 @@ export async function giveUpGenerationById(
         // provider 已有结论：走正常推进落库/标记失败，而不是直接放弃
         return responseFor(await applyProviderTask(generation, task));
       }
-    } catch {
+    } catch (error) {
+      // provider 说任务不存在：重试也不会有结果，直接定论
+      if (isMissingProviderTaskError(error)) {
+        return responseFor(
+          await failGeneration(
+            generation,
+            PROVIDER_TASK_MISSING_MESSAGE,
+            "failed",
+            "PROVIDER_TASK_MISSING",
+          ),
+        );
+      }
       // 查不到 provider 状态时保守处理：未到硬超时就不放弃
     }
     if (!hardTimeoutPassed) {
@@ -422,6 +474,7 @@ export async function giveUpGenerationById(
     generation,
     "The image service did not respond; your credits were returned.",
     "timed_out",
+    "PROVIDER_UNRESPONSIVE",
   );
   return responseFor(updated);
 }

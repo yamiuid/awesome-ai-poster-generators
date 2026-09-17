@@ -4,7 +4,11 @@ import {
   monotonicWorkingProgress,
   PROVIDER_PROGRESS_CEILING,
 } from "@/lib/domain/generation-progress";
-import type { ProviderTask } from "./apimart";
+import {
+  type ProviderTask,
+  providerErrorCode,
+  providerTaskPhase,
+} from "./apimart";
 import { AppError } from "./errors";
 import {
   failLimitedGeneration,
@@ -24,8 +28,14 @@ export async function failGeneration(
   generation: GenerationRow,
   message: string,
   status: "failed" | "timed_out",
+  errorCode: string | null = null,
 ): Promise<GenerationRow> {
-  const updated = await failLimitedGeneration(generation.id, status, message);
+  const updated = await failLimitedGeneration(
+    generation.id,
+    status,
+    message,
+    errorCode,
+  );
   // free/pro 模式都有预扣积分，失败时随结算释放返还（guest 无预扣）
   if (generation.mode !== "guest" && updated) {
     await settleGenerationCredits(generation.id, 0, 0);
@@ -189,9 +199,18 @@ export async function applyProviderTask(
   generation: GenerationRow,
   task: ProviderTask,
 ): Promise<GenerationRow> {
-  switch (task.status) {
-    case "pending":
-    case "processing": {
+  const phase = providerTaskPhase(task.status);
+  switch (phase) {
+    case "working":
+    case "unknown": {
+      if (phase === "unknown") {
+        // 未知状态按「仍在处理」处理：既不会误杀仍在出图的任务，
+        // 也能让 15 分钟硬超时兜底，日志里能看到 provider 新增了什么状态。
+        console.warn("APIMart returned an unsupported task status", {
+          generationId: generation.id,
+          status: task.status,
+        });
+      }
       const { data, error } = await createSupabaseAdminClient()
         .from("generations")
         .update({
@@ -226,12 +245,7 @@ export async function applyProviderTask(
         task.error?.message ??
           "The image provider failed to generate this poster.",
         "failed",
-      );
-    default:
-      return failGeneration(
-        generation,
-        "The provider returned an unsupported task status.",
-        "failed",
+        providerErrorCode(task),
       );
   }
 }

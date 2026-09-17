@@ -229,7 +229,12 @@ export async function createGeneration(
       },
     );
     if (reserveError || !reserved) {
-      await failLimitedGeneration(inserted.id, "failed", "Not enough credits.");
+      await failLimitedGeneration(
+        inserted.id,
+        "failed",
+        "Not enough credits.",
+        "INSUFFICIENT_CREDITS",
+      );
       throw new AppError(
         "INSUFFICIENT_CREDITS",
         "You do not have enough credits for this generation.",
@@ -296,7 +301,14 @@ export async function createGeneration(
     return updated;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Provider error";
-    await failLimitedGeneration(inserted.id, "failed", message);
+    // 提交阶段的失败原因同样要归因：本地安全审查、provider 拒绝、网络错误
+    // 在后台需要能分开统计，否则只能靠翻日志。
+    await failLimitedGeneration(
+      inserted.id,
+      "failed",
+      message,
+      error instanceof AppError ? error.code : "PROVIDER_SUBMIT_FAILED",
+    );
     if (credits > 0) {
       await settleGenerationCredits(inserted.id, 0, 0);
     }

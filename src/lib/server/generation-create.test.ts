@@ -12,6 +12,7 @@ vi.mock("./supabase/admin", () => ({
     rpc: mocks.rpc,
     from: () => {
       const builder = {
+        update: () => builder,
         select: () => builder,
         eq: () => builder,
         single: () =>

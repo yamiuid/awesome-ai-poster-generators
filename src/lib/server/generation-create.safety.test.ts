@@ -124,6 +124,7 @@ describe("generation prompt safety integration", () => {
       generation.id,
       "failed",
       expect.stringContaining("explicit adult sexual content"),
+      "PROMPT_SAFETY_BLOCKED",
     );
     expect(mocks.settleGenerationCredits).toHaveBeenCalledWith(
       generation.id,
@@ -169,6 +170,7 @@ describe("generation prompt safety integration", () => {
       guestGeneration.id,
       "failed",
       expect.any(String),
+      "PROMPT_SAFETY_BLOCKED",
     );
     expect(mocks.settleGenerationCredits).not.toHaveBeenCalled();
   });

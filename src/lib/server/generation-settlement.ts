@@ -47,6 +47,7 @@ export async function failLimitedGeneration(
   generationId: string,
   status: "failed" | "timed_out",
   message: string,
+  errorCode: string | null = null,
 ): Promise<boolean> {
   const { data, error } = await createSupabaseAdminClient().rpc(
     "fail_limited_generation",
@@ -70,6 +71,21 @@ export async function failLimitedGeneration(
       "The generation failure response was invalid.",
       503,
     );
+  }
+  // 归因码单独补写：fail_limited_generation 只接受状态与文案（改签名要动线上
+  // RPC），而 error_code 列本就存在。写失败只影响统计，不能影响失败状态本身。
+  if (errorCode && parsed.data.updated) {
+    const { error: codeError } = await createSupabaseAdminClient()
+      .from("generations")
+      .update({ error_code: errorCode })
+      .eq("id", generationId);
+    if (codeError) {
+      console.error("Could not record generation error code", {
+        generationId,
+        errorCode,
+        message: codeError.message,
+      });
+    }
   }
   return parsed.data.updated;
 }
