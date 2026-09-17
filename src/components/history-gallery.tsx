@@ -138,49 +138,6 @@ export function HistoryGallery({
                       : item.status === "timed_out"
                         ? t("timedOut")
                         : item.status}
-              {item.status !== "submitted" && item.status !== "processing" && (
-                <span className="history-delete">
-                  {confirmingId === item.id ? (
-                    <>
-                      <span className="history-delete-question">
-                        {t("deleteConfirm")}
-                      </span>
-                      <button
-                        type="button"
-                        className="history-delete-confirm"
-                        disabled={deletingId === item.id}
-                        onClick={() => void removeGeneration(item.id)}
-                      >
-                        {deletingId === item.id
-                          ? t("deleting")
-                          : t("deletePoster")}
-                      </button>
-                      <button
-                        type="button"
-                        className="history-delete-cancel"
-                        onClick={() => setConfirmingId(null)}
-                      >
-                        {t("deleteCancel")}
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      className="history-delete-button"
-                      aria-label={t("deletePoster")}
-                      onClick={() => {
-                        setDeleteErrorId(null);
-                        setConfirmingId(item.id);
-                      }}
-                    >
-                      <Trash2 size={13} aria-hidden="true" />
-                      <span className="history-delete-label">
-                        {t("deletePoster")}
-                      </span>
-                    </button>
-                  )}
-                </span>
-              )}
             </span>
           </div>
           <div className="history-thumbs">
@@ -210,13 +167,30 @@ export function HistoryGallery({
                   />
                 </button>
                 <figcaption>
-                  <a
-                    className="download-link"
-                    href={image.url}
-                    download={`text-to-poster-${item.id.slice(0, 8)}.png`}
-                  >
-                    <ArrowDownToLine size={14} /> {t("download")}
-                  </a>
+                  <span className="history-figure-actions">
+                    <a
+                      className="download-link"
+                      href={image.url}
+                      download={`text-to-poster-${item.id.slice(0, 8)}.png`}
+                    >
+                      <ArrowDownToLine size={14} /> {t("download")}
+                    </a>
+                    {/* 删除是针对整次生成，多图卡片只在第一张旁边给入口 */}
+                    {image.id === item.images[0]?.id && (
+                      <button
+                        type="button"
+                        className="history-delete-link"
+                        aria-label={t("deletePoster")}
+                        onClick={() => {
+                          setDeleteErrorId(null);
+                          setConfirmingId(item.id);
+                        }}
+                      >
+                        <Trash2 size={14} aria-hidden="true" />{" "}
+                        {t("deletePoster")}
+                      </button>
+                    )}
+                  </span>
                   {image.watermarked && (
                     <span className="watermark-note">{t("freePreview")}</span>
                   )}
@@ -224,6 +198,42 @@ export function HistoryGallery({
               </figure>
             ))}
           </div>
+          {/* 没有图片的卡片（失败/超时）没有下载行，删除入口单独放一行 */}
+          {item.images.length === 0 && confirmingId !== item.id && (
+            <div className="history-card-actions">
+              <button
+                type="button"
+                className="history-delete-link"
+                aria-label={t("deletePoster")}
+                onClick={() => {
+                  setDeleteErrorId(null);
+                  setConfirmingId(item.id);
+                }}
+              >
+                <Trash2 size={14} aria-hidden="true" /> {t("deletePoster")}
+              </button>
+            </div>
+          )}
+          {confirmingId === item.id && (
+            <div className="history-delete-confirm-row">
+              <span>{t("deleteConfirm")}</span>
+              <button
+                type="button"
+                className="history-delete-confirm"
+                disabled={deletingId === item.id}
+                onClick={() => void removeGeneration(item.id)}
+              >
+                {deletingId === item.id ? t("deleting") : t("deletePoster")}
+              </button>
+              <button
+                type="button"
+                className="history-delete-cancel"
+                onClick={() => setConfirmingId(null)}
+              >
+                {t("deleteCancel")}
+              </button>
+            </div>
+          )}
           <p className="history-prompt">{item.prompt}</p>
           {deleteErrorId === item.id && (
             <p className="history-delete-error" role="alert">

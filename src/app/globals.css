@@ -2328,7 +2328,8 @@ textarea:focus-visible {
   aspect-ratio: 4 / 5;
   object-fit: cover;
 }
-.download-link {
+.download-link,
+.history-delete-link {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -2338,7 +2339,15 @@ textarea:focus-visible {
   font-weight: 800;
   text-decoration: none;
 }
-.download-link:hover {
+.history-delete-link {
+  /* 按钮需要显式清掉浏览器默认样式，视觉与下载链接完全一致 */
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.download-link:hover,
+.history-delete-link:hover {
   color: var(--accent-dark);
 }
 .watermark-note {
@@ -4121,33 +4130,23 @@ dialog.modal-backdrop:not([open]) {
   font-weight: 700;
   letter-spacing: 0.04em;
 }
-.history-delete {
+.history-figure-actions {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  text-transform: none;
-  letter-spacing: 0;
+  gap: 0.15rem;
 }
-.history-delete-button {
-  display: inline-flex;
+.history-card-actions {
+  display: flex;
+  margin-top: 0.25rem;
+}
+.history-delete-confirm-row {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.15rem 0.45rem;
-  border: 1px solid var(--line);
-  border-radius: 0.35rem;
-  background: none;
+  gap: 0.5rem;
+  padding: 0.5rem 0.15rem 0;
   color: var(--ink-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-.history-delete-button:hover {
-  border-color: var(--accent-dark);
-  color: var(--accent-dark);
-}
-.history-delete-question {
-  color: var(--ink);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
 }
 .history-delete-confirm,
 .history-delete-cancel {
@@ -4173,12 +4172,6 @@ dialog.modal-backdrop:not([open]) {
   margin: 0.5rem 0 0;
   color: var(--accent-dark);
   font-size: 0.72rem;
-}
-/* 窄屏只留图标，避免卡片头部换行 */
-@media (max-width: 520px) {
-  .history-delete-label {
-    display: none;
-  }
 }
 .credit-activity {
   padding: 1.5rem;
