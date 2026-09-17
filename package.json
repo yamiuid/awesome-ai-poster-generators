@@ -24,6 +24,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "biome check . && tsc --noEmit",
+    "check:schema": "node scripts/check-prod-schema.mjs",
     "format": "biome format --write .",
     "migrate:r2": "node scripts/migrate-posters-to-r2.mjs",
     "migrate:r2:dry-run": "node scripts/migrate-posters-to-r2.mjs --dry-run"
