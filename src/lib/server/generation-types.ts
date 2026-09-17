@@ -164,6 +164,9 @@ export function toGenerationResponse(
     ...(value.generation.error_message
       ? { error: value.generation.error_message }
       : {}),
+    ...(value.generation.error_code
+      ? { errorCode: value.generation.error_code }
+      : {}),
     creditsReserved: value.generation.reserved_credits,
     ...(consumed !== undefined ? { creditsConsumed: consumed } : {}),
     imageCount: value.generation.image_count,

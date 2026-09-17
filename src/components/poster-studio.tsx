@@ -9,8 +9,8 @@ import {
   ChevronRight,
   CircleAlert,
   History,
-  Images,
   ImagePlus,
+  Images,
   LoaderCircle,
   LockKeyhole,
   Pencil,
@@ -44,6 +44,7 @@ import {
 import {
   generationAction,
   generationFailureMessage,
+  generationFailureMessageKey,
   generationPollDelay,
   mergeGenerationResponse,
 } from "@/lib/domain/generation-progress";
@@ -51,8 +52,8 @@ import { detectInputType, type InputType } from "@/lib/domain/input-intent";
 import {
   ASPECT_RATIOS,
   type AspectRatio,
-  type GenerationResponse,
   FREE_REFERENCE_IMAGES,
+  type GenerationResponse,
   generationAcceptedSchema,
   generationCreatedSchema,
   generationResponseSchema,
@@ -64,10 +65,10 @@ import {
   type PosterStyle,
   QUALITIES,
   type Quality,
-  referenceImageLimit,
   RESOLUTIONS,
   type Resolution,
   recentGenerationsSchema,
+  referenceImageLimit,
   STYLES,
 } from "@/lib/domain/poster";
 import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
@@ -867,7 +868,8 @@ function generationLimitKind(error: unknown): GenerationLimitKind | null {
   }
 }
 
-function isPromptSafetyFailure(error: unknown): boolean {
+/** 本地安全审查与 provider 内容审核都归为「内容被拒」，文案一致、可操作。 */
+function isSafetyRejection(error: unknown): boolean {
   const parsed = readApiSubmitError(error);
   if (!parsed) {
     return false;
@@ -876,6 +878,7 @@ function isPromptSafetyFailure(error: unknown): boolean {
     case "PROMPT_SAFETY_BLOCKED":
     case "PROMPT_SAFETY_REVIEW_REQUIRED":
     case "PROMPT_SAFETY_UNAVAILABLE":
+    case "PROVIDER_CONTENT_POLICY":
       return true;
     default:
       return false;
@@ -1271,6 +1274,8 @@ function ReferenceUploader({
           disabled={disabled || slotsLeft <= 0}
         />
       </div>
+      {/* provider 只接受图片素材，内容审核靠它兜底；本地先给一条可操作提示 */}
+      <p className="reference-policy-hint">{t("referencePolicyHint")}</p>
     </div>
   );
 }
@@ -1463,6 +1468,7 @@ function StudioHistoryProgress({
   const isSubmitted = generation.status === "submitted";
   const isFailure =
     generation.status === "failed" || generation.status === "timed_out";
+  const failureMessageKey = generationFailureMessageKey(generation);
   return (
     <div className="studio-history-progress" aria-live="polite">
       <div
@@ -1476,7 +1482,11 @@ function StudioHistoryProgress({
                 ? t("generationTimedOut")
                 : t("generationFailed")}
             </strong>
-            <p>{generationFailureMessage(generation)}</p>
+            <p>
+              {failureMessageKey
+                ? t(failureMessageKey)
+                : generationFailureMessage(generation)}
+            </p>
             {generation.error && <span>{t("noCharge")}</span>}
             {onDismiss && (
               <button type="button" onClick={onDismiss}>
@@ -2929,7 +2939,7 @@ export function PosterStudio({
       }
     } catch (submitError) {
       setPendingSubmission(null);
-      const safetyFailure = isPromptSafetyFailure(submitError);
+      const safetyFailure = isSafetyRejection(submitError);
       const limitKind = generationLimitKind(submitError);
       if (safetyFailure) {
         applyGeneration({
@@ -3403,9 +3413,9 @@ export function PosterStudio({
                   {t("startNewBrief")}
                 </button>
               )}
-            </>
-          )}
-        </div>
+          </>
+        )}
+      </div>
       </div>
       <div className="studio-mobile-examples">
         <StudioExamplesPanel

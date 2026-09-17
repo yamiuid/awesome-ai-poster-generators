@@ -202,6 +202,8 @@ export type GenerationResponse = Readonly<{
   referenceImageUrls?: readonly string[] | undefined;
   imageCount: number;
   error?: string | undefined;
+  /** 失败归因码（generations.error_code），用于把原因映射成本地化文案 */
+  errorCode?: string | undefined;
   creditsReserved: number;
   creditsConsumed?: number | undefined;
   nextPollAt?: string | undefined;
@@ -234,6 +236,7 @@ export const generationResponseSchema = z.object({
   referenceImageUrls: z.array(z.string()).optional(),
   imageCount: z.number().int().min(1).max(4),
   error: z.string().optional(),
+  errorCode: z.string().optional(),
   creditsReserved: z.number().int().nonnegative(),
   creditsConsumed: z.number().int().nonnegative().optional(),
   nextPollAt: z.string().optional(),

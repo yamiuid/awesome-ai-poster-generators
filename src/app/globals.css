@@ -1475,6 +1475,12 @@ textarea:focus-visible {
   font-size: 0.78rem;
   color: var(--ink-muted);
 }
+.reference-policy-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
 .reference-thumb {
   position: relative;
   width: 5.5rem;
