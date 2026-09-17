@@ -7,9 +7,9 @@ const freePlan = {
   audience: "Try the studio — free credits on signup.",
   price: "$0",
   cadence: "/ month",
-  creditsLabel: "30 credits · one-time welcome",
-  creditsNote: "About 15 1K images in total.",
-  features: ["30 welcome credits (one-time)"],
+  creditsLabel: "20 credits · one-time welcome",
+  creditsNote: "About 10 1K images in total.",
+  features: ["20 welcome credits (one-time)"],
 } as const;
 
 const paidPlans = [

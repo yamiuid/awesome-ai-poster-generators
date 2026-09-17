@@ -51,7 +51,7 @@ export default async function PricingPage() {
   const scaleCredits = formatNumber.format(creditsForTier("scale"));
   const auth = await getAuthContext();
   // 预计可生成图片数：1K/标准品质 = 2 积分/张
-  const welcomeImages = formatNumber.format(15);
+  const welcomeImages = formatNumber.format(10);
   const creatorImages = formatNumber.format(250);
   const studioImages = formatNumber.format(500);
   const scaleImages = formatNumber.format(1_500);

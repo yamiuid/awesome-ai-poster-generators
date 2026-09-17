@@ -3134,7 +3134,7 @@ export function PosterStudio({
       {welcomeBannerVisible && (
         <div className="welcome-credits-banner" role="status">
           <Sparkles size={16} />
-          <p>{t("welcomeBanner", { credits: welcomeGrant?.amount ?? 30 })}</p>
+          <p>{t("welcomeBanner", { credits: welcomeGrant?.amount ?? 20 })}</p>
           <button
             type="button"
             className="text-button"

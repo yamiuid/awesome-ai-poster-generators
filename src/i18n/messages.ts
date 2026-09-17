@@ -110,7 +110,7 @@ const englishMessages = {
     noSavedPostersBody:
       "Generate a poster and it will appear here for quick comparison.",
     guestHistory: "Guest posters stay in this browser for 24 hours.",
-    signInToKeep: "Free account: clean HD file + 30 credits (~15 posters)",
+    signInToKeep: "Free account: clean HD file + 20 credits (~10 posters)",
     download: "Download",
     useAsReference: "Use as reference",
     editAgain: "Edit again",
@@ -127,13 +127,13 @@ const englishMessages = {
     freeAccount: "Free account",
     guestLimitTitle: "Your 2 free previews are used up.",
     guestLimitBody:
-      "Create a free account to claim 30 credits — about 15 more 1K posters, no watermark. We’ll run this one right away.",
-    guestOfferTitle: "Get the clean HD file + 30 credits",
+      "Create a free account to claim 20 credits — about 10 more 1K posters, no watermark. We’ll run this one right away.",
+    guestOfferTitle: "Get the clean HD file + 20 credits",
     guestOfferBody:
-      "A free account drops the watermark, keeps your previews, and adds 30 credits — about 15 more 1K posters.",
+      "A free account drops the watermark, keeps your previews, and adds 20 credits — about 10 more 1K posters.",
     guestReferenceTitle: "Guests can attach 1 reference image.",
     guestReferenceBody:
-      "Create a free account to attach 2 reference images — plus 30 welcome credits and watermark-free downloads.",
+      "Create a free account to attach 2 reference images — plus 20 welcome credits and watermark-free downloads.",
     referenceLimitTitle: "Free accounts attach 2 reference images.",
     referenceLimitBody:
       "Upgrade to Creator or Studio to attach up to 5 reference images per generation.",
@@ -172,7 +172,7 @@ const englishMessages = {
     currentGenerating: "Current poster is generating",
     describeIdea: "Describe your poster idea",
     guestsQuota:
-      "Guests can try 2 free generations. Sign in for 30 welcome credits.",
+      "Guests can try 2 free generations. Sign in for 20 welcome credits.",
     urlToPoster: "URL to poster",
     createFromLink: "Create a poster from your link",
     readPage: "Read the page",
@@ -245,7 +245,7 @@ const englishMessages = {
     eyebrow: "Simple, weighted credits",
     heading: "Pay for the directions worth keeping.",
     intro:
-      "Paid plans return up to four posters per generation. New accounts get 30 welcome credits that never expire, and one-time credit packs top you up without a subscription. Guests can try 2 watermarked generations without signing in; annual plans still refresh credits monthly.",
+      "Paid plans return up to four posters per generation. New accounts get 20 welcome credits that never expire, and one-time credit packs top you up without a subscription. Guests can try 2 watermarked generations without signing in; annual plans still refresh credits monthly.",
     footnote:
       "Image engine: GPT Image 2.5 via APIMart. Outputs are AI-generated and should be reviewed before publication.",
     readRefundPolicy: "Read the policy.",
@@ -288,15 +288,15 @@ const englishMessages = {
     freeEyebrow: "Free / account",
     freeCadence: "/ forever",
     freeDescription:
-      "30 welcome credits that never expire — enough room to try the studio before paying.",
-    freeFeature1: "30 welcome credits (one-time)",
+      "20 welcome credits that never expire — enough room to try the studio before paying.",
+    freeFeature1: "20 welcome credits (one-time)",
     freeFeature2: "1K output · low / medium quality",
     freeFeature3: "Watermark-free downloads",
     freeFeatureReferences: "Up to 2 reference images",
     freeFeature4: "7-day account history",
     freeAudience: "Try the studio — free credits on signup.",
     packAudience: "One-time purchase — credits never expire.",
-    welcomeCreditsLine: "30 credits · one-time welcome",
+    welcomeCreditsLine: "20 credits · one-time welcome",
     packCreditsLine: "{credits} credits on purchase",
     creditsNoteMonthly: "Up to about {count} 1K images each month.",
     creditsNoteOnce: "About {count} 1K images in total.",
@@ -350,7 +350,7 @@ const englishMessages = {
     faqIntro: "Quick answers about credits, packs, and subscriptions.",
     faq1Question: "How do I get my free credits?",
     faq1Answer:
-      "Create an account and 30 welcome credits land in your balance automatically on your first visit — enough for about 15 standard 1K posters.",
+      "Create an account and 20 welcome credits land in your balance automatically on your first visit — enough for about 10 standard 1K posters.",
     faq2Question: "How are credits deducted?",
     faq2Answer:
       "Each generation costs credits based on resolution and quality — a standard 1K poster costs 2 credits, while a 4K Max run costs 115. Each reference image in Image → Poster mode adds 1 credit, and how many you can attach depends on your plan: 1 as a guest, 2 with a free account, up to 5 on paid plans. Failed generations are never charged.",
@@ -481,7 +481,7 @@ const englishMessages = {
     pricingMonth: "/ month",
     pricingFeature1: "Guests get 2 watermarked trial generations",
     pricingFeature2:
-      "Free accounts get 30 welcome credits and watermark-free downloads, never expire",
+      "Free accounts get 20 welcome credits and watermark-free downloads, never expire",
     pricingFeature3:
       "Creator, Studio, and Scale plans add 500–3,000 monthly credits",
     pricingFeature4: "1K, 2K, and 4K exports",
@@ -492,7 +492,7 @@ const englishMessages = {
       "Start small, learn from the first result, and refine only what needs changing. These answers cover the practical details behind making a poster from text with the free studio.",
     faq1Question: "Is this really free?",
     faq1Answer:
-      "Yes. Guests can try 2 watermarked generations. Signing up grants 30 welcome credits that never expire and work on every style and quality — one poster costs as little as 2 credits. Failed generations do not count.",
+      "Yes. Guests can try 2 watermarked generations. Signing up grants 20 welcome credits that never expire and work on every style and quality — one poster costs as little as 2 credits. Failed generations do not count.",
     faq2Question: "What is an AI poster generator from text?",
     faq2Answer:
       "It turns a written brief into finished visual directions. Describe the subject, mood, audience, or words you want to see, and the studio turns that brief into multiple compositions.",
@@ -569,7 +569,7 @@ const englishMessages = {
   auth: {
     signInHeading: "Sign in or create a free account.",
     signInBody:
-      "Use Google or email. We’ll send a 6-digit sign-in code, and your first email sign-in automatically creates a free account. New accounts get 30 welcome credits that never expire; Pro adds monthly credits, private history, and clean high-definition exports.",
+      "Use Google or email. We’ll send a 6-digit sign-in code, and your first email sign-in automatically creates a free account. New accounts get 20 welcome credits that never expire; Pro adds monthly credits, private history, and clean high-definition exports.",
     continueWithGoogle: "Continue with Google",
     orUseEmail: "or use email",
     emailAddress: "Email address",
@@ -704,7 +704,7 @@ const englishMessages = {
       "We could not confirm the latest billing state. New purchases are paused so you are not charged twice.",
     contactSupport: "Contact support",
     freeStudio: "Free studio",
-    startDirections: "Your 30 welcome credits are ready to use.",
+    startDirections: "Your 20 welcome credits are ready to use.",
     upgradeDescription:
       "Buy a one-time credit pack or subscribe to Creator or Studio for monthly credits, clean exports, and private history.",
     seePlans: "See plans",
@@ -916,7 +916,7 @@ const translated = {
       createAnother: "再建立一張",
       currentGenerating: "目前海報生成中",
       describeIdea: "描述你的海報想法",
-      guestsQuota: "訪客可免費試用 2 次生成。登入即可獲贈 30 點歡迎點數。",
+      guestsQuota: "訪客可免費試用 2 次生成。登入即可獲贈 20 點歡迎點數。",
       creditBalance: "可用點數 {credits} 點",
       insufficientCreditsTitle: "你的點數已用完。",
       insufficientCreditsBody:
@@ -935,7 +935,7 @@ const translated = {
       eyebrow: "簡單透明的加權點數",
       heading: "為值得保留的方向付費。",
       intro:
-        "付費方案每次最多回傳四張海報。新帳戶獲贈 30 點永不過期的歡迎點數，一次性點數包可隨時補充，無需訂閱。訪客無需登入即可試用 2 次帶浮水印的生成；年繳方案仍會每月更新點數。",
+        "付費方案每次最多回傳四張海報。新帳戶獲贈 20 點永不過期的歡迎點數，一次性點數包可隨時補充，無需訂閱。訪客無需登入即可試用 2 次帶浮水印的生成；年繳方案仍會每月更新點數。",
       footnote:
         "圖像引擎：透過 APIMart 使用 GPT Image 2.5。AI 生成內容請在發布前審閱。",
       readRefundPolicy: "查看政策。",
@@ -958,15 +958,15 @@ const translated = {
         "一次性點數包與 Creator／Studio 訂閱方案，包含每月點數、1K 至 4K 匯出、無浮水印與私人紀錄。",
       freeEyebrow: "免費／帳戶",
       freeCadence: "／永久",
-      freeDescription: "30 點歡迎點數、永不過期——先充分體驗工作室再付費。",
-      freeFeature1: "30 點歡迎點數（一次性）",
+      freeDescription: "20 點歡迎點數、永不過期——先充分體驗工作室再付費。",
+      freeFeature1: "20 點歡迎點數（一次性）",
       freeFeature2: "1K 輸出 · low／medium 品質",
       freeFeature3: "無浮水印下載",
       freeFeatureReferences: "最多 2 張參考圖",
       freeFeature4: "保留 7 天紀錄",
       freeAudience: "體驗海報生成，註冊即送點數。",
       packAudience: "一次性購買，點數永不過期。",
-      welcomeCreditsLine: "30 點 · 一次性贈送",
+      welcomeCreditsLine: "20 點 · 一次性贈送",
       packCreditsLine: "一次入帳 {credits} 點",
       creditsNoteMonthly: "每月最多可生成約 {count} 張 1K 圖片。",
       creditsNoteOnce: "約可生成 {count} 張 1K 圖片。",
@@ -1029,7 +1029,7 @@ const translated = {
       ...englishMessages.auth,
       signInHeading: "登入或建立免費帳戶。",
       signInBody:
-        "使用 Google 或電子郵件。我們會寄送 6 位數登入驗證碼，首次使用電子郵件登入會自動建立免費帳戶。新帳戶獲贈 30 點永不過期的歡迎點數；Pro 方案提供每月點數、私人紀錄與乾淨的高畫質匯出。",
+        "使用 Google 或電子郵件。我們會寄送 6 位數登入驗證碼，首次使用電子郵件登入會自動建立免費帳戶。新帳戶獲贈 20 點永不過期的歡迎點數；Pro 方案提供每月點數、私人紀錄與乾淨的高畫質匯出。",
       continueWithGoogle: "使用 Google 繼續",
       orUseEmail: "或使用電子郵件",
       emailAddress: "電子郵件地址",
@@ -1107,7 +1107,7 @@ const translated = {
       checkSubscription: "我們需要確認你的訂閱。",
       contactSupport: "聯絡客服",
       freeStudio: "免費工作室",
-      startDirections: "你的 30 點歡迎點數已經可以使用了。",
+      startDirections: "你的 20 點歡迎點數已經可以使用了。",
       seePlans: "查看方案",
       refunds: "退款",
       refundPolicy:
@@ -1289,7 +1289,7 @@ const translated = {
       currentGenerating: "現在のポスターを生成中",
       describeIdea: "ポスターのアイデアを説明してください",
       guestsQuota:
-        "ゲストは2回まで無料で生成できます。ログインするとウェルカムクレジット30を進呈します。",
+        "ゲストは2回まで無料で生成できます。ログインするとウェルカムクレジット20を進呈します。",
       posterPreview: "ポスタープレビュー",
       retryPoster: "ポスターを読み込めませんでした。再試行",
       posterLoading: "ポスターを読み込み中…",
@@ -1301,7 +1301,7 @@ const translated = {
       eyebrow: "シンプルな従量クレジット",
       heading: "残したい方向性にだけ支払う",
       intro:
-        "有料プランでは1回の生成で最大4枚のポスターを作成できます。新規アカウントには期限なしのウェルカムクレジット30を進呈し、サブスクリプション不要の都度購入クレジットパックもあります。ゲストはログインなしで透かし付き生成を2回試せます。年額プランもクレジットは毎月更新されます。",
+        "有料プランでは1回の生成で最大4枚のポスターを作成できます。新規アカウントには期限なしのウェルカムクレジット20を進呈し、サブスクリプション不要の都度購入クレジットパックもあります。ゲストはログインなしで透かし付き生成を2回試せます。年額プランもクレジットは毎月更新されます。",
       footnote:
         "画像エンジン：APIMart経由のGPT Image 2.5。AI生成物は公開前に確認してください。",
       readRefundPolicy: "ポリシーを読む",
@@ -1324,7 +1324,7 @@ const translated = {
       freeEyebrow: "無料／アカウント",
       freeCadence: "／永久",
       freeDescription:
-        "期限なしのウェルカムクレジット30。支払い前にスタジオを存分に試せます。",
+        "期限なしのウェルカムクレジット20。支払い前にスタジオを存分に試せます。",
       freeFeature3: "透かしなしダウンロード",
       freeFeatureReferences: "参照画像は最大2枚",
       freeFeature4: "7日間の履歴",
@@ -1359,7 +1359,7 @@ const translated = {
       ...englishMessages.auth,
       signInHeading: "ログインまたは無料アカウントを作成",
       signInBody:
-        "Googleまたはメールアドレスを使用できます。6桁のログインコードを送信し、初回のメールログインで無料アカウントを自動作成します。新規アカウントには期限なしのウェルカムクレジット30を進呈します。Proでは毎月のクレジット、非公開履歴、透かしなしの高解像度書き出しが利用できます。",
+        "Googleまたはメールアドレスを使用できます。6桁のログインコードを送信し、初回のメールログインで無料アカウントを自動作成します。新規アカウントには期限なしのウェルカムクレジット20を進呈します。Proでは毎月のクレジット、非公開履歴、透かしなしの高解像度書き出しが利用できます。",
       continueWithGoogle: "Googleで続ける",
       orUseEmail: "またはメールアドレスを使用",
       emailAddress: "メールアドレス",
@@ -1430,7 +1430,7 @@ const translated = {
       checkSubscription: "サブスクリプションを確認しています。",
       contactSupport: "サポートに連絡",
       freeStudio: "無料スタジオ",
-      startDirections: "ウェルカムクレジット30がすぐ使えます。",
+      startDirections: "ウェルカムクレジット20がすぐ使えます。",
       seePlans: "プランを見る",
       refunds: "返金",
       refundPolicy:
@@ -1614,7 +1614,7 @@ const translated = {
       currentGenerating: "El póster actual se está generando",
       describeIdea: "Describe tu idea para el póster",
       guestsQuota:
-        "Los invitados pueden probar 2 generaciones gratis. Inicia sesión para recibir 30 créditos de bienvenida.",
+        "Los invitados pueden probar 2 generaciones gratis. Inicia sesión para recibir 20 créditos de bienvenida.",
       posterPreview: "Vista previa del póster",
       retryPoster: "No se pudo cargar el póster. Reintentar",
       posterLoading: "Cargando póster…",
@@ -1643,7 +1643,7 @@ const translated = {
       freeEyebrow: "Gratis／cuenta",
       freeCadence: "／para siempre",
       freeDescription:
-        "30 créditos de bienvenida que nunca caducan para probar el estudio antes de pagar.",
+        "20 créditos de bienvenida que nunca caducan para probar el estudio antes de pagar.",
       freeFeature3: "Descargas sin marca de agua",
       freeFeatureReferences: "Hasta 2 imágenes de referencia",
       freeFeature4: "Historial de 7 días",
@@ -1678,7 +1678,7 @@ const translated = {
       ...englishMessages.auth,
       signInHeading: "Inicia sesión o crea una cuenta gratuita.",
       signInBody:
-        "Usa Google o tu correo electrónico. Te enviaremos un código de acceso de 6 dígitos y el primer inicio con correo creará automáticamente una cuenta gratuita. Las cuentas nuevas reciben 30 créditos de bienvenida que nunca caducan; Pro añade créditos mensuales, historial privado y exportaciones limpias en alta definición.",
+        "Usa Google o tu correo electrónico. Te enviaremos un código de acceso de 6 dígitos y el primer inicio con correo creará automáticamente una cuenta gratuita. Las cuentas nuevas reciben 20 créditos de bienvenida que nunca caducan; Pro añade créditos mensuales, historial privado y exportaciones limpias en alta definición.",
       continueWithGoogle: "Continuar con Google",
       orUseEmail: "o usar el correo electrónico",
       emailAddress: "Correo electrónico",
@@ -1749,7 +1749,7 @@ const translated = {
       checkSubscription: "Tenemos que comprobar tu suscripción.",
       contactSupport: "Contactar con soporte",
       freeStudio: "Estudio gratuito",
-      startDirections: "Tus 30 créditos de bienvenida están listos para usar.",
+      startDirections: "Tus 20 créditos de bienvenida están listos para usar.",
       seePlans: "Ver planes",
       refunds: "Reembolsos",
       refundPolicy:
@@ -1932,7 +1932,7 @@ const translated = {
       currentGenerating: "جارٍ إنشاء الملصق الحالي",
       describeIdea: "صف فكرة ملصقك",
       guestsQuota:
-        "يمكن للزوار تجربة عمليتي إنشاء مجانًا. سجّل الدخول للحصول على 30 رصيد ترحيبي.",
+        "يمكن للزوار تجربة عمليتي إنشاء مجانًا. سجّل الدخول للحصول على 20 رصيدًا ترحيبيًا.",
       posterPreview: "معاينة الملصق",
       retryPoster: "تعذر تحميل الملصق. إعادة المحاولة",
       posterLoading: "جارٍ تحميل الملصق…",
@@ -1960,7 +1960,7 @@ const translated = {
       freeEyebrow: "مجاني／حساب",
       freeCadence: "／دائمًا",
       freeDescription:
-        "30 رصيدًا ترحيبيًا عند التسجيل — جرّب الاستوديو قبل الدفع.",
+        "20 رصيدًا ترحيبيًا عند التسجيل — جرّب الاستوديو قبل الدفع.",
       freeFeature3: "تنزيلات بلا علامة مائية",
       freeFeatureReferences: "حتى صورتين مرجعيتين",
       freeFeature4: "سجل لمدة 7 أيام",
@@ -1996,7 +1996,7 @@ const translated = {
       ...englishMessages.auth,
       signInHeading: "سجّل الدخول أو أنشئ حسابًا مجانيًا.",
       signInBody:
-        "استخدم Google أو بريدك الإلكتروني. سنرسل رمز دخول من 6 أرقام، وسيؤدي أول تسجيل دخول بالبريد الإلكتروني إلى إنشاء حساب مجاني تلقائيًا. تحصل الحسابات الجديدة على 30 رصيدًا ترحيبيًا؛ وتزيل Pro العلامة المائية وتحافظ على خصوصية الملفات عالية الدقة.",
+        "استخدم Google أو بريدك الإلكتروني. سنرسل رمز دخول من 6 أرقام، وسيؤدي أول تسجيل دخول بالبريد الإلكتروني إلى إنشاء حساب مجاني تلقائيًا. تحصل الحسابات الجديدة على 20 رصيدًا ترحيبيًا؛ وتزيل Pro العلامة المائية وتحافظ على خصوصية الملفات عالية الدقة.",
       continueWithGoogle: "المتابعة باستخدام Google",
       orUseEmail: "أو استخدم البريد الإلكتروني",
       emailAddress: "البريد الإلكتروني",
@@ -2067,7 +2067,7 @@ const translated = {
       checkSubscription: "نحتاج إلى التحقق من اشتراكك.",
       contactSupport: "التواصل مع الدعم",
       freeStudio: "الاستوديو المجاني",
-      startDirections: "أرصدتك الترحيبية البالغة 30 رصيدًا جاهزة للاستخدام.",
+      startDirections: "أرصدتك الترحيبية البالغة 20 رصيدًا جاهزة للاستخدام.",
       seePlans: "عرض الخطط",
       refunds: "المبالغ المستردة",
       refundPolicy:
@@ -2149,7 +2149,7 @@ const coverageTranslations = {
       noSavedPosters: "還沒有已儲存的海報",
       noSavedPostersBody: "生成海報後，就能在這裡快速比較。",
       guestHistory: "訪客海報會保留在此瀏覽器 24 小時。",
-      signInToKeep: "免費帳戶：無水印高清檔 + 30 點（約 15 張）",
+      signInToKeep: "免費帳戶：無水印高清檔 + 20 點（約 10 張）",
       download: "下載",
       useAsReference: "作為參考圖",
       editAgain: "再次編輯",
@@ -2159,13 +2159,13 @@ const coverageTranslations = {
       outputPolicy: "閱讀 AI 使用政策。",
       guestLimitTitle: "2 次免費預覽已用完。",
       guestLimitBody:
-        "建立免費帳戶即可獲得 30 點——約可再生成 15 張 1K 海報，且不含水印。我們會立刻為你重跑這一張。",
-      guestOfferTitle: "取得無水印高清檔 + 30 點",
+        "建立免費帳戶即可獲得 20 點——約可再生成 10 張 1K 海報，且不含水印。我們會立刻為你重跑這一張。",
+      guestOfferTitle: "取得無水印高清檔 + 20 點",
       guestOfferBody:
-        "免費帳戶可移除水印、保留你的預覽紀錄，並贈送 30 點——約可再生成 15 張 1K 海報。",
+        "免費帳戶可移除水印、保留你的預覽紀錄，並贈送 20 點——約可再生成 10 張 1K 海報。",
       guestReferenceTitle: "訪客僅能上傳 1 張參考圖。",
       guestReferenceBody:
-        "建立免費帳戶即可上傳 2 張參考圖，並獲得 30 點歡迎點數與無浮水印下載。",
+        "建立免費帳戶即可上傳 2 張參考圖，並獲得 20 點歡迎點數與無浮水印下載。",
       referenceLimitTitle: "免費帳戶最多可上傳 2 張參考圖。",
       referenceLimitBody:
         "升級 Creator 或 Studio 方案，每次生成最多可上傳 5 張參考圖。",
@@ -2245,7 +2245,7 @@ const coverageTranslations = {
       faqIntro: "關於點數、點數包與訂閱的快速解答。",
       faq1Question: "免費點數怎麼領取？",
       faq1Answer:
-        "建立帳戶後，30 點歡迎點數會在首次開啟網站時自動入帳——約可生成 15 張標準 1K 海報。",
+        "建立帳戶後，20 點歡迎點數會在首次開啟網站時自動入帳——約可生成 10 張標準 1K 海報。",
       faq2Question: "點數是怎麼扣的？",
       faq2Answer:
         "每次生成依解析度與品質扣點：標準 1K 海報每張 2 點，4K 最高品質每張 115 點。圖生圖模式每張參考圖加 1 點，可上傳張數依方案而定：訪客 1 張、免費帳戶 2 張、付費方案最多 5 張。生成失敗不扣點。",
@@ -2324,7 +2324,7 @@ const coverageTranslations = {
       pricingCardTitle: "Creator · Studio · Scale",
       pricingMonth: "／月",
       pricingFeature1: "訪客可免費試用 2 次帶浮水印的生成",
-      pricingFeature2: "免費帳戶獲贈 30 點永不過期的歡迎點數與無浮水印下載",
+      pricingFeature2: "免費帳戶獲贈 20 點永不過期的歡迎點數與無浮水印下載",
       pricingFeature3: "Creator、Studio 與 Scale 方案每月提供 500–3,000 點",
       pricingFeature4: "1K、2K 與 4K 匯出",
       pricingFeature5: "中等、高與最高完成度",
@@ -2334,7 +2334,7 @@ const coverageTranslations = {
         "從小處開始，從第一個結果學習，只調整真正需要改變的地方。以下回答文字製作海報與免費工作室的實際問題。",
       faq1Question: "真的免費嗎？",
       faq1Answer:
-        "是。訪客可免費試用 2 次帶浮水印的生成。註冊即贈 30 點永不過期的歡迎點數，適用所有風格與品質——一張海報最低只需 2 點。失敗的生成不會計入次數。",
+        "是。訪客可免費試用 2 次帶浮水印的生成。註冊即贈 20 點永不過期的歡迎點數，適用所有風格與品質——一張海報最低只需 2 點。失敗的生成不會計入次數。",
       faq2Question: "什麼是文字 AI 海報生成器？",
       faq2Answer:
         "它會把文字簡報轉成完成的視覺方向。描述想呈現的主題、氣氛、受眾或文字，工作室就會將簡報轉成多種構圖。",
@@ -2501,7 +2501,7 @@ const coverageTranslations = {
       noSavedPosters: "保存されたポスターはまだありません",
       noSavedPostersBody: "ポスターを生成すると、ここで簡単に比較できます。",
       guestHistory: "ゲストのポスターはこのブラウザに24時間保存されます。",
-      signInToKeep: "無料アカウント：透かしなしHD + 30クレジット（約15枚）",
+      signInToKeep: "無料アカウント：透かしなしHD + 20クレジット（約10枚）",
       download: "ダウンロード",
       useAsReference: "参考画像にする",
       editAgain: "もう一度編集",
@@ -2512,13 +2512,13 @@ const coverageTranslations = {
       outputPolicy: "AI 利用ポリシーを読む。",
       guestLimitTitle: "無料プレビュー2回を使い切りました。",
       guestLimitBody:
-        "無料アカウントを作成すると30クレジットを進呈します。1Kポスター約15枚分で、透かしも消えます。この1枚はすぐに再生成します。",
-      guestOfferTitle: "透かしなしHDと30クレジットを取得",
+        "無料アカウントを作成すると20クレジットを進呈します。1Kポスター約10枚分で、透かしも消えます。この1枚はすぐに再生成します。",
+      guestOfferTitle: "透かしなしHDと20クレジットを取得",
       guestOfferBody:
-        "無料アカウントで透かしが消え、プレビューが保存され、30クレジット（1Kポスター約15枚分）が付きます。",
+        "無料アカウントで透かしが消え、プレビューが保存され、20クレジット（1Kポスター約10枚分）が付きます。",
       guestReferenceTitle: "ゲストは参照画像を1枚まで添付できます。",
       guestReferenceBody:
-        "無料アカウントを作成すると参照画像を2枚まで添付でき、ウェルカムクレジット30と透かしなしダウンロードも付きます。",
+        "無料アカウントを作成すると参照画像を2枚まで添付でき、ウェルカムクレジット20と透かしなしダウンロードも付きます。",
       referenceLimitTitle: "無料アカウントの参照画像は2枚までです。",
       referenceLimitBody:
         "Creator または Studio にアップグレードすると、1回の生成で参照画像を最大5枚まで添付できます。",
@@ -2664,7 +2664,7 @@ const coverageTranslations = {
       pricingMonth: "／月",
       pricingFeature1: "ゲストは透かし付き生成を2回試用可能",
       pricingFeature2:
-        "新規アカウントには期限なしのウェルカムクレジット30と透かしなしダウンロード",
+        "新規アカウントには期限なしのウェルカムクレジット20と透かしなしダウンロード",
       pricingFeature4: "1K、2K、4K の書き出し",
       pricingFeature5: "Medium・High・Max の仕上がり",
       pricingFeature6: "1回の生成で参照画像は最大5枚",
@@ -2672,7 +2672,7 @@ const coverageTranslations = {
         "まず小さく始め、最初の結果から学び、変えるべき部分だけを整えます。以下では無料スタジオでテキストからポスターを作る際の実用的な疑問に答えます。",
       faq1Question: "本当に無料ですか？",
       faq1Answer:
-        "はい。ゲストは透かし付き生成を2回試せます。登録すると、期限なしですべてのスタイルと品質に使えるウェルカムクレジット30を進呈します。ポスター1枚は最低2クレジットから。失敗した生成はカウントされません。",
+        "はい。ゲストは透かし付き生成を2回試せます。登録すると、期限なしですべてのスタイルと品質に使えるウェルカムクレジット20を進呈します。ポスター1枚は最低2クレジットから。失敗した生成はカウントされません。",
       faq2Question: "テキストから作る AI ポスター生成ツールとは？",
       faq2Answer:
         "文章のブリーフを完成したビジュアルの方向に変えるツールです。テーマ、雰囲気、対象、必要な言葉を説明すると、スタジオが複数の構図を作ります。",
@@ -2871,7 +2871,7 @@ const coverageTranslations = {
       guestHistory:
         "Los pósteres de invitados permanecen en este navegador durante 24 horas.",
       signInToKeep:
-        "Cuenta gratis: archivo HD sin marca + 30 créditos (~15 pósteres)",
+        "Cuenta gratis: archivo HD sin marca + 20 créditos (~10 pósteres)",
       download: "Descargar",
       useAsReference: "Usar como referencia",
       editAgain: "Editar de nuevo",
@@ -2883,14 +2883,14 @@ const coverageTranslations = {
       outputPolicy: "Leer la política de uso de IA.",
       guestLimitTitle: "Tus 2 previsualizaciones gratis se agotaron.",
       guestLimitBody:
-        "Crea una cuenta gratuita para recibir 30 créditos: unos 15 pósteres 1K más y sin marca de agua. Volveremos a generar este ahora mismo.",
-      guestOfferTitle: "Consigue el HD sin marca de agua + 30 créditos",
+        "Crea una cuenta gratuita para recibir 20 créditos: unos 10 pósteres 1K más y sin marca de agua. Volveremos a generar este ahora mismo.",
+      guestOfferTitle: "Consigue el HD sin marca de agua + 20 créditos",
       guestOfferBody:
-        "Una cuenta gratuita quita la marca de agua, conserva tus previsualizaciones y añade 30 créditos: unos 15 pósteres 1K más.",
+        "Una cuenta gratuita quita la marca de agua, conserva tus previsualizaciones y añade 20 créditos: unos 10 pósteres 1K más.",
       guestReferenceTitle:
         "Los invitados pueden adjuntar 1 imagen de referencia.",
       guestReferenceBody:
-        "Crea una cuenta gratuita para adjuntar 2 imágenes de referencia, con 30 créditos de bienvenida y descargas sin marca de agua.",
+        "Crea una cuenta gratuita para adjuntar 2 imágenes de referencia, con 20 créditos de bienvenida y descargas sin marca de agua.",
       referenceLimitTitle:
         "Las cuentas gratuitas admiten 2 imágenes de referencia.",
       referenceLimitBody:
@@ -2970,7 +2970,7 @@ const coverageTranslations = {
       eyebrow: "Créditos simples y ponderados",
       heading: "Paga por las direcciones que vale la pena conservar.",
       intro:
-        "Los planes de pago devuelven hasta cuatro pósteres por generación. Las cuentas nuevas reciben 30 créditos de bienvenida que nunca caducan, y los paquetes de créditos de pago único recargan sin suscripción. Los invitados pueden probar dos generaciones con marca de agua sin registrarse; los planes anuales también renuevan los créditos cada mes.",
+        "Los planes de pago devuelven hasta cuatro pósteres por generación. Las cuentas nuevas reciben 20 créditos de bienvenida que nunca caducan, y los paquetes de créditos de pago único recargan sin suscripción. Los invitados pueden probar dos generaciones con marca de agua sin registrarse; los planes anuales también renuevan los créditos cada mes.",
       footnote:
         "Motor de imágenes: GPT Image 2.5 mediante APIMart. Los resultados son generados por IA y deben revisarse antes de publicarse.",
       readRefundPolicy: "Leer la política.",
@@ -3055,7 +3055,7 @@ const coverageTranslations = {
       pricingFeature1:
         "Los invitados obtienen dos generaciones de prueba con marca de agua",
       pricingFeature2:
-        "Las cuentas nuevas reciben 30 créditos de bienvenida que nunca caducan y descargas sin marca de agua",
+        "Las cuentas nuevas reciben 20 créditos de bienvenida que nunca caducan y descargas sin marca de agua",
       pricingFeature4: "Exportaciones 1K, 2K y 4K",
       pricingFeature5: "Acabados Medium, High y Max",
       pricingFeature6: "Hasta 5 imágenes de referencia por generación",
@@ -3063,7 +3063,7 @@ const coverageTranslations = {
         "Empieza con algo pequeño, aprende del primer resultado y ajusta solo lo que necesite cambiar. Estas respuestas cubren los detalles prácticos de crear un póster desde texto con el estudio gratuito.",
       faq1Question: "¿De verdad es gratis?",
       faq1Answer:
-        "Sí. Los invitados pueden probar dos generaciones con marca de agua. Al registrarte recibes 30 créditos de bienvenida que nunca caducan y funcionan con cualquier estilo y calidad: un póster cuesta desde 2 créditos. Las generaciones fallidas no cuentan.",
+        "Sí. Los invitados pueden probar dos generaciones con marca de agua. Al registrarte recibes 20 créditos de bienvenida que nunca caducan y funcionan con cualquier estilo y calidad: un póster cuesta desde 2 créditos. Las generaciones fallidas no cuentan.",
       faq2Question:
         "¿Qué es un generador de pósteres con IA a partir de texto?",
       faq2Answer:
@@ -3262,7 +3262,7 @@ const coverageTranslations = {
       noSavedPostersBody: "أنشئ ملصقًا وسيظهر هنا للمقارنة السريعة.",
       guestHistory: "تبقى ملصقات الزائر في هذا المتصفح لمدة 24 ساعة.",
       signInToKeep:
-        "حساب مجاني: ملف HD بدون علامة مائية + 30 رصيدًا (نحو 15 ملصقًا)",
+        "حساب مجاني: ملف HD بدون علامة مائية + 20 رصيدًا (نحو 10 ملصقات)",
       download: "تنزيل",
       useAsReference: "استخدامه كصورة مرجعية",
       editAgain: "تعديل مرة أخرى",
@@ -3272,13 +3272,13 @@ const coverageTranslations = {
       outputPolicy: "اقرأ سياسة استخدام الذكاء الاصطناعي.",
       guestLimitTitle: "لقد استُهلكت المعاينتان المجانيتان.",
       guestLimitBody:
-        "أنشئ حسابًا مجانيًا للحصول على 30 رصيدًا — نحو 15 ملصقًا إضافيًا بدقة 1K وبدون علامة مائية. سنعيد إنشاء هذا الملصق فورًا.",
-      guestOfferTitle: "احصل على ملف HD بدون علامة مائية + 30 رصيدًا",
+        "أنشئ حسابًا مجانيًا للحصول على 20 رصيدًا — نحو 10 ملصقات إضافية بدقة 1K وبدون علامة مائية. سنعيد إنشاء هذا الملصق فورًا.",
+      guestOfferTitle: "احصل على ملف HD بدون علامة مائية + 20 رصيدًا",
       guestOfferBody:
-        "الحساب المجاني يزيل العلامة المائية، ويحفظ معايناتك، ويضيف 30 رصيدًا — نحو 15 ملصقًا بدقة 1K.",
+        "الحساب المجاني يزيل العلامة المائية، ويحفظ معايناتك، ويضيف 20 رصيدًا — نحو 10 ملصقات بدقة 1K.",
       guestReferenceTitle: "يمكن للزائر إرفاق صورة مرجعية واحدة.",
       guestReferenceBody:
-        "أنشئ حسابًا مجانيًا لإرفاق صورتين مرجعيتين، مع 30 رصيدًا ترحيبيًا وتنزيلات بلا علامة مائية.",
+        "أنشئ حسابًا مجانيًا لإرفاق صورتين مرجعيتين، مع 20 رصيدًا ترحيبيًا وتنزيلات بلا علامة مائية.",
       referenceLimitTitle: "الحسابات المجانية تسمح بصورتين مرجعيتين.",
       referenceLimitBody:
         "قم بالترقية إلى Creator أو Studio لإرفاق ما يصل إلى 5 صور مرجعية في كل عملية إنشاء.",
@@ -3353,7 +3353,7 @@ const coverageTranslations = {
       eyebrow: "أرصدة بسيطة ومرجّحة",
       heading: "ادفع مقابل الاتجاهات التي تستحق الاحتفاظ بها.",
       intro:
-        "تبدأ الحسابات الجديدة بـ 30 رصيدًا ترحيبيًا، وتضيف خطط الاشتراك أرصدة شهرية أكبر. يمكن للزوار تجربة عمليتي إنشاء تجريبيتين دون تسجيل.",
+        "تبدأ الحسابات الجديدة بـ 20 رصيدًا ترحيبيًا، وتضيف خطط الاشتراك أرصدة شهرية أكبر. يمكن للزوار تجربة عمليتي إنشاء تجريبيتين دون تسجيل.",
       footnote:
         "محرك الصور: GPT Image 2.5 عبر APIMart. الصور مولّدة بالذكاء الاصطناعي ويجب مراجعتها قبل النشر.",
       readRefundPolicy: "اقرأ السياسة.",
@@ -3430,7 +3430,7 @@ const coverageTranslations = {
       pricingMonth: "／شهريًا",
       pricingFeature1: "يحصل الزوار على عمليتي إنشاء تجريبية بعلامة مائية",
       pricingFeature2:
-        "تحصل الحسابات الجديدة على 30 رصيدًا ترحيبيًا (مرة واحدة) وتنزيلات بلا علامة مائية",
+        "تحصل الحسابات الجديدة على 20 رصيدًا ترحيبيًا (مرة واحدة) وتنزيلات بلا علامة مائية",
       pricingFeature4: "تصدير بدقة 1K و2K و4K",
       pricingFeature5: "تشطيبات Medium وHigh وMax",
       pricingFeature6: "حتى 5 صور مرجعية في كل عملية إنشاء",
@@ -3438,7 +3438,7 @@ const coverageTranslations = {
         "ابدأ بخطوة صغيرة، وتعلّم من النتيجة الأولى، ونقّح ما يحتاج إلى تغيير فقط. تغطي هذه الإجابات التفاصيل العملية لإنشاء ملصق من النص باستخدام الاستوديو المجاني.",
       faq1Question: "هل الخدمة مجانية حقًا؟",
       faq1Answer:
-        "نعم. يمكن للزوار إجراء عمليتي إنشاء تجريبيتين، وتحصل الحسابات الجديدة على 30 رصيدًا ترحيبيًا (مرة واحدة). لا تُحتسب العمليات الفاشلة.",
+        "نعم. يمكن للزوار إجراء عمليتي إنشاء تجريبيتين، وتحصل الحسابات الجديدة على 20 رصيدًا ترحيبيًا (مرة واحدة). لا تُحتسب العمليات الفاشلة.",
       faq2Question: "ما مولّد الملصقات بالذكاء الاصطناعي من النص؟",
       faq2Answer:
         "إنه يحول موجزًا مكتوبًا إلى اتجاهات بصرية مكتملة. صف الموضوع أو المزاج أو الجمهور أو الكلمات التي تريد ظهورها، وسيحوّل الاستوديو الموجز إلى تكوينات متعددة.",

@@ -60,7 +60,7 @@ describe("guest lifetime limit", () => {
       code: "GUEST_LIMIT_REACHED",
       status: 429,
       message:
-        "You have used your 2 free guest generations. Sign in or create an account to claim 30 welcome credits.",
+        "You have used your 2 free guest generations. Sign in or create an account to claim 20 welcome credits.",
     });
   });
 });

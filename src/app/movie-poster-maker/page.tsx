@@ -18,7 +18,7 @@ const movieFaqs = [
   ],
   [
     "Is this movie poster generator free?",
-    "Guests can make 2 watermarked 1K generations and attach 1 reference image without signing in. A free account adds 30 welcome credits, watermark-free downloads, and up to 2 reference images. Paid plans add more credits, higher resolutions, up to 5 reference images, and private history.",
+    "Guests can make 2 watermarked 1K generations and attach 1 reference image without signing in. A free account adds 20 welcome credits, watermark-free downloads, and up to 2 reference images. Paid plans add more credits, higher resolutions, up to 5 reference images, and private history.",
   ],
   [
     "Can I make a movie poster from a photo?",
@@ -396,7 +396,7 @@ export default async function MoviePosterMakerPage() {
             You can test the movie poster generator free before deciding whether
             it belongs in your production workflow. Guests get 2 watermarked 1K
             generations and 1 reference image with no sign-up required. A free
-            account adds 30 welcome credits, watermark-free downloads, and up to
+            account adds 20 welcome credits, watermark-free downloads, and up to
             2 reference images, while paid plans add monthly credits, higher
             resolutions, more posters per run, up to 5 reference images, and
             private history.

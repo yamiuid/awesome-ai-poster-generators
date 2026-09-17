@@ -156,7 +156,7 @@ export async function createGeneration(
       throw new AppError(
         actor.mode === "guest" ? "GUEST_LIMIT_REACHED" : "INSUFFICIENT_CREDITS",
         actor.mode === "guest"
-          ? "You have used your 2 free guest generations. Sign in or create an account to claim 30 welcome credits."
+          ? "You have used your 2 free guest generations. Sign in or create an account to claim 20 welcome credits."
           : "You do not have enough credits for this generation.",
         429,
       );
