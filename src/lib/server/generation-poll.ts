@@ -7,7 +7,7 @@ import {
 } from "@/lib/domain/generation-progress";
 import type { GenerationMode } from "@/lib/domain/poster";
 import { sendAlert } from "./alerts";
-import { getTask } from "./apimart";
+import { getTask, providerTaskPhase } from "./apimart";
 import { AppError } from "./errors";
 import { applyProviderTask, failGeneration } from "./generation-task";
 import type { GenerationActor, GenerationRow } from "./generation-types";
@@ -274,6 +274,67 @@ export async function listRecentGenerations(
   return { active, recent };
 }
 
+/**
+ * 硬超时兜底。
+ *
+ * 推进生成任务只有两个来源：用户浏览器轮询，和兜底扫描（cron maintenance）。
+ * 用户中途关掉页面/断网时，只有兜底扫描会碰到这条记录，而 Hobby 计划的 cron
+ * 一天只跑一次，等它跑到时记录早就过了 15 分钟硬超时。
+ *
+ * 所以这里不能直接判死：先向 provider 核实真实状态——已经出图的任务照常
+ * 下载/水印/入库交付，被 provider 拒绝或取消的任务按真实原因记账，任务已被
+ * provider 清理的记录成「已不存在」；只有确实还在生成的任务才判超时。
+ * 口径与 giveUpGenerationById 保持一致。
+ */
+async function failTimedOutGeneration(
+  generation: GenerationRow,
+): Promise<GenerationRow> {
+  const taskId = generation.provider_task_id;
+  if (taskId) {
+    try {
+      const task = await getTask(taskId);
+      const phase = providerTaskPhase(task.status);
+      if (
+        phase === "completed" ||
+        phase === "failed" ||
+        phase === "cancelled"
+      ) {
+        // 有图没交付是最贵的失败：provider 已经计费，用户却什么都没拿到
+        console.warn(
+          "Recovered an abandoned generation past the hard timeout",
+          {
+            generationId: generation.id,
+            taskId,
+            providerStatus: task.status,
+            ageMs: Date.now() - new Date(generation.submitted_at).getTime(),
+          },
+        );
+        return applyProviderTask(generation, task);
+      }
+    } catch (error) {
+      if (isMissingProviderTaskError(error)) {
+        return failGeneration(
+          generation,
+          PROVIDER_TASK_MISSING_MESSAGE,
+          "failed",
+          "PROVIDER_TASK_MISSING",
+        );
+      }
+      console.error("Generation timeout recheck failed", {
+        generationId: generation.id,
+        taskId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return failGeneration(
+    generation,
+    "This generation took too long and your credits were returned.",
+    "timed_out",
+    "GENERATION_TIMEOUT",
+  );
+}
+
 async function advanceGeneration(
   initialGeneration: GenerationRow,
 ): Promise<GenerationRow> {
@@ -314,12 +375,7 @@ async function advanceGeneration(
     Date.now() - new Date(generation.submitted_at).getTime() >
     MAX_GENERATION_MS
   ) {
-    return failGeneration(
-      generation,
-      "This generation took too long and your credits were returned.",
-      "timed_out",
-      "GENERATION_TIMEOUT",
-    );
+    return failTimedOutGeneration(generation);
   }
   if (!generation.provider_task_id) {
     throw new AppError(

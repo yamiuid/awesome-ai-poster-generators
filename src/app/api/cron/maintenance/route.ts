@@ -13,6 +13,10 @@ import {
   replayUnprocessedPaymentEvents,
 } from "@/lib/server/waffo-recovery";
 
+// 兜底扫描会真的补做落库（下载 provider 图片 + 加水印 + 上传 R2），
+// 一批 100 条时默认时长不够用
+export const maxDuration = 300;
+
 export async function GET(request: Request): Promise<Response> {
   const env = getServerEnv();
   if (request.headers.get("authorization") !== `Bearer ${env.CRON_SECRET}`) {
