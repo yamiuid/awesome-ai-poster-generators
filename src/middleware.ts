@@ -52,7 +52,17 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     },
   });
 
-  await supabase.auth.getUser();
+  // 只保留「需要时刷新会话 + 校验令牌」的作用：
+  // getClaims() 对 ES256 令牌走本地 JWKS 验签，省掉每次请求到 Auth 服务器的一次往返；
+  // 令牌临近过期时它仍会先刷新会话，所以 cookie 刷新行为不变。
+  try {
+    await supabase.auth.getClaims();
+  } catch (error) {
+    // JWKS 拉取失败不该让整站 500：页面自身的鉴权路径会再处理一次
+    console.error("Middleware session verification failed", {
+      error: error instanceof Error ? error.name : "UnknownError",
+    });
+  }
   return response;
 }
 

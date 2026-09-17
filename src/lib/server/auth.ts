@@ -20,6 +20,55 @@ export type AuthContext = Readonly<{
   subscriptionState: SubscriptionLifecycleState;
 }>;
 
+type VerifiedIdentity = Readonly<{
+  userId: string;
+  email: string | null;
+  avatarUrl: string | null;
+}>;
+
+/**
+ * 校验登录态。
+ *
+ * 项目用的是 ES256 非对称签名密钥，`getClaims()` 会用本地缓存的 JWKS 直接验签，
+ * 不再像 `getUser()` 那样每次都请求 Auth 服务器（省一跳，约 100–300ms）。
+ * 冷启动首次仍需拉一次 JWKS，之后走实例内缓存。
+ *
+ * 如果 JWKS 拉取/验签出现非「未登录」类异常，退回 `getUser()` 兜底：
+ * 不能因为一次网络抖动就把已登录用户当成访客。
+ */
+async function readVerifiedIdentity(
+  client: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+): Promise<VerifiedIdentity | null> {
+  const { data, error } = await client.auth.getClaims();
+  const claims = data?.claims;
+  if (typeof claims?.sub === "string" && claims.sub.length > 0) {
+    const rawAvatar = claims.user_metadata?.["avatar_url"];
+    return {
+      userId: claims.sub,
+      email: typeof claims.email === "string" ? claims.email : null,
+      avatarUrl: typeof rawAvatar === "string" ? rawAvatar : null,
+    };
+  }
+  // 没有会话就是访客，不需要再问一次 Auth 服务器
+  if (!error || error.name === "AuthSessionMissingError") {
+    return null;
+  }
+  console.error("getClaims failed, falling back to getUser", {
+    error: error.name,
+  });
+  const { data: userData } = await client.auth.getUser();
+  const user = userData.user;
+  if (!user) {
+    return null;
+  }
+  const rawAvatar = user.user_metadata?.["avatar_url"];
+  return {
+    userId: user.id,
+    email: user.email ?? null,
+    avatarUrl: typeof rawAvatar === "string" ? rawAvatar : null,
+  };
+}
+
 export async function getAuthContext(): Promise<AuthContext> {
   let client: Awaited<ReturnType<typeof createSupabaseServerClient>>;
   try {
@@ -38,9 +87,8 @@ export async function getAuthContext(): Promise<AuthContext> {
     }
     throw error;
   }
-  const { data } = await client.auth.getUser();
-  const user = data.user;
-  if (!user) {
+  const identity = await readVerifiedIdentity(client);
+  if (!identity) {
     return {
       userId: null,
       email: null,
@@ -57,13 +105,13 @@ export async function getAuthContext(): Promise<AuthContext> {
     client
       .from("subscriptions")
       .select("status, period_end, tier")
-      .eq("user_id", user.id)
+      .eq("user_id", identity.userId)
       .maybeSingle(),
     // 积分包购买记录：有则解锁全档位 / 无水印 / 180 天保留（按 pro 模式生成）
     client
       .from("credit_grants")
       .select("id")
-      .eq("user_id", user.id)
+      .eq("user_id", identity.userId)
       .eq("source", "credit_pack")
       .limit(1),
   ]);
@@ -84,11 +132,10 @@ export async function getAuthContext(): Promise<AuthContext> {
   );
   const isPro =
     subscriptionState === "active" || subscriptionState === "canceling";
-  const rawAvatar = user.user_metadata?.["avatar_url"];
   return {
-    userId: user.id,
-    email: user.email ?? null,
-    avatarUrl: typeof rawAvatar === "string" ? rawAvatar : null,
+    userId: identity.userId,
+    email: identity.email,
+    avatarUrl: identity.avatarUrl,
     isPro,
     hasPack: (packGrant?.length ?? 0) > 0,
     tier: isPro ? (subscription?.tier ?? null) : null,
