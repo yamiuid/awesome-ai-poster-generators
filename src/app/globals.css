@@ -3417,6 +3417,21 @@ html[lang="ar"] .wordmark {
   background: var(--line);
   content: "";
 }
+.login-captcha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.9rem;
+}
+.login-captcha-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+}
+.login-captcha-widget {
+  min-height: 4.1rem;
+}
 .text-field {
   display: block;
   width: 100%;

@@ -1,4 +1,7 @@
 {
   "installCommand": "rm -rf node_modules && npm install --include=optional --foreground-scripts",
-  "crons": [{ "path": "/api/cron/maintenance", "schedule": "0 3 * * *" }]
+  "crons": [
+    { "path": "/api/cron/maintenance", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/blocklist-sync", "schedule": "0 4 * * 1" }
+  ]
 }

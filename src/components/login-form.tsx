@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { loginRedirectPath } from "@/lib/domain/navigation";
 import { createSupabaseBrowserClient } from "@/lib/server/supabase/browser";
+import { getPublicEnv } from "@/lib/server/supabase/public-env";
+import { TurnstileField } from "./turnstile-field";
 
 type Props = Readonly<{
   next: string | undefined;
@@ -19,6 +21,13 @@ type Message = Readonly<{
 }>;
 
 const RESEND_COOLDOWN_SECONDS = 60;
+
+/**
+ * before_user_created hook 抛出的异常前缀（见
+ * supabase/migrations/20260917150000_blocked_email_domains.sql）。
+ * 前端据此把原始数据库报错换成可翻译的文案。
+ */
+const BLOCKED_DOMAIN_MARKER = "EMAIL_DOMAIN_BLOCKED";
 
 export function authRedirectUrl(origin: string, callbackUrl: string): string {
   return `${origin}${callbackUrl}`;
@@ -60,6 +69,23 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const [googlePending, setGooglePending] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaUnavailable, setCaptchaUnavailable] = useState(false);
+  // 每次提交后自增，让 Turnstile 换一个新 token（token 只能用一次）
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const turnstileSiteKey = getPublicEnv().turnstileSiteKey;
+
+  const handleCaptchaToken = useCallback((token: string) => {
+    setCaptchaToken(token);
+    if (token) {
+      setCaptchaUnavailable(false);
+    }
+  }, []);
+
+  const handleCaptchaUnavailable = useCallback(() => {
+    setCaptchaToken("");
+    setCaptchaUnavailable(true);
+  }, []);
 
   // 重发倒计时：countdown > 0 时每秒减 1，到 0 停止（此时允许重发）
   useEffect(() => {
@@ -76,12 +102,53 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
     ? `/auth/callback?next=${encodeURIComponent(next)}`
     : "/auth/callback";
 
+  /**
+   * 把后端原始报错换成可翻译文案：
+   * - 域名黑名单（hook 拒绝注册）→ emailDomainBlocked
+   * - Supabase CAPTCHA 校验失败 → captchaRequired
+   */
+  function presentAuthError(text: string): string {
+    if (text.includes(BLOCKED_DOMAIN_MARKER)) {
+      return t("emailDomainBlocked");
+    }
+    if (/captcha/i.test(text)) {
+      return t("captchaRequired");
+    }
+    return text;
+  }
+
   function showError(text: string): void {
-    setMessage({ tone: "error", text });
+    setMessage({ tone: "error", text: presentAuthError(text) });
   }
 
   function showSuccess(text: string): void {
     setMessage({ tone: "success", text });
+  }
+
+  /**
+   * 配了 site key 就必须带 token 提交：Supabase Auth 侧开着 CAPTCHA 时，
+   * 缺 token 的请求会被直接拒绝，不如在本地就给出可翻译的提示。
+   */
+  function ensureCaptcha(): boolean {
+    if (!turnstileSiteKey) {
+      return true;
+    }
+    if (captchaUnavailable) {
+      showError(t("captchaUnavailable"));
+      return false;
+    }
+    if (!captchaToken) {
+      showError(t("captchaRequired"));
+      return false;
+    }
+    return true;
+  }
+
+  function resetCaptcha(): void {
+    setCaptchaToken("");
+    if (turnstileSiteKey) {
+      setCaptchaReset((value) => value + 1);
+    }
   }
 
   async function google(): Promise<void> {
@@ -114,6 +181,9 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
     event: React.FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
+    if (!ensureCaptcha()) {
+      return;
+    }
     setLoading(true);
     setMessage(null);
     try {
@@ -122,6 +192,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
         options: {
           shouldCreateUser: true,
           emailRedirectTo: authRedirectUrl(window.location.origin, callbackUrl),
+          ...(captchaToken ? { captchaToken } : {}),
         },
       });
       if (result.error) {
@@ -134,11 +205,15 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
     } catch {
       showError(t("sendFailed"));
     } finally {
+      resetCaptcha();
       setLoading(false);
     }
   }
 
   async function resendCode(): Promise<void> {
+    if (!ensureCaptcha()) {
+      return;
+    }
     setLoading(true);
     setMessage(null);
     try {
@@ -147,6 +222,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
         options: {
           shouldCreateUser: true,
           emailRedirectTo: authRedirectUrl(window.location.origin, callbackUrl),
+          ...(captchaToken ? { captchaToken } : {}),
         },
       });
       if (result.error) {
@@ -158,6 +234,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
     } catch {
       showError(t("sendFailed"));
     } finally {
+      resetCaptcha();
       setLoading(false);
     }
   }
@@ -240,6 +317,20 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
                 : t("resendCode")}
             </button>
           </div>
+          {turnstileSiteKey && (
+            <div className="login-captcha">
+              <span className="login-captcha-label">
+                {t("captchaLabel")}
+              </span>
+              <TurnstileField
+                siteKey={turnstileSiteKey}
+                action="signup"
+                resetSignal={captchaReset}
+                onToken={handleCaptchaToken}
+                onUnavailable={handleCaptchaUnavailable}
+              />
+            </div>
+          )}
           <button
             className="solid-button wide"
             type="submit"
@@ -304,6 +395,18 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
           placeholder={t("emailPlaceholder")}
           required
         />
+        {turnstileSiteKey && (
+          <div className="login-captcha">
+            <span className="login-captcha-label">{t("captchaLabel")}</span>
+            <TurnstileField
+              siteKey={turnstileSiteKey}
+              action="signup"
+              resetSignal={captchaReset}
+              onToken={handleCaptchaToken}
+              onUnavailable={handleCaptchaUnavailable}
+            />
+          </div>
+        )}
         <button className="solid-button wide" type="submit" disabled={loading}>
           {loading ? t("sending") : t("sendCode")}
         </button>

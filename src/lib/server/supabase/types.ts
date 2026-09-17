@@ -48,6 +48,14 @@ export type Database = {
         bucket: string;
         created_at: string;
       }>;
+      blocked_email_domains: TableDefinition<{
+        domain: string;
+        reason: string;
+        source: string;
+        active: boolean;
+        created_at: string;
+        updated_at: string;
+      }>;
       credit_grants: TableDefinition<{
         id: string;
         user_id: string;

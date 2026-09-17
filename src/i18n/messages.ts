@@ -595,6 +595,12 @@ const englishMessages = {
       "That code is not valid. Check the email or request a new code.",
     googleUnavailable:
       "Google sign-in is temporarily unavailable. Check the Supabase configuration.",
+    captchaLabel: "Bot check",
+    captchaRequired: "Complete the bot check to continue.",
+    captchaUnavailable:
+      "The bot check could not load. Disable content blockers and reload the page.",
+    emailDomainBlocked:
+      "That email provider cannot be used to create an account. Please sign up with a permanent email address.",
     metadataTitle: "Sign in or create an account | Text to Poster",
   },
   account: {
@@ -2359,6 +2365,11 @@ const coverageTranslations = {
       enterCode: "請輸入電子郵件中的 6 位數驗證碼。",
       invalidCode: "這組驗證碼無效，請檢查電子郵件或要求新的驗證碼。",
       googleUnavailable: "Google 登入暫時無法使用，請檢查 Supabase 設定。",
+      captchaLabel: "機器人驗證",
+      captchaRequired: "請先完成機器人驗證。",
+      captchaUnavailable: "機器人驗證載入失敗，請關閉內容阻擋外掛後重新載入頁面。",
+      emailDomainBlocked:
+        "此電子郵件服務無法用來建立帳戶，請改用長期使用的電子郵件地址。",
       emailPlaceholder: "you@example.com",
       metadataTitle: "登入或建立帳戶 | Text to Poster",
     },
@@ -2694,6 +2705,12 @@ const coverageTranslations = {
         "このコードは無効です。メールを確認するか、新しいコードをリクエストしてください。",
       googleUnavailable:
         "Google ログインは一時的に利用できません。Supabase の設定を確認してください。",
+      captchaLabel: "ボット確認",
+      captchaRequired: "ボット確認を完了してください。",
+      captchaUnavailable:
+        "ボット確認を読み込めませんでした。コンテンツブロッカーを無効にして再読み込みしてください。",
+      emailDomainBlocked:
+        "このメールサービスではアカウントを作成できません。常用のメールアドレスをご利用ください。",
       emailPlaceholder: "you@example.com",
       metadataTitle: "ログインまたはアカウント作成 | Text to Poster",
     },
@@ -3080,6 +3097,12 @@ const coverageTranslations = {
         "Ese código no es válido. Revisa el correo o solicita uno nuevo.",
       googleUnavailable:
         "El acceso con Google no está disponible temporalmente. Revisa la configuración de Supabase.",
+      captchaLabel: "Verificación de seguridad",
+      captchaRequired: "Completa la verificación para continuar.",
+      captchaUnavailable:
+        "No se pudo cargar la verificación de seguridad. Desactiva los bloqueadores de contenido y recarga la página.",
+      emailDomainBlocked:
+        "Ese proveedor de correo no sirve para crear una cuenta. Usa una dirección de correo permanente.",
       emailPlaceholder: "you@example.com",
       metadataTitle: "Inicia sesión o crea una cuenta | Text to Poster",
     },
@@ -3447,6 +3470,12 @@ const coverageTranslations = {
       invalidCode: "هذا الرمز غير صالح. تحقق من البريد أو اطلب رمزًا جديدًا.",
       googleUnavailable:
         "تسجيل الدخول عبر Google غير متاح مؤقتًا. تحقق من إعدادات Supabase.",
+      captchaLabel: "التحقق من الروبوت",
+      captchaRequired: "أكمل التحقق من الروبوت للمتابعة.",
+      captchaUnavailable:
+        "تعذر تحميل التحقق من الروبوت. عطّل مانعات المحتوى وأعد تحميل الصفحة.",
+      emailDomainBlocked:
+        "لا يمكن استخدام مزود البريد هذا لإنشاء حساب. يُرجى التسجيل بعنوان بريد دائم.",
       emailPlaceholder: "you@example.com",
       metadataTitle: "تسجيل الدخول أو إنشاء حساب | Text to Poster",
     },
