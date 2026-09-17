@@ -49,6 +49,15 @@ const nextConfig: NextConfig = {
       "./node_modules/@img/sharp-libvips-linux-x64/**",
     ],
   },
+  experimental: {
+    // 客户端路由缓存：默认对动态路由是 0 秒，导致每次点导航（乃至同页 hash 跳转）
+    // 都要重新等服务端渲染完才换页。给 30 秒后，回访/来回切换是瞬时的，
+    // 首次访问仍有上面的 loading.tsx 骨架兜底。
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
+  },
 };
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");

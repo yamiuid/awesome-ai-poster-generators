@@ -1,8 +1,7 @@
 "use client";
 
 import ky from "ky";
-import { ArrowUpRight, LoaderCircle, Menu, Sparkles, X } from "lucide-react";
-import { useLinkStatus } from "next/link";
+import { ArrowUpRight, Menu, Sparkles, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +12,7 @@ import { LogoMark } from "@/components/logo";
 import { UserMenu } from "@/components/user-menu";
 import { Link } from "@/i18n/navigation";
 import { activePrimaryNav, PRIMARY_NAV_ITEMS } from "@/lib/domain/navigation";
+import { stripLocalePrefix } from "@/lib/i18n/locale";
 import type { AuthContext } from "@/lib/server/auth";
 import { createSupabaseBrowserClient } from "@/lib/server/supabase/browser";
 
@@ -154,23 +154,41 @@ function HeaderAccount({
 }
 
 /**
- * 导航项文字 + 跳转中的即时反馈。
- * 页面是动态渲染（每页都要读登录态），点击后要等服务端返回才换页，
- * 这里用 useLinkStatus 在等待期间给出转圈，避免"点了没反应"的迟滞感。
+ * 导航项。
+ *
+ * `/#studio`、`/#examples` 这类锚点在首页点击时走原生 `<a href="#…">`：
+ * 浏览器直接滚动，不发起路由导航（Next 会把带 hash 的跳转当成一次页面导航，
+ * 实测要等好几秒才更新 URL）。跨页时仍用 <Link> 做客户端跳转。
  */
-function NavLinkLabel({ label }: Readonly<{ label: string }>) {
-  const { pending } = useLinkStatus();
+function HeaderNavLink({
+  item,
+  active,
+  onHome,
+  children,
+}: Readonly<{
+  item: (typeof PRIMARY_NAV_ITEMS)[number];
+  active: boolean;
+  onHome: boolean;
+  children: React.ReactNode;
+}>) {
+  const className = `header-nav-link${active ? " is-active" : ""}`;
+  const ariaCurrent =
+    active && item.key === "generators"
+      ? ("location" as const)
+      : active
+        ? ("page" as const)
+        : undefined;
+  if (onHome && item.href.startsWith("/#")) {
+    return (
+      <a className={className} href={item.href.slice(1)} aria-current={ariaCurrent}>
+        {children}
+      </a>
+    );
+  }
   return (
-    <>
-      {label}
-      {pending && (
-        <LoaderCircle
-          size={13}
-          className="spin header-nav-pending"
-          aria-hidden="true"
-        />
-      )}
-    </>
+    <Link className={className} href={item.href} aria-current={ariaCurrent}>
+      {children}
+    </Link>
   );
 }
 
@@ -243,20 +261,14 @@ export function SiteHeader({
             aria-label={t("primaryNavigation")}
           >
             {PRIMARY_NAV_ITEMS.map((item) => (
-              <Link
+              <HeaderNavLink
                 key={item.key}
-                href={item.href}
-                className={`header-nav-link${activeKey === item.key ? " is-active" : ""}`}
-                aria-current={
-                  activeKey === item.key
-                    ? item.key === "generators"
-                      ? "location"
-                      : "page"
-                    : undefined
-                }
+                item={item}
+                active={activeKey === item.key}
+                onHome={pathname === "/" || stripLocalePrefix(pathname) === "/"}
               >
-                <NavLinkLabel label={t(item.key)} />
-              </Link>
+                {t(item.key)}
+              </HeaderNavLink>
             ))}
             <LocaleSwitcher />
             {account?.userId && account.credits !== null && (
