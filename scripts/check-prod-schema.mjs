@@ -18,9 +18,9 @@
  * 目标项目 ref 取自 .env.local 的 NEXT_PUBLIC_SUPABASE_URL。
  */
 import { readFileSync } from "node:fs";
+import { readdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { readdir } from "node:fs/promises";
 
 const MIGRATIONS_DIR = join(process.cwd(), "supabase", "migrations");
 const ENV_FILE = join(process.cwd(), ".env.local");
@@ -94,6 +94,7 @@ function checksForMigration(file, sql) {
       /add column (?:if not exists )?(\w+)/g,
     )) {
       checks.push({
+        key: `column ${tableName}.${match[1]}`,
         item: `${file}|column ${tableName}.${match[1]}`,
         sql: `exists(select 1 from information_schema.columns c where c.table_schema='public' and c.table_name='${tableName}' and c.column_name='${match[1]}')`,
       });
@@ -104,6 +105,7 @@ function checksForMigration(file, sql) {
   )) {
     const table = match[1];
     checks.push({
+      key: `table ${table}`,
       item: `${file}|table ${table}`,
       sql: `exists(select 1 from information_schema.tables where table_schema='public' and table_name='${table}')`,
     });
@@ -113,6 +115,7 @@ function checksForMigration(file, sql) {
   )) {
     const fn = match[1];
     checks.push({
+      key: `function ${fn}`,
       item: `${file}|function ${fn}`,
       sql: `exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='${fn}')`,
     });
@@ -120,15 +123,57 @@ function checksForMigration(file, sql) {
   return checks;
 }
 
+/**
+ * 迁移里被删掉的对象：按文件名顺序抵消前面的 create / add column，
+ * 否则「清理旧函数」的迁移会被判成漂移（仓库有 create、线上已 drop）。
+ */
+function dropsForMigration(sql) {
+  const cleaned = sql
+    .replace(/^[ \t]*--.*$/gm, "")
+    .replace(/[ \t]+--.*$/gm, "");
+  const dropped = new Set();
+  for (const statement of cleaned.split(";")) {
+    for (const match of statement.matchAll(
+      /drop\s+function\s+(?:if exists\s+)?public\.(\w+)/gi,
+    )) {
+      dropped.add(`function ${match[1]}`);
+    }
+    for (const match of statement.matchAll(
+      /drop\s+table\s+(?:if exists\s+)?public\.(\w+)/gi,
+    )) {
+      dropped.add(`table ${match[1]}`);
+    }
+    const alter = /^\s*alter table\s+(?:if exists\s+)?public\.(\w+)/i.exec(
+      statement,
+    );
+    if (!alter) {
+      continue;
+    }
+    for (const match of statement.matchAll(
+      /drop column (?:if exists )?(\w+)/gi,
+    )) {
+      dropped.add(`column ${alter[1]}.${match[1]}`);
+    }
+  }
+  return dropped;
+}
+
 async function main() {
   const files = (await readdir(MIGRATIONS_DIR))
     .filter((name) => name.endsWith(".sql"))
     .sort();
-  const checks = [];
+  // 按文件名顺序累积：后一个迁移删掉的对象不再要求线上存在
+  const tracked = new Map();
   for (const file of files) {
     const sql = readFileSync(join(MIGRATIONS_DIR, file), "utf8");
-    checks.push(...checksForMigration(file, sql));
+    for (const check of checksForMigration(file, sql)) {
+      tracked.set(check.key, check);
+    }
+    for (const key of dropsForMigration(sql)) {
+      tracked.delete(key);
+    }
   }
+  const checks = [...tracked.values()];
   if (checks.length === 0) {
     console.log("No migration statements to check.");
     return;

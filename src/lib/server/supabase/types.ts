@@ -150,14 +150,6 @@ export type Database = {
         };
         Returns: boolean;
       };
-      claim_guest_generation: {
-        Args: { p_guest_key: string };
-        Returns: boolean;
-      };
-      release_guest_generation: {
-        Args: { p_guest_key: string };
-        Returns: null;
-      };
       create_limited_generation: {
         Args: {
           p_user_id: string | null;

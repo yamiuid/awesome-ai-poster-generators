@@ -29,20 +29,6 @@ export async function settleGenerationCredits(
   }
 }
 
-export async function releaseGuestGeneration(guestKey: string): Promise<void> {
-  const { error } = await createSupabaseAdminClient().rpc(
-    "release_guest_generation",
-    { p_guest_key: guestKey },
-  );
-  if (error) {
-    throw new AppError(
-      "GUEST_RELEASE_FAILED",
-      "We could not release the free generation allowance.",
-      503,
-    );
-  }
-}
-
 export async function failLimitedGeneration(
   generationId: string,
   status: "failed" | "timed_out",
