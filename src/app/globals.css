@@ -4026,7 +4026,7 @@ dialog.modal-backdrop:not([open]) {
 }
 .account-balance {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: end;
   gap: 0 1.5rem;
   margin: 1.5rem 1.5rem 0;
@@ -4039,6 +4039,7 @@ dialog.modal-backdrop:not([open]) {
   margin: 0 0 0.3rem;
 }
 .account-balance-number {
+  grid-area: 2 / 1;
   margin: 0;
   font-family: var(--font-display);
   font-size: 3rem;
@@ -4046,6 +4047,7 @@ dialog.modal-backdrop:not([open]) {
   line-height: 1;
 }
 .account-balance-meta {
+  grid-area: 2 / 2;
   margin: 0 0 0.2rem;
   color: var(--ink-muted);
   font-size: 0.72rem;
@@ -4061,11 +4063,14 @@ dialog.modal-backdrop:not([open]) {
   line-height: 1.5;
 }
 .account-balance-actions {
-  grid-column: 1 / -1;
+  /* 大屏放在额度那行的最右侧；窄屏在媒体查询里退回独占一行 */
+  grid-area: 2 / 3;
+  align-self: end;
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  margin-top: 1rem;
+  justify-content: flex-end;
+  margin: 0 0 0.2rem;
 }
 .account-tabs {
   display: flex;
@@ -4270,6 +4275,20 @@ dialog.modal-backdrop:not([open]) {
   .account-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+  /* 窄屏：动作按钮回到额度下方独占一行 */
+  .account-balance {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .account-balance-number,
+  .account-balance-meta {
+    grid-row: auto;
+  }
+  .account-balance-actions {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    justify-content: flex-start;
+    margin-top: 1rem;
   }
   .billing-top {
     flex-direction: column;
