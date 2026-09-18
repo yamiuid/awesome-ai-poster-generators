@@ -28,6 +28,7 @@ const englishMessages = {
     openMenu: "Open menu",
     closeMenu: "Close menu",
     primaryNavigation: "Primary navigation",
+    language: "Language",
     languageMenu: "Language menu",
     switchTo: "Switch to {language}",
     loginTitle: "Your studio, kept close",
@@ -83,7 +84,6 @@ const englishMessages = {
     examples: "Examples",
     history: "History",
     create: "Create",
-    results: "Results",
     posterResults: "Poster results",
     posterStudio: "Poster studio",
     more: "More",
@@ -100,8 +100,6 @@ const englishMessages = {
       "The image service blocked this request because of its content policy. Adjust the prompt or the reference image and try again.",
     providerTimeout:
       "The image service stopped responding and this run was not charged. Please try again.",
-    referencePolicyHint:
-      "Don’t use photos of real people for adult, political or defamatory content — the image service blocks those requests.",
     startFailed: "We could not start this generation.",
     preparing: "Preparing poster…",
     generating: "Generating poster…",
@@ -766,6 +764,7 @@ const translated = {
       creditsBalance: "可用點數 {credits} 點",
       openMenu: "開啟選單",
       closeMenu: "關閉選單",
+      language: "語言",
       languageMenu: "語言選單",
       switchTo: "切換至{language}",
       loginTitle: "你的工作室，妥善保留",
@@ -883,7 +882,6 @@ const translated = {
       examples: "範例",
       history: "歷史紀錄",
       create: "建立",
-      results: "結果",
       more: "更多",
       noExamples: "目前沒有可用範例。",
       generate: "生成海報",
@@ -1152,6 +1150,7 @@ const translated = {
       freeToStart: "無料で始める",
       openMenu: "メニューを開く",
       closeMenu: "メニューを閉じる",
+      language: "言語",
       languageMenu: "言語メニュー",
       switchTo: "{language}に切り替える",
       loginTitle: "あなたのスタジオを安全に",
@@ -1254,7 +1253,6 @@ const translated = {
       examples: "例",
       history: "履歴",
       create: "作成",
-      results: "結果",
       more: "その他",
       noExamples: "使用できる例はありません。",
       generate: "ポスターを生成",
@@ -1539,6 +1537,7 @@ const translated = {
       freeToStart: "Empezar gratis",
       openMenu: "Abrir menú",
       closeMenu: "Cerrar menú",
+      language: "Idioma",
       languageMenu: "Menú de idioma",
       switchTo: "Cambiar a {language}",
       loginTitle: "Tu estudio, siempre contigo",
@@ -1643,7 +1642,6 @@ const translated = {
       examples: "Ejemplos",
       history: "Historial",
       create: "Crear",
-      results: "Resultados",
       more: "Más",
       noExamples: "No hay ejemplos disponibles.",
       generate: "Generar póster",
@@ -1928,6 +1926,7 @@ const translated = {
       freeToStart: "ابدأ مجانًا",
       openMenu: "فتح القائمة",
       closeMenu: "إغلاق القائمة",
+      language: "اللغة",
       languageMenu: "قائمة اللغة",
       switchTo: "التبديل إلى {language}",
       loginTitle: "استوديوك محفوظ لك",
@@ -2029,7 +2028,6 @@ const translated = {
       examples: "أمثلة",
       history: "السجل",
       create: "إنشاء",
-      results: "النتائج",
       more: "المزيد",
       noExamples: "لا توجد أمثلة متاحة.",
       generate: "إنشاء الملصق",
@@ -2341,8 +2339,6 @@ const coverageTranslations = {
         "圖像服務因內容政策拒絕了這次請求。請調整提示詞或參考圖後再試一次。",
       providerTimeout:
         "圖像服務沒有回應，這次生成不會扣除點數，請再試一次。",
-      referencePolicyHint:
-        "請勿把真人照片用於成人、政治或誹謗性內容，圖像服務會拒絕這類請求。",
       noSavedPosters: "還沒有已儲存的海報",
       noSavedPostersBody: "生成海報後，就能在這裡快速比較。",
       guestHistory: "訪客海報會保留在此瀏覽器 24 小時。",
@@ -2697,8 +2693,6 @@ const coverageTranslations = {
         "画像サービスがコンテンツポリシーによりこのリクエストを拒否しました。プロンプトまたは参考画像を調整して、もう一度お試しください。",
       providerTimeout:
         "画像サービスから応答がありませんでした。今回の生成は課金されません。もう一度お試しください。",
-      referencePolicyHint:
-        "実在の人物の写真を成人向け・政治的・誹謗的な内容に使わないでください。画像サービスが拒否します。",
       noSavedPosters: "保存されたポスターはまだありません",
       noSavedPostersBody: "ポスターを生成すると、ここで簡単に比較できます。",
       guestHistory: "ゲストのポスターはこのブラウザに24時間保存されます。",
@@ -3081,8 +3075,6 @@ const coverageTranslations = {
         "El servicio de imágenes bloqueó esta solicitud por su política de contenido. Ajusta el prompt o la imagen de referencia e inténtalo de nuevo.",
       providerTimeout:
         "El servicio de imágenes dejó de responder y esta generación no se cobró. Inténtalo de nuevo.",
-      referencePolicyHint:
-        "No uses fotos de personas reales en contenido adulto, político o difamatorio: el servicio de imágenes bloquea esas solicitudes.",
       noSavedPosters: "Todavía no hay pósteres guardados",
       noSavedPostersBody:
         "Genera un póster y aparecerá aquí para compararlo rápidamente.",
@@ -3494,8 +3486,6 @@ const coverageTranslations = {
         "رفضت خدمة الصور هذا الطلب بسبب سياسة المحتوى. عدّل الوصف أو الصورة المرجعية وحاول مرة أخرى.",
       providerTimeout:
         "توقفت خدمة الصور عن الاستجابة ولم يتم خصم أي مبلغ. حاول مرة أخرى.",
-      referencePolicyHint:
-        "لا تستخدم صور أشخاص حقيقيين في محتوى للبالغين أو سياسي أو تشهيري؛ فخدمة الصور ترفض هذه الطلبات.",
       noSavedPosters: "لا توجد ملصقات محفوظة بعد",
       noSavedPostersBody: "أنشئ ملصقًا وسيظهر هنا للمقارنة السريعة.",
       guestHistory: "تبقى ملصقات الزائر في هذا المتصفح لمدة 24 ساعة.",

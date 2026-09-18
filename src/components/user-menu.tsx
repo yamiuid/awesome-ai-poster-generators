@@ -13,6 +13,8 @@ type Props = Readonly<{
   email: string | null;
   avatarUrl: string | null;
   tier: SubscriptionTier | null;
+  /** 移动端抽屉里插在「我的历史」和「退出登录」之间的额外一行（语言选择） */
+  mobileLocaleSlot?: React.ReactNode;
 }>;
 
 function Avatar({
@@ -48,7 +50,7 @@ function Avatar({
   );
 }
 
-export function UserMenu({ email, avatarUrl, tier }: Props) {
+export function UserMenu({ email, avatarUrl, tier, mobileLocaleSlot }: Props) {
   const rawLocale = useLocale();
   const locale: UiLocale = isUiLocale(rawLocale) ? rawLocale : "en";
   const t = useTranslations("account");
@@ -121,6 +123,7 @@ export function UserMenu({ email, avatarUrl, tier }: Props) {
       <div className="user-menu-mobile-actions">
         <Link href="/account/billing">{t("billing")}</Link>
         <Link href="/account">{t("history")}</Link>
+        {mobileLocaleSlot}
         <button
           type="button"
           className="user-menu-mobile-signout"

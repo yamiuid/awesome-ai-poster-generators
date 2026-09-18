@@ -245,7 +245,22 @@ function BriefPointInput({
   );
 }
 
-type TierOption = Readonly<{ value: string; label: string; locked: boolean }>;
+type TierOption = Readonly<{
+  value: string;
+  label: string;
+  /** 折叠态显示的短标签，缺省时用 label */
+  shortLabel?: string;
+  locked: boolean;
+}>;
+
+/**
+ * 折叠态只显示选项的主值：比例是「1:1」、分辨率是「2K」、质量是「Low」。
+ * 各语言的描述都写成「主值 / 补充说明」（zh-TW 用全角「／」），这里统一取前半段。
+ */
+function optionMainValue(label: string): string {
+  const [main] = label.split(/[/／]/);
+  return (main ?? label).trim();
+}
 
 /**
  * 原生 select 的替代：自定义 listbox，避免系统控件样式与站点风格脱节。
@@ -285,7 +300,9 @@ function TierSelect({
     () => options.find((option) => option.value === value),
     [options, value],
   );
-  const selectedLabel = selectedOption?.label ?? "";
+  const selectedLabel = selectedOption
+    ? (selectedOption.shortLabel ?? selectedOption.label)
+    : "";
 
   function openMenu(): void {
     setActiveIndex(selectedIndex);
@@ -521,7 +538,7 @@ function OutputSettingsSelect({
       ...ASPECT_RATIOS.map((option) => ({
         group: "aspect" as const,
         value: option,
-        label: `${t(ASPECT_LABEL_KEYS[option])} (${option})`,
+        label: `${option} (${t(ASPECT_LABEL_KEYS[option])})`,
         locked: false,
         selected: option === aspectRatio,
       })),
@@ -695,17 +712,17 @@ function OutputSettingsSelect({
       >
         <span className="option-control-label">
           <span className="option-control-text">
+            <span>{aspectRatio}</span>
+            <span className="output-summary-sep" aria-hidden="true">
+              |
+            </span>
             <span>
-              {t(ASPECT_LABEL_KEYS[aspectRatio]).toLowerCase()}({aspectRatio})
+              {optionMainValue(t(RESOLUTION_LABEL_KEYS[resolution]))}
             </span>
             <span className="output-summary-sep" aria-hidden="true">
               |
             </span>
-            <span>{t(RESOLUTION_LABEL_KEYS[resolution])}</span>
-            <span className="output-summary-sep" aria-hidden="true">
-              |
-            </span>
-            <span>{t(QUALITY_LABEL_KEYS[quality])}</span>
+            <span>{optionMainValue(t(QUALITY_LABEL_KEYS[quality]))}</span>
           </span>
           {selectedSummaryLocked && (
             <LockKeyhole size={13} className="option-lock" aria-hidden="true" />
@@ -1090,7 +1107,7 @@ function MobileStudioTabs({
         className={`studio-tab ${activeTab === "results" ? "is-active" : ""}`}
         onClick={() => onChange("results")}
       >
-        <History size={18} aria-hidden="true" /> {t("results")}
+        <History size={18} aria-hidden="true" /> {t("history")}
       </button>
     </div>
   );
@@ -1274,8 +1291,6 @@ function ReferenceUploader({
           disabled={disabled || slotsLeft <= 0}
         />
       </div>
-      {/* provider 只接受图片素材，内容审核靠它兜底；本地先给一条可操作提示 */}
-      <p className="reference-policy-hint">{t("referencePolicyHint")}</p>
     </div>
   );
 }
@@ -3222,11 +3237,13 @@ export function PosterStudio({
                       {
                         value: "auto",
                         label: t("matchReference"),
+                        shortLabel: t("matchReference"),
                         locked: false,
                       },
                       ...ASPECT_RATIOS.map((option) => ({
                         value: option,
-                        label: `${t(ASPECT_LABEL_KEYS[option])} (${option})`,
+                        label: `${option} (${t(ASPECT_LABEL_KEYS[option])})`,
+                        shortLabel: option,
                         locked: false,
                       })),
                     ]}
@@ -3247,6 +3264,9 @@ export function PosterStudio({
                     options={RESOLUTIONS.map((option) => ({
                       value: option,
                       label: t(RESOLUTION_LABEL_KEYS[option]),
+                      shortLabel: optionMainValue(
+                        t(RESOLUTION_LABEL_KEYS[option]),
+                      ),
                       locked: option !== "1k" && !paid,
                     }))}
                   />

@@ -20,7 +20,16 @@ const LOCALE_LABELS: Readonly<Record<UiLocale, string>> = {
   ar: "العربية",
 };
 
-export function LocaleSwitcher() {
+/**
+ * 语言选择器。
+ *
+ * 同一个组件会同时挂在导航条（桌面端）和移动端抽屉的账户操作区里，
+ * 两处都常驻 DOM、靠 CSS 决定哪一处可见，所以用 `idPrefix` 让各自的
+ * listbox / option 元素 id 保持唯一。
+ */
+export function LocaleSwitcher({
+  idPrefix = "locale-switcher",
+}: Readonly<{ idPrefix?: string }>) {
   const rawLocale = useLocale();
   const locale: UiLocale = isUiLocale(rawLocale) ? rawLocale : "en";
   const pathname = usePathname();
@@ -29,6 +38,8 @@ export function LocaleSwitcher() {
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedIndex = Math.max(0, UI_LOCALES.indexOf(locale));
+  const listboxId = `${idPrefix}-listbox`;
+  const optionId = (index: number): string => `${idPrefix}-option-${index}`;
 
   function openMenu(): void {
     setActiveIndex(selectedIndex);
@@ -124,21 +135,23 @@ export function LocaleSwitcher() {
         aria-label={t("languageMenu")}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-controls="locale-switcher-listbox"
+        aria-controls={listboxId}
         aria-activedescendant={
-          open ? `locale-option-${activeIndex}` : undefined
+          open ? optionId(activeIndex) : undefined
         }
         onClick={() => (open ? setOpen(false) : openMenu())}
         onKeyDown={onKeyDown}
       >
         <span className="option-control-label">
+          {/* 移动端抽屉里显示「语言」标题，桌面端隐藏（只有当前语言值） */}
+          <span className="locale-switcher-label">{t("language")}</span>
           <span className="option-control-text">{LOCALE_LABELS[locale]}</span>
         </span>
         <ChevronDown size={14} className="option-chevron" aria-hidden="true" />
       </button>
       {open && (
         <div
-          id="locale-switcher-listbox"
+          id={listboxId}
           className="option-menu locale-switcher-menu"
           role="listbox"
           aria-label={t("languageMenu")}
@@ -147,7 +160,7 @@ export function LocaleSwitcher() {
             <button
               key={option}
               type="button"
-              id={`locale-option-${index}`}
+              id={optionId(index)}
               role="option"
               aria-selected={option === locale}
               className={`option-item ${index === activeIndex ? "is-active" : ""}`}

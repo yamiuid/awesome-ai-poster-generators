@@ -151,6 +151,10 @@ textarea:focus-visible {
 .header-menu-button {
   display: none;
 }
+/* 移动端顶栏右侧的「积分 + 汉堡按钮」组合容器，桌面端整体隐藏 */
+.header-mobile-actions {
+  display: none;
+}
 .header-cta {
   display: inline-flex;
   align-items: center;
@@ -923,12 +927,14 @@ textarea:focus-visible {
   margin-top: 0.65rem;
 }
 .option-select {
+  --option-select-pad-inline: 0.6rem;
+  position: relative;
   display: flex;
   align-items: flex-start;
   flex-direction: column;
   gap: 0.2rem;
   min-width: 0;
-  padding: 0.4rem 0.6rem;
+  padding: 0.4rem var(--option-select-pad-inline);
   border: 1px solid var(--line);
   border-radius: 0.5rem;
   color: var(--ink-muted);
@@ -945,7 +951,7 @@ textarea:focus-visible {
     grid-column: auto;
   }
   .option-select {
-    padding: 0.4rem 0.45rem;
+    --option-select-pad-inline: 0.45rem;
   }
   .option-control {
     gap: 0.35rem;
@@ -1436,12 +1442,12 @@ textarea:focus-visible {
 .reference-empty {
   display: flex;
   width: 100%;
-  min-height: 9rem;
+  min-height: 6.5rem;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
-  padding: 1.5rem;
+  gap: 0.35rem;
+  padding: 0.9rem;
   border: 0;
   background: transparent;
   color: var(--ink-muted);
@@ -1458,8 +1464,8 @@ textarea:focus-visible {
 }
 .reference-empty-icon {
   display: flex;
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 2.2rem;
+  height: 2.2rem;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--line);
@@ -1473,12 +1479,6 @@ textarea:focus-visible {
 }
 .reference-empty-hint {
   font-size: 0.78rem;
-  color: var(--ink-muted);
-}
-.reference-policy-hint {
-  margin: 0.5rem 0 0;
-  font-size: 0.72rem;
-  line-height: 1.45;
   color: var(--ink-muted);
 }
 .reference-thumb {
@@ -2929,6 +2929,24 @@ textarea:focus-visible {
     background: transparent;
     color: var(--ink);
   }
+  /*
+   * 移动端：logo 只留图标，积分余额挪到顶栏汉堡按钮左侧。
+   * 抽屉里的那份积分 chip 隐藏，否则展开菜单会出现两个余额。
+   */
+  .wordmark-label {
+    display: none;
+  }
+  .header-mobile-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .header-mobile-actions .header-credits {
+    min-height: 2.5rem;
+  }
+  .header-nav .header-credits {
+    display: none;
+  }
   .header-nav {
     display: none;
     position: absolute;
@@ -3150,6 +3168,10 @@ textarea:focus-visible {
 .locale-switcher .option-control[aria-expanded="true"] .option-chevron {
   transform: rotate(180deg);
 }
+/* 「语言」标题只在移动端抽屉里出现，桌面端只有当前语言值 */
+.locale-switcher-label {
+  display: none;
+}
 .locale-switcher-menu {
   inset-inline-start: auto;
   inset-inline-end: 0;
@@ -3164,12 +3186,49 @@ textarea:focus-visible {
   .header-nav .locale-switcher {
     align-self: stretch;
     width: 100%;
-    margin-block: 0.25rem;
+  }
+  /* 已登录时语言行挪进账户操作区（我的历史下面），导航里这一份隐藏 */
+  .header-nav.has-account > .locale-switcher {
+    display: none;
   }
   .header-nav .locale-switcher .option-control {
     min-height: 2.75rem;
+    /* 与抽屉里的菜单项同一套文字样式与缩进：无描边框、底色跟随抽屉 */
     padding-inline: 0.5rem;
-    font-size: 0.82rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+  }
+  .header-nav .locale-switcher .option-control:hover,
+  .header-nav .locale-switcher .option-control[aria-expanded="true"] {
+    background: var(--paper-deep);
+  }
+  .header-nav .locale-switcher .option-control-label {
+    flex: 1;
+    justify-content: space-between;
+  }
+  .header-nav .locale-switcher-label {
+    display: block;
+  }
+  /* 折叠时箭头指向行尾（参考图的 ›），展开时转回来朝下 */
+  .header-nav .locale-switcher .option-chevron {
+    color: var(--ink-muted);
+    transform: rotate(-90deg);
+  }
+  .header-nav .locale-switcher .option-control[aria-expanded="true"] .option-chevron {
+    transform: rotate(0deg);
+  }
+  [dir="rtl"] .header-nav .locale-switcher .option-chevron {
+    transform: rotate(90deg);
+  }
+  [dir="rtl"]
+    .header-nav
+    .locale-switcher
+    .option-control[aria-expanded="true"]
+    .option-chevron {
+    transform: rotate(0deg);
   }
   .header-nav .locale-switcher-menu {
     inset-inline: 0;
@@ -4565,4 +4624,31 @@ dialog.modal-backdrop:not([open]) {
   margin: 0 0 0.5rem;
   color: var(--ink-muted);
   font-size: 0.8rem;
+}
+
+/*
+ * 整个选项框都可点：标签行和四周留白原本是死区，只有下半截的控件能点。
+ * 让控制层不再做定位参照（static），按钮的 ::after 就能铺满整块 .option-select，
+ * 点哪儿都等于点按钮。菜单的定位与宽度随之要按选项框内边距补回来，保持原位。
+ * 这段放在文件末尾，避免与上面的 .option-menu 规则形成「先高后低」的特异性顺序。
+ */
+.option-select > .option-control-wrap {
+  position: static;
+}
+.option-select > .option-control-wrap > .option-control::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.option-select > .option-control-wrap > .option-menu {
+  top: 100%;
+  left: auto;
+  inset-inline-start: calc(-0.75rem + var(--option-select-pad-inline));
+  min-width: calc(100% + 2.5rem - 2 * var(--option-select-pad-inline));
+}
+.option-select > .option-control-wrap > .output-settings-menu {
+  min-width: max(
+    calc(100% + 2.5rem - 2 * var(--option-select-pad-inline)),
+    min(34rem, calc(100vw - 2rem))
+  );
 }

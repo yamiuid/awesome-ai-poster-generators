@@ -137,7 +137,11 @@ function useHeaderAccount(
 
 function HeaderAccount({
   account,
-}: Readonly<{ account: HeaderAccount | null }>) {
+  mobileLocaleSlot,
+}: Readonly<{
+  account: HeaderAccount | null;
+  mobileLocaleSlot?: React.ReactNode;
+}>) {
   if (!account) {
     return <span className="header-account-loading" aria-hidden="true" />;
   }
@@ -147,10 +151,31 @@ function HeaderAccount({
         email={account.email}
         avatarUrl={account.avatarUrl}
         tier={account.tier}
+        mobileLocaleSlot={mobileLocaleSlot}
       />
     );
   }
   return null;
+}
+
+/**
+ * 积分余额 chip。
+ *
+ * 同一份标记渲染在两个位置：桌面端在导航条里（语言切换器右侧），
+ * 移动端在顶栏汉堡按钮左侧。靠 CSS 决定哪个位置可见，两边共用同一份
+ * 无障碍名称，键盘和读屏只会遇到当前可见的那一个。
+ */
+function HeaderCredits({
+  credits,
+  className,
+  label,
+}: Readonly<{ credits: number; className: string; label: string }>) {
+  return (
+    <Link className={className} href="/account" aria-label={label}>
+      <Sparkles size={15} aria-hidden="true" />
+      <span>{credits}</span>
+    </Link>
+  );
 }
 
 /**
@@ -235,29 +260,40 @@ export function SiteHeader({
     <header className="site-header" ref={headerRef}>
       <Link className="wordmark" href="/">
         <LogoMark className="wordmark-mark" />
-        <span>Text to Poster</span>
+        <span className="wordmark-label">Text to Poster</span>
       </Link>
 
       {variant === "global" && (
         <>
-          <button
-            type="button"
-            className="header-menu-button"
-            aria-expanded={open}
-            aria-controls="site-header-nav"
-            aria-label={open ? t("closeMenu") : t("openMenu")}
-            onClick={() => setOpen((value) => !value)}
-          >
-            {open ? (
-              <X size={20} aria-hidden="true" />
-            ) : (
-              <Menu size={20} aria-hidden="true" />
+          <div className="header-mobile-actions">
+            {account?.userId && account.credits !== null && (
+              <HeaderCredits
+                credits={account.credits ?? 0}
+                className="header-credits"
+                label={t("creditsBalance", { credits: account.credits ?? 0 })}
+              />
             )}
-          </button>
+            <button
+              type="button"
+              className="header-menu-button"
+              aria-expanded={open}
+              aria-controls="site-header-nav"
+              aria-label={open ? t("closeMenu") : t("openMenu")}
+              onClick={() => setOpen((value) => !value)}
+            >
+              {open ? (
+                <X size={20} aria-hidden="true" />
+              ) : (
+                <Menu size={20} aria-hidden="true" />
+              )}
+            </button>
+          </div>
 
           <nav
             id="site-header-nav"
-            className={`header-nav${open ? " is-open" : ""}`}
+            className={`header-nav${open ? " is-open" : ""}${
+              account?.userId ? " has-account" : ""
+            }`}
             aria-label={t("primaryNavigation")}
           >
             {PRIMARY_NAV_ITEMS.map((item) => (
@@ -272,18 +308,18 @@ export function SiteHeader({
             ))}
             <LocaleSwitcher />
             {account?.userId && account.credits !== null && (
-              <Link
+              <HeaderCredits
+                credits={account.credits ?? 0}
                 className="header-credits"
-                href="/account"
-                aria-label={t("creditsBalance", {
-                  credits: account.credits ?? 0,
-                })}
-              >
-                <Sparkles size={15} aria-hidden="true" />
-                <span>{account.credits}</span>
-              </Link>
+                label={t("creditsBalance", { credits: account.credits ?? 0 })}
+              />
             )}
-            <HeaderAccount account={account} />
+            <HeaderAccount
+              account={account}
+              mobileLocaleSlot={
+                <LocaleSwitcher idPrefix="account-locale-switcher" />
+              }
+            />
             {account !== null && !account.userId && (
               <button
                 type="button"
