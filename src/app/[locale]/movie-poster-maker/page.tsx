@@ -111,6 +111,9 @@ const movieDirections = [
   },
 ] as const;
 
+/** 静态化开关：见 app/[locale]/page.tsx 的说明 */
+export const dynamic = "force-static";
+
 export async function generateMetadata({ params }: RouteParams) {
   const locale = await resolveRouteLocale(params);
   const t = await getTranslations("styles");

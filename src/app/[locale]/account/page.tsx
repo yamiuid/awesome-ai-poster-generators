@@ -20,6 +20,9 @@ import {
 import { createPosterUrls } from "@/lib/server/storage";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
 
+/** 服务端读登录态 + searchParams（tab），必须按请求渲染 */
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: RouteParams): Promise<Metadata> {

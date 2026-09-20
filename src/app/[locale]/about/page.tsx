@@ -4,6 +4,9 @@ import { SiteHeader } from "@/components/site-header";
 import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 import { pageMeta } from "@/lib/seo";
 
+/** 静态化开关：见 app/[locale]/page.tsx 的说明 */
+export const dynamic = "force-static";
+
 export async function generateMetadata({ params }: RouteParams) {
   const locale = await resolveRouteLocale(params);
   const t = await getTranslations("about");

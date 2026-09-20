@@ -4,6 +4,9 @@ import { SiteHeader } from "@/components/site-header";
 import { SubscriptionStatus } from "@/components/subscription-status";
 import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 
+/** 静态化开关：见 app/[locale]/page.tsx 的说明（订阅状态在客户端轮询） */
+export const dynamic = "force-static";
+
 export async function generateMetadata({
   params,
 }: RouteParams): Promise<Metadata> {

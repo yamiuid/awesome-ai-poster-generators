@@ -15,7 +15,8 @@ import {
   settleGenerationCredits,
 } from "./generation-settlement";
 import type { GenerationRow } from "./generation-types";
-import { bakeWatermark, downloadProviderImage, uploadPoster } from "./storage";
+import { bakeWatermark } from "./image-ops";
+import { downloadProviderImage, uploadPoster } from "./storage";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
 const POLL_DELAY_MS = 4_000;

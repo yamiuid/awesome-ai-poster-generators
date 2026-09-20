@@ -4,6 +4,9 @@ import { LoginForm } from "@/components/login-form";
 import { SiteHeader } from "@/components/site-header";
 import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 
+/** 读 searchParams（next / error 回跳参数），必须按请求渲染 */
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: RouteParams): Promise<Metadata> {

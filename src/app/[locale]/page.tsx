@@ -11,6 +11,13 @@ import { localizedPath } from "@/lib/i18n/locale";
 import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 import { pageMeta, siteUrl } from "@/lib/seo";
 
+/**
+ * 静态化开关。vinext 的构建期判定只读 page 文件，而 [locale] 是动态段路由，
+ * 默认会被判成 dynamic；这里显式声明后，五个语言各预渲染一份 HTML。
+ * 登录态在客户端解析（use-account-status.ts），服务端渲染不读请求态。
+ */
+export const dynamic = "force-static";
+
 export async function generateMetadata({ params }: RouteParams) {
   const locale = await resolveRouteLocale(params);
   const t = await getTranslations("home");

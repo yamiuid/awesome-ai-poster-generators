@@ -55,3 +55,8 @@ PROJECT_AUDIT_REPORT.html
 .git-clean-index*
 .git-final-index*
 .git-idx*
+/dist/
+.vinext/
+.wrangler/
+.dev.vars
+.dev.vars.*

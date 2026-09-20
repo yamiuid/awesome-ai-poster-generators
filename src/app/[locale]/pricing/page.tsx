@@ -17,6 +17,9 @@ import {
   isStudioPlanConfigured,
 } from "@/lib/server/env";
 
+/** 静态化开关：见 app/[locale]/page.tsx 的说明（登录态在客户端解析） */
+export const dynamic = "force-static";
+
 export async function generateMetadata({ params }: RouteParams) {
   const locale = await resolveRouteLocale(params);
   const t = await getTranslations("pricing");

@@ -6,9 +6,9 @@ import {
   isPrivateAddress,
   keyToPublicUrl,
   uploadPoster,
-  watermarkSvg,
 } from "./storage";
 import { createSupabaseAdminClient } from "./supabase/admin";
+import { watermarkMetrics, watermarkOverlay } from "./watermark-png";
 
 vi.mock("./supabase/admin", () => ({
   createSupabaseAdminClient: vi.fn(),
@@ -69,12 +69,22 @@ describe("provider image address checks", () => {
 });
 
 describe("production-safe watermark renderer", () => {
-  it("draws the label with vector blocks instead of system-font glyphs", () => {
-    const svg = watermarkSvg(1024, 1280).toString("utf8");
+  it("emits a PNG overlay sized to the label instead of relying on system fonts", () => {
+    const overlay = watermarkOverlay(1024);
+    const { cellSize, labelWidth, labelHeight } = watermarkMetrics(1024);
 
-    expect(svg).toContain("TEXTTOPOSTER.COM");
-    expect(svg).toContain("<rect");
-    expect(svg).not.toContain("<text");
+    expect([...overlay.png.subarray(0, 8)]).toEqual([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ]);
+    expect(overlay.width).toBe(labelWidth + overlay.shadowOffset);
+    expect(overlay.height).toBe(labelHeight + overlay.shadowOffset);
+    expect(cellSize).toBe(4);
+    // 有透明像素（不是整块实心），也有不透明像素（确实画了字）
+    const alphas = new Set<number>();
+    for (let index = 3; index < overlay.png.length; index += 1) {
+      alphas.add(overlay.png[index] ?? 0);
+    }
+    expect(alphas.size).toBeGreaterThan(2);
   });
 });
 

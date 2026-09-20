@@ -1,55 +1,13 @@
-import type { LookupAddress } from "node:dns";
-import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
 import * as cheerio from "cheerio";
-import type { Dispatcher } from "undici";
-import { ProxyAgent, Socks5ProxyAgent, fetch as undiciFetch } from "undici";
 import { type UrlPreview, urlPreviewSchema } from "@/lib/domain/url-preview";
 import { AppError } from "./errors";
+import { ipVersion, resolveHostAddresses } from "./net-guard";
+import { createProxiedFetch } from "./proxy-fetch";
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
 const FETCH_TIMEOUT_MS = 10_000;
 const MAX_CONTENT_CHARS = 6_000;
-
-let proxyDispatcher: Dispatcher | undefined;
-
-// 本地开发网络（如沙箱/公司网络）DNS 可能被劫持，所有域名都解析到内网地址；
-// 与 APIMart 客户端一致，配置代理后由代理端解析域名并跳过本地 DNS 预检。
-function getProxiedFetch(): typeof fetch | undefined {
-  const proxyUrl =
-    process.env["APIMART_PROXY"] ??
-    process.env["HTTPS_PROXY"] ??
-    process.env["https_proxy"];
-  if (!proxyUrl) {
-    return undefined;
-  }
-  if (!proxyDispatcher) {
-    proxyDispatcher = proxyUrl.trim().toLowerCase().startsWith("socks")
-      ? new Socks5ProxyAgent(proxyUrl)
-      : new ProxyAgent(proxyUrl);
-  }
-  const dispatcher = proxyDispatcher;
-  return (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const request =
-      input instanceof globalThis.Request
-        ? input
-        : new globalThis.Request(String(input), init);
-    const body =
-      request.method === "GET" ||
-      request.method === "HEAD" ||
-      request.body === null
-        ? undefined
-        : Buffer.from(await request.arrayBuffer());
-    return undiciFetch(request.url, {
-      method: request.method,
-      headers: request.headers,
-      signal: request.signal,
-      dispatcher,
-      ...(body === undefined ? {} : { body }),
-    } as unknown as Parameters<typeof undiciFetch>[1]);
-  }) as unknown as typeof fetch;
-}
 
 function isPrivateIpv4(ip: string): boolean {
   const parts = ip.split(".").map(Number);
@@ -91,13 +49,13 @@ function isPrivateIpv6(ip: string): boolean {
   }
   if (normalized.startsWith("::ffff:")) {
     const v4 = normalized.slice("::ffff:".length);
-    return isIP(v4) === 4 && isPrivateIpv4(v4);
+    return ipVersion(v4) === 4 && isPrivateIpv4(v4);
   }
   return false;
 }
 
 export function isPrivateAddress(address: string): boolean {
-  const version = isIP(address);
+  const version = ipVersion(address);
   if (version === 4) {
     return isPrivateIpv4(address);
   }
@@ -109,9 +67,9 @@ export function isPrivateAddress(address: string): boolean {
 }
 
 async function assertPublicHost(hostname: string): Promise<void> {
-  let addresses: readonly LookupAddress[] = [];
+  let addresses: readonly string[] = [];
   try {
-    addresses = await lookup(hostname, { all: true, verbatim: true });
+    addresses = await resolveHostAddresses(hostname);
   } catch {
     throw new AppError(
       "URL_PREVIEW_UNREACHABLE",
@@ -126,7 +84,7 @@ async function assertPublicHost(hostname: string): Promise<void> {
       422,
     );
   }
-  for (const { address } of addresses) {
+  for (const address of addresses) {
     if (isPrivateAddress(address)) {
       throw new AppError(
         "URL_PREVIEW_BLOCKED",
@@ -280,7 +238,7 @@ export async function fetchPageHtml(
   truncated: boolean;
   finalUrl: URL;
 }> {
-  const proxiedFetch = getProxiedFetch();
+  const proxiedFetch = createProxiedFetch();
   const usesProxy = proxiedFetch !== undefined;
   let current = url;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {

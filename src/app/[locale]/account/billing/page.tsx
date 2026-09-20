@@ -10,6 +10,9 @@ import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 import { getAuthContext } from "@/lib/server/auth";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
 
+/** 服务端读登录态与订阅记录，必须按请求渲染 */
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: RouteParams): Promise<Metadata> {

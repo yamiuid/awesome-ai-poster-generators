@@ -1,4 +1,6 @@
 /** 参考图上传限制：类型、大小、像素总量 */
+import { readImageInfo } from "./image-ops";
+
 export const REFERENCE_MAX_BYTES = 10 * 1024 * 1024;
 export const REFERENCE_MAX_PIXELS = 24_000_000; // 约 6000×4000
 
@@ -54,8 +56,8 @@ export function referenceExtension(mime: string): string {
 }
 
 /**
- * 校验参考图：魔数 + 大小 + 像素总量（sharp 按需加载，
- * 避免引用本模块的轻路由触发原生库加载）。
+ * 校验参考图：魔数 + 大小 + 像素总量。
+ * 尺寸读取走 image-ops：Workers 上用 Images binding 的 .info()，Node 上用 sharp。
  * 返回嗅探出的 MIME；不合法时抛错。
  */
 export async function assertReferenceImage(bytes: Buffer): Promise<string> {
@@ -69,9 +71,8 @@ export async function assertReferenceImage(bytes: Buffer): Promise<string> {
   if (!mime) {
     throw new Error("Reference image must be JPEG, PNG or WebP.");
   }
-  const { default: sharp } = await import("sharp");
-  const metadata = await sharp(bytes).metadata();
-  if ((metadata.width ?? 0) * (metadata.height ?? 0) > REFERENCE_MAX_PIXELS) {
+  const info = await readImageInfo(bytes);
+  if (info.width * info.height > REFERENCE_MAX_PIXELS) {
     throw new Error("Reference image has too many pixels.");
   }
   return mime;

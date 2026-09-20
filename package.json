@@ -10,7 +10,11 @@
     "onlyBuiltDependencies": [
       "sharp",
       "@img/sharp-linux-x64",
-      "@img/sharp-win32-x64"
+      "@img/sharp-win32-x64",
+      "@parcel/watcher",
+      "@swc/core",
+      "esbuild",
+      "workerd"
     ]
   },
   "overrides": {
@@ -27,38 +31,53 @@
     "check:schema": "node scripts/check-prod-schema.mjs",
     "format": "biome format --write .",
     "migrate:r2": "node scripts/migrate-posters-to-r2.mjs",
-    "migrate:r2:dry-run": "node scripts/migrate-posters-to-r2.mjs --dry-run"
+    "migrate:r2:dry-run": "node scripts/migrate-posters-to-r2.mjs --dry-run",
+    "dev:vinext": "vinext dev --port 3001",
+    "build:vinext": "vinext build",
+    "start:vinext": "wrangler dev --config dist/server/wrangler.json",
+    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json",
+    "deploy:response-store": "wrangler deploy --config wrangler.response-store.jsonc"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1112.0",
+    "@cloudflare/workers-response-store": "0.1.0-beta.0",
     "@img/sharp-libvips-linux-x64": "1.2.4",
     "@img/sharp-linux-x64": "0.34.5",
     "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "2.111.0",
+    "@vinext/cloudflare": "1.0.0-beta.8",
     "@waffo/pancake-ts": "^0.21.0",
     "cheerio": "^1.2.0",
     "ky": "2.0.2",
     "lucide-react": "1.28.0",
     "next": "16.2.12",
     "next-intl": "^4.14.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-server-dom-webpack": "^19.3.0",
     "sharp": "0.34.5",
     "undici": "8.9.0",
+    "vinext": "1.0.0-beta.10",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",
+    "@cloudflare/vite-plugin": "^1.56.0",
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "20.19.43",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "^6.1.1",
+    "@vitejs/plugin-rsc": "^0.5.35",
     "react-doctor": "0.9.3",
     "react-grab": "0.1.50",
     "react-scan": "0.5.7",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3",
-    "vitest": "4.1.10"
-  }
+    "vite": "^8.3.0",
+    "vitest": "4.1.10",
+    "wrangler": "^4.135.0"
+  },
+  "type": "module"
 }

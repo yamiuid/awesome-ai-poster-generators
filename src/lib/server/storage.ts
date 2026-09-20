@@ -1,5 +1,3 @@
-import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
 import {
   DeleteObjectsCommand,
   ListObjectsV2Command,
@@ -7,6 +5,8 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getServerEnv } from "./env";
+import { readImageInfo } from "./image-ops";
+import { ipVersion, resolveHostAddresses } from "./net-guard";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
 const MAX_PROVIDER_IMAGE_BYTES = 25 * 1024 * 1024;
@@ -14,7 +14,7 @@ const MAX_PROVIDER_IMAGE_PIXELS = 40_000_000;
 const MAX_REDIRECTS = 3;
 
 export function isPrivateAddress(address: string): boolean {
-  if (isIP(address) === 4) {
+  if (ipVersion(address) === 4) {
     const octets = address.split(".").map(Number);
     const [first, second] = octets;
     return (
@@ -66,9 +66,9 @@ async function assertSafeProviderUrl(input: string): Promise<URL> {
   ) {
     throw new Error("Provider image URL points to a private address.");
   }
-  const addresses = isIP(hostname)
+  const addresses = ipVersion(hostname)
     ? [hostname]
-    : (await lookup(hostname, { all: true })).map((entry) => entry.address);
+    : await resolveHostAddresses(hostname);
   if (addresses.some(isPrivateAddress)) {
     throw new Error("Provider image URL resolves to a private address.");
   }
@@ -102,51 +102,6 @@ async function readLimitedBody(response: Response): Promise<Buffer> {
   return Buffer.concat(chunks, total);
 }
 
-const WATERMARK_GLYPHS: Readonly<Record<string, readonly string[]>> = {
-  T: ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
-  E: ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
-  X: ["10001", "10001", "01010", "00100", "01010", "10001", "10001"],
-  O: ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
-  P: ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
-  S: ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
-  R: ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
-  ".": ["00000", "00000", "00000", "00000", "00000", "00100", "00100"],
-  C: ["01110", "10001", "10000", "10000", "10000", "10001", "01110"],
-  M: ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
-};
-
-export function watermarkSvg(width: number, height: number): Buffer {
-  const label = "TEXTTOPOSTER.COM";
-  const cellSize = Math.max(3, Math.round(width / 256));
-  const margin = Math.max(20, Math.round(width / 36));
-  const glyphWidth = cellSize * 5;
-  const gap = cellSize;
-  const labelWidth = label.length * glyphWidth + (label.length - 1) * gap;
-  const left = width - margin - labelWidth;
-  const top = height - margin - cellSize * 7;
-  const blocks = label
-    .split("")
-    .flatMap((character, glyphIndex) => {
-      const glyph = WATERMARK_GLYPHS[character];
-      if (!glyph) {
-        return [];
-      }
-      return glyph.flatMap((row, rowIndex) =>
-        [...row].flatMap((pixel, columnIndex) =>
-          pixel === "1"
-            ? [
-                `<rect x="${left + glyphIndex * (glyphWidth + gap) + columnIndex * cellSize}" y="${top + rowIndex * cellSize}" width="${cellSize}" height="${cellSize}"/>`,
-              ]
-            : [],
-        ),
-      );
-    })
-    .join("");
-  return Buffer.from(
-    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><title>${label}</title><g fill="black" fill-opacity="0.45" transform="translate(2 2)">${blocks}</g><g fill="white" fill-opacity="0.9">${blocks}</g></svg>`,
-  );
-}
-
 export async function downloadProviderImage(url: string): Promise<Buffer> {
   let current = await assertSafeProviderUrl(url);
   for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect += 1) {
@@ -175,29 +130,13 @@ export async function downloadProviderImage(url: string): Promise<Buffer> {
       throw new Error("Provider returned a non-image response.");
     }
     const image = await readLimitedBody(response);
-    // 按需加载 sharp：storage 模块被 generation 查询路由引用时不应触发原生库加载
-    const { default: sharp } = await import("sharp");
-    const metadata = await sharp(image).metadata();
-    if (
-      (metadata.width ?? 0) * (metadata.height ?? 0) >
-      MAX_PROVIDER_IMAGE_PIXELS
-    ) {
+    const info = await readImageInfo(image);
+    if (info.width * info.height > MAX_PROVIDER_IMAGE_PIXELS) {
       throw new Error("Provider image has too many pixels.");
     }
     return image;
   }
   throw new Error("Provider image redirect failed.");
-}
-
-export async function bakeWatermark(image: Buffer): Promise<Buffer> {
-  const { default: sharp } = await import("sharp");
-  const metadata = await sharp(image).metadata();
-  const width = metadata.width ?? 1024;
-  const height = metadata.height ?? 1024;
-  return sharp(image)
-    .composite([{ input: watermarkSvg(width, height), gravity: "southeast" }])
-    .png()
-    .toBuffer();
 }
 
 export async function uploadPoster(path: string, image: Buffer): Promise<void> {
