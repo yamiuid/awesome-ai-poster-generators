@@ -2,7 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { WaffoPancake } from "@waffo/pancake-ts";
 import type { Database } from "./supabase/types";
 import {
+  applyCreditPackEvent,
   applySubscriptionEvent,
+  isCreditPackOrder,
   type WaffoEventPayload,
 } from "./waffo-event-processing";
 
@@ -60,7 +62,12 @@ export async function replayUnprocessedPaymentEvents(
       continue;
     }
     try {
-      await applySubscriptionEvent(admin, payload as WaffoEventPayload);
+      const event = payload as WaffoEventPayload;
+      if (isCreditPackOrder(event.data)) {
+        await applyCreditPackEvent(admin, event);
+      } else {
+        await applySubscriptionEvent(admin, event);
+      }
       await markProcessed(admin, row.waffo_event_id, now);
       replayed += 1;
     } catch (error) {

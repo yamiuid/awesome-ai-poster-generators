@@ -7,13 +7,22 @@
       "!**/node_modules",
       "!**/public",
       "!**/output",
-      "!**/.playwright-cli"
+      "!**/.playwright-cli",
+      "!**/.playwright-mcp",
+      "!**/.omo",
+      "!**/.wrangler",
+      "!**/.vercel",
+      "!**/.vinext",
+      "!**/.tmp-*",
+      "!**/_tmp_*",
+      "!**/dist"
     ]
   },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
-    "indentWidth": 2
+    "indentWidth": 2,
+    "lineEnding": "crlf"
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {

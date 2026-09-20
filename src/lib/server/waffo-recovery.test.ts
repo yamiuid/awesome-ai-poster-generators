@@ -6,6 +6,7 @@ import {
 
 const mocks = vi.hoisted(() => ({
   applied: [] as Array<Record<string, unknown>>,
+  credited: [] as Array<Record<string, unknown>>,
   applyError: null as Error | null,
   paymentRows: [] as Array<{ waffo_event_id: string; payload: unknown }>,
   paymentReadError: null as { message: string } | null,
@@ -15,6 +16,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./waffo-event-processing", () => ({
+  applyCreditPackEvent: async (
+    _admin: unknown,
+    event: Record<string, unknown>,
+  ) => {
+    mocks.credited.push(event);
+  },
   applySubscriptionEvent: async (
     _admin: unknown,
     event: Record<string, unknown>,
@@ -24,6 +31,9 @@ vi.mock("./waffo-event-processing", () => ({
     }
     mocks.applied.push(event);
   },
+  isCreditPackOrder: (data: Record<string, unknown>) =>
+    (data["orderMetadata"] as Record<string, unknown> | undefined)?.["kind"] ===
+    "credit_pack",
 }));
 
 function adminMock() {
@@ -84,6 +94,7 @@ function event(id: string, eventType: string): Record<string, unknown> {
 describe("replayUnprocessedPaymentEvents", () => {
   beforeEach(() => {
     mocks.applied.length = 0;
+    mocks.credited.length = 0;
     mocks.applyError = null;
     mocks.paymentRows.length = 0;
     mocks.paymentReadError = null;
@@ -114,6 +125,28 @@ describe("replayUnprocessedPaymentEvents", () => {
 
     expect(result).toEqual({ replayed: 0, unresolved: 0, failed: 1 });
     expect(mocks.processedIds).toEqual([]);
+  });
+
+  it("replays a credit-pack event through the credit grant handler", async () => {
+    mocks.paymentRows.push({
+      waffo_event_id: "evt_pack",
+      payload: {
+        id: "evt_pack",
+        eventType: "order.completed",
+        timestamp: "2026-09-08T04:20:43.300Z",
+        data: {
+          orderId: "ORD_PACK",
+          orderMetadata: { kind: "credit_pack" },
+        },
+      },
+    });
+
+    const result = await replayUnprocessedPaymentEvents(adminMock(), NOW);
+
+    expect(result).toEqual({ replayed: 1, unresolved: 0, failed: 0 });
+    expect(mocks.credited).toHaveLength(1);
+    expect(mocks.applied).toHaveLength(0);
+    expect(mocks.processedIds).toEqual(["evt_pack"]);
   });
 
   it("retires an unusable payload instead of rescanning it forever", async () => {

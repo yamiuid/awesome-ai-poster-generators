@@ -7,12 +7,15 @@ import { createSupabaseServerClient } from "@/lib/server/supabase/server";
 export async function GET(): Promise<NextResponse> {
   const auth = await getAuthContext();
   if (!auth.userId) {
-    return NextResponse.json({
-      signedIn: false,
-      isPro: false,
-      hasPack: false,
-      subscriptionState: auth.subscriptionState,
-    });
+    return NextResponse.json(
+      {
+        signedIn: false,
+        isPro: false,
+        hasPack: false,
+        subscriptionState: auth.subscriptionState,
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   }
   const { data: subscription } = await (await createSupabaseServerClient())
     .from("subscriptions")
@@ -37,13 +40,16 @@ export async function GET(): Promise<NextResponse> {
     ? null
     : await getAccountBalance(admin, auth.userId);
 
-  return NextResponse.json({
-    signedIn: true,
-    isPro: auth.isPro,
-    // 静态页没有服务端注入，客户端要靠这两个字段决定界面档位
-    hasPack: auth.hasPack,
-    subscriptionState: auth.subscriptionState,
-    subscription,
-    balance,
-  });
+  return NextResponse.json(
+    {
+      signedIn: true,
+      isPro: auth.isPro,
+      // 静态页没有服务端注入，客户端要靠这两个字段决定界面档位
+      hasPack: auth.hasPack,
+      subscriptionState: auth.subscriptionState,
+      subscription,
+      balance,
+    },
+    { headers: { "Cache-Control": "private, no-store" } },
+  );
 }

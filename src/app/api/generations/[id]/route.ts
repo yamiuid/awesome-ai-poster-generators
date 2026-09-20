@@ -17,7 +17,9 @@ export async function GET(
     const auth = await getAuthContext();
     const identity = getGuestIdentity(request);
     const actor = getActorForRequest(auth.userId, identity, auth.isPro);
-    return Response.json(await pollGeneration(id, actor));
+    return Response.json(await pollGeneration(id, actor), {
+      headers: { "Cache-Control": "private, no-store" },
+    });
   } catch (error) {
     return responseForError(error);
   }

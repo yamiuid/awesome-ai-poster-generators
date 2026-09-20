@@ -66,7 +66,7 @@ export function isPrivateAddress(address: string): boolean {
   return true;
 }
 
-async function assertPublicHost(hostname: string): Promise<void> {
+async function assertPublicHost(hostname: string): Promise<string> {
   let addresses: readonly string[] = [];
   try {
     addresses = await resolveHostAddresses(hostname);
@@ -93,6 +93,15 @@ async function assertPublicHost(hostname: string): Promise<void> {
       );
     }
   }
+  const [address] = addresses;
+  if (!address) {
+    throw new AppError(
+      "URL_PREVIEW_UNREACHABLE",
+      "This link could not be resolved.",
+      422,
+    );
+  }
+  return address;
 }
 
 export function cleanBodyText(text: string): string {
@@ -227,6 +236,90 @@ async function readBodyCapped(
   };
 }
 
+type FetchWithCleanup = Readonly<{
+  response: Response;
+  cleanup?: () => Promise<void>;
+}>;
+
+async function fetchWithPinnedAddress(
+  url: URL,
+  init: RequestInit,
+  address: string,
+): Promise<FetchWithCleanup> {
+  const isNodeProduction =
+    typeof process !== "undefined" &&
+    process.versions?.node !== undefined &&
+    process.env.NODE_ENV === "production";
+  if (!isNodeProduction) {
+    return { response: await fetch(url, init) };
+  }
+
+  const { Agent, buildConnector, fetch: undiciFetch } = await import("undici");
+  const connector = buildConnector({});
+  const pinnedConnector: typeof connector = (options, callback) => {
+    connector(
+      {
+        ...options,
+        hostname: address,
+        servername: options.servername ?? url.hostname,
+      },
+      callback,
+    );
+  };
+  const dispatcher = new Agent({ connect: pinnedConnector });
+  const undiciInit = {
+    dispatcher,
+    ...(init.redirect ? { redirect: init.redirect } : {}),
+    ...(init.signal ? { signal: init.signal } : {}),
+    ...(init.headers ? { headers: init.headers } : {}),
+  } satisfies import("undici").RequestInit;
+  let response: Awaited<ReturnType<typeof undiciFetch>>;
+  try {
+    response = await undiciFetch(url, undiciInit);
+  } catch (error) {
+    await dispatcher.close();
+    throw error;
+  }
+  const nativeHeaders = new Headers();
+  response.headers.forEach((value, key) => {
+    nativeHeaders.set(key, value);
+  });
+  const nativeBody = response.body
+    ? new ReadableStream<Uint8Array>({
+        async start(controller) {
+          const reader = response.body?.getReader();
+          if (!reader) {
+            controller.close();
+            return;
+          }
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                controller.close();
+                return;
+              }
+              controller.enqueue(value);
+            }
+          } catch (error) {
+            controller.error(error);
+          }
+        },
+      })
+    : null;
+  const nativeResponse = new Response(nativeBody, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: nativeHeaders,
+  });
+  return {
+    response: nativeResponse,
+    cleanup: async () => {
+      await dispatcher.close();
+    },
+  };
+}
+
 export async function fetchPageHtml(
   url: URL,
   options?: { signal?: AbortSignal },
@@ -238,14 +331,15 @@ export async function fetchPageHtml(
   truncated: boolean;
   finalUrl: URL;
 }> {
-  const proxiedFetch = createProxiedFetch();
-  const usesProxy = proxiedFetch !== undefined;
+  const isNodeProduction =
+    typeof process !== "undefined" &&
+    process.versions?.node !== undefined &&
+    process.env.NODE_ENV === "production";
+  const proxiedFetch = isNodeProduction ? undefined : createProxiedFetch();
   let current = url;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-    if (!usesProxy) {
-      await assertPublicHost(current.hostname);
-    }
-    const response = await (proxiedFetch ?? fetch)(current, {
+    const address = await assertPublicHost(current.hostname);
+    const requestInit: RequestInit = {
       redirect: "manual",
       signal: AbortSignal.any([
         AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -255,46 +349,54 @@ export async function fetchPageHtml(
         "user-agent": "TextToPosterBot/1.0 (+https://texttoposter.com)",
         accept: "text/html,application/xhtml+xml",
       },
-    });
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get("location");
-      if (!location) {
-        throw new AppError(
-          "URL_PREVIEW_UNREACHABLE",
-          "This link redirected without a target.",
-          422,
-        );
-      }
-      current = new URL(location, current);
-      if (current.protocol !== "http:" && current.protocol !== "https:") {
-        throw new AppError(
-          "URL_PREVIEW_BLOCKED",
-          "This link is not supported.",
-          422,
-        );
-      }
-      continue;
-    }
-    const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.toLowerCase().includes("text/html")) {
-      throw new AppError(
-        "URL_PREVIEW_NOT_HTML",
-        "This link is not a web page.",
-        422,
-      );
-    }
-    const { html, truncated, byteLength } = await readBodyCapped(
-      response,
-      MAX_BYTES,
-    );
-    return {
-      html,
-      status: response.status,
-      contentType,
-      byteLength,
-      truncated,
-      finalUrl: current,
     };
+    const fetched = proxiedFetch
+      ? { response: await proxiedFetch(current, requestInit) }
+      : await fetchWithPinnedAddress(current, requestInit, address);
+    try {
+      const { response } = fetched;
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        if (!location) {
+          throw new AppError(
+            "URL_PREVIEW_UNREACHABLE",
+            "This link redirected without a target.",
+            422,
+          );
+        }
+        current = new URL(location, current);
+        if (current.protocol !== "http:" && current.protocol !== "https:") {
+          throw new AppError(
+            "URL_PREVIEW_BLOCKED",
+            "This link is not supported.",
+            422,
+          );
+        }
+        continue;
+      }
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!contentType.toLowerCase().includes("text/html")) {
+        throw new AppError(
+          "URL_PREVIEW_NOT_HTML",
+          "This link is not a web page.",
+          422,
+        );
+      }
+      const { html, truncated, byteLength } = await readBodyCapped(
+        response,
+        MAX_BYTES,
+      );
+      return {
+        html,
+        status: response.status,
+        contentType,
+        byteLength,
+        truncated,
+        finalUrl: current,
+      };
+    } finally {
+      await fetched.cleanup?.();
+    }
   }
 
   throw new AppError(

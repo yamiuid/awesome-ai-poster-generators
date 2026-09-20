@@ -33,7 +33,7 @@ const content: Readonly<
       ],
       [
         "Service providers",
-        "Supabase provides authentication, Postgres, and private Storage. APIMart receives the prompt and generation settings and routes them to the gpt-image-2.5-flare (GPT Image 2.5) image-generation endpoint. Waffo processes checkout, payment, and subscription events; it may process payment details as the merchant-of-record provider. Vercel hosts the app, and Umami receives the listed product events without poster prompts. These providers may process data in countries other than where you live.",
+        "Supabase provides authentication, Postgres, and private Storage. APIMart receives the prompt and generation settings and routes them to the gpt-image-2.5-flare (GPT Image 2.5) image-generation endpoint. Waffo processes checkout, payment, and subscription events; it may process payment details as the merchant-of-record provider. Vercel hosts the app. If you consent to optional analytics, Google Analytics and Microsoft Clarity receive usage and session information; Umami receives the listed product events without poster prompts. These providers may process data in countries other than where you live.",
       ],
       [
         "Why we use it",
@@ -45,7 +45,7 @@ const content: Readonly<
       ],
       [
         "Your choices",
-        "You may request access, correction, deletion, or a copy of personal information by emailing support@texttoposter.com. You may stop analytics where the available browser controls or consent settings allow it. We may need to verify a request and retain limited information when a legal or security obligation requires it.",
+        "Optional analytics are off until you choose to allow them. You can decline or withdraw that choice through the site consent controls or your browser settings. You may also request access, correction, deletion, or a copy of personal information by emailing support@texttoposter.com. We may need to verify a request and retain limited information when a legal or security obligation requires it.",
       ],
       [
         "Children and sensitive data",

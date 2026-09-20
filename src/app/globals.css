@@ -3292,6 +3292,103 @@ textarea:focus-visible {
 .locale-suggestion-keep:hover {
   color: var(--ink);
 }
+.analytics-consent {
+  position: fixed;
+  z-index: 101;
+  inset-block-end: 1rem;
+  inset-inline-start: 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  width: min(38rem, calc(100vw - 2rem));
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--ink);
+  border-radius: 0.75rem;
+  background: var(--paper);
+  box-shadow: 0 0.8rem 2rem rgba(29, 26, 23, 0.16);
+}
+.analytics-consent-title,
+.analytics-consent-body {
+  margin: 0;
+}
+.analytics-consent-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.analytics-consent-body {
+  margin-top: 0.25rem;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.analytics-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+.analytics-consent-actions button,
+.analytics-consent-actions a {
+  min-height: 2.25rem;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+.analytics-consent-accept {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  font-weight: 700;
+}
+.analytics-consent-decline {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.analytics-consent-actions a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-muted);
+  text-underline-offset: 0.15rem;
+}
+.analytics-consent-manage {
+  position: fixed;
+  z-index: 100;
+  inset-block-end: 1rem;
+  inset-inline-end: 1rem;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+}
+.analytics-consent-manage:hover,
+.analytics-consent-manage:focus-visible {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+@media (max-width: 640px) {
+  .analytics-consent {
+    grid-template-columns: 1fr;
+  }
+  .analytics-consent-actions {
+    justify-content: flex-start;
+  }
+  .analytics-consent-manage {
+    inset-block-end: 0.75rem;
+    inset-inline-end: 0.75rem;
+  }
+}
 .checkout-locale-notice {
   margin-top: 0.75rem;
   padding: 0.75rem;

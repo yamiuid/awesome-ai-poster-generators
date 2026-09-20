@@ -5,8 +5,51 @@ const nextConfig: NextConfig = {
   // 本地 dev 的 HMR WebSocket 默认只放行 localhost，用 127.0.0.1 打开会被拒
   // 导致浏览器报 ERR_INVALID_HTTP_RESPONSE（服务端返回裸 Unauthorized）
   allowedDevOrigins: ["localhost", "127.0.0.1"],
-  // 本地 IDE 的 TS 语言服务独占 next-env.d.ts 导致构建 EPERM，类型检查由 tsc --noEmit 单独把关
-  typescript: { ignoreBuildErrors: true },
+  typescript: { ignoreBuildErrors: false },
+  async headers() {
+    const scriptSources = [
+      "'self'",
+      "'unsafe-inline'",
+      "https://www.googletagmanager.com",
+      "https://www.google-analytics.com",
+      "https://www.clarity.ms",
+      "https://*.clarity.ms",
+      "https://challenges.cloudflare.com",
+    ];
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              `script-src ${scriptSources.join(" ")}`,
+              "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://*.clarity.ms https://*.bing.com https://challenges.cloudflare.com",
+              "img-src 'self' data: blob: https://images.texttoposter.com https://*.r2.dev https://*.supabase.co https://*.clarity.ms https://*.bing.com https://www.google-analytics.com",
+              "font-src 'self' data:",
+              "style-src 'self' 'unsafe-inline'",
+              "frame-src 'self' https://challenges.cloudflare.com https://*.supabase.co https://accounts.google.com",
+              "form-action 'self' https://*.supabase.co",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "frame-ancestors 'none'",
+            ].join("; "),
+          },
+        ],
+      },
+    ];
+  },
   // 海报图片托管在 Cloudflare R2（public 自定义域名或 r2.dev fallback），
   // 交给 next/image 优化器自动输出 WebP/AVIF；下载仍用源 URL（PNG）。
   images: {
