@@ -2429,21 +2429,23 @@ export function PosterStudio({ initialStyle, examples: providedExamples }: Props
   function applyRecentGenerations(
     responses: readonly GenerationResponse[],
   ): void {
+    const fresh = responses.filter(
+      (generation) => !dismissedIds.current.has(generation.id),
+    );
     setRecentGenerations((prev) => {
-      const currentIds = new Set(
-        generations.map((generation) => generation.id),
-      );
-      const next = responses.filter(
-        (generation) =>
-          !currentIds.has(generation.id) &&
-          !dismissedIds.current.has(generation.id),
-      );
       const byId = new Map(
         prev.map((generation) => [generation.id, generation]),
       );
-      for (const generation of next) {
-        byId.set(generation.id, generation);
-        generationById.current.set(generation.id, generation);
+      // 本地已有同 id 的也要合并，不能直接跳过：卡住的任务可能被服务端 cron
+      // 补完（状态从 timed_out 变 succeeded 并落了图），跳过就永远看不到图。
+      for (const generation of fresh) {
+        const merged = mergeGenerationResponse(
+          generationById.current.get(generation.id) ??
+            byId.get(generation.id),
+          generation,
+        );
+        byId.set(generation.id, merged);
+        generationById.current.set(generation.id, merged);
       }
       return [...byId.values()].sort(
         (left, right) =>
@@ -2451,6 +2453,15 @@ export function PosterStudio({ initialStyle, examples: providedExamples }: Props
           new Date(left.createdAt).getTime(),
       );
     });
+    // 会话列表里同名的那份也要更新，历史条取的是两个列表的并集
+    setGenerations((prev) =>
+      prev.map((generation) => {
+        const server = fresh.find((item) => item.id === generation.id);
+        return server
+          ? mergeGenerationResponse(generation, server)
+          : generation;
+      }),
+    );
   }
 
   function moveCompletedGenerationsToRecent(): void {

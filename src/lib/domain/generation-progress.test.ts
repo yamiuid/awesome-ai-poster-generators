@@ -188,3 +188,56 @@ describe("generation progress", () => {
     expect(generationPollDelay(8, false)).toBe(30_000);
   });
 });
+
+describe("server-side recovery", () => {
+  const recovered = generation({
+    status: "succeeded",
+    progress: 100,
+    images: [
+      {
+        id: "image-1",
+        url: "https://example.com/poster.png",
+        alt: "poster",
+        watermarked: false,
+      },
+    ],
+  });
+
+  it("adopts a successful server state over a local timeout", () => {
+    // 客户端放弃后，cron 仍可能在服务端把任务补完（含落图），
+    // 否则首页历史会一直显示那条没有图片的失败记录，而 /account 能看到图。
+    expect(
+      mergeGenerationResponse(generation({ status: "timed_out" }), recovered),
+    ).toMatchObject({
+      status: "succeeded",
+      images: [{ url: "https://example.com/poster.png" }],
+    });
+  });
+
+  it("adopts a partial success over a local failure", () => {
+    expect(
+      mergeGenerationResponse(
+        generation({ status: "failed" }),
+        generation({ status: "partially_succeeded", images: recovered.images }),
+      ),
+    ).toMatchObject({ status: "partially_succeeded" });
+  });
+
+  it("never downgrades a local success", () => {
+    expect(
+      mergeGenerationResponse(
+        generation({ status: "succeeded", images: recovered.images }),
+        generation({ status: "failed" }),
+      ),
+    ).toMatchObject({ status: "succeeded" });
+  });
+
+  it("keeps a local timeout when the server also reports a failure", () => {
+    expect(
+      mergeGenerationResponse(
+        generation({ status: "timed_out" }),
+        generation({ status: "failed" }),
+      ),
+    ).toMatchObject({ status: "timed_out" });
+  });
+});

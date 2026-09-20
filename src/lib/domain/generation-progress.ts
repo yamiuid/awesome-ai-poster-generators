@@ -42,6 +42,19 @@ export function mergeGenerationResponse(
     return response;
   }
   if (isTerminal(previous.status)) {
+    // 本地已终态时，服务端只有「把失败/超时补完为成功」才允许翻盘：
+    // 卡住的任务可能被 cron 在服务端恢复（下载 + 水印 + 上传都做完），
+    // 此时必须采纳服务端的状态，否则列表会一直挂着那条没有图片的失败记录。
+    // 反向（服务端 failed / 本地 succeeded）不翻盘。
+    if (
+      isFailureTerminal(previous.status) &&
+      isSuccessTerminal(response.status)
+    ) {
+      return {
+        ...response,
+        progress: Math.max(previous.progress, response.progress),
+      };
+    }
     return {
       ...previous,
       ...response,
@@ -159,6 +172,14 @@ export function generationFailureStatus(
     return "retry";
   }
   return source === "finalization" ? "failed" : "timed_out";
+}
+
+function isFailureTerminal(status: GenerationResponse["status"]): boolean {
+  return status === "failed" || status === "timed_out";
+}
+
+function isSuccessTerminal(status: GenerationResponse["status"]): boolean {
+  return status === "succeeded" || status === "partially_succeeded";
 }
 
 /**
