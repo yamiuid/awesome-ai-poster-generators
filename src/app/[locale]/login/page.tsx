@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
 }: RouteParams): Promise<Metadata> {
-  await resolveRouteLocale(params);
-  const t = await getTranslations("auth");
+  const locale = await resolveRouteLocale(params);
+  const t = await getTranslations({ locale, namespace: "auth" });
   return { title: t("metadataTitle"), robots: { index: false, follow: false } };
 }
 

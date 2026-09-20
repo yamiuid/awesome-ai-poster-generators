@@ -9,7 +9,7 @@ export const dynamic = "force-static";
 
 export async function generateMetadata({ params }: RouteParams) {
   const locale = await resolveRouteLocale(params);
-  const t = await getTranslations("about");
+  const t = await getTranslations({ locale, namespace: "about" });
   return pageMeta({
     title: `${t("title")} | Text to Poster`,
     description: t("intro"),

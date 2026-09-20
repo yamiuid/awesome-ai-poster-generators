@@ -10,8 +10,8 @@ export const dynamic = "force-static";
 export async function generateMetadata({
   params,
 }: RouteParams): Promise<Metadata> {
-  await resolveRouteLocale(params);
-  const t = await getTranslations("checkout");
+  const locale = await resolveRouteLocale(params);
+  const t = await getTranslations({ locale, namespace: "checkout" });
   return { title: t("metadataTitle"), robots: { index: false, follow: false } };
 }
 

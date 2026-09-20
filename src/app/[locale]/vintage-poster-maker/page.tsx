@@ -11,7 +11,7 @@ export const dynamic = "force-static";
 
 export async function generateMetadata({ params }: RouteParams) {
   const locale = await resolveRouteLocale(params);
-  const t = await getTranslations("styles");
+  const t = await getTranslations({ locale, namespace: "styles" });
   const style = t(landing.style);
   return pageMeta({
     title: t("metadataTitle", { style }),

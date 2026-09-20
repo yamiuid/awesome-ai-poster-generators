@@ -13,7 +13,14 @@ const nextConfig: NextConfig = {
     // 本地开发默认 Supabase Storage（与 env.ts 默认一致）：签名 URL 需要浏览器
     // 直连，且 Node 侧优化器在无代理的开发环境拉不到图，直接关闭优化；
     // 生产显式设置 STORAGE_PROVIDER=r2（images.texttoposter.com）时保持默认优化。
-    unoptimized: (process.env["STORAGE_PROVIDER"] ?? "supabase") !== "r2",
+    // vinext 的 /_next/image 只接受同源相对路径（其 parseImageParams 会拒绝绝对
+    // URL），远程 R2 图片会被 400 拒掉。所以 Workers 构建直接关掉优化器、让图片
+    // 走 R2 公开域名；Vercel 构建保持优化（线上仍是 AVIF/WebP）。
+    // 后续如果要在 Workers 上恢复优化，需要自定义 loader + 用 Images binding
+    // 做在线变换的路由，而不是这个内置优化器。
+    unoptimized:
+      process.env["IMAGE_UNOPTIMIZED"] === "1" ||
+      (process.env["STORAGE_PROVIDER"] ?? "supabase") !== "r2",
     remotePatterns: [
       {
         protocol: "https",

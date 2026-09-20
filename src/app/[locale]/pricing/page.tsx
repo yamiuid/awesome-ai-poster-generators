@@ -22,7 +22,7 @@ export const dynamic = "force-static";
 
 export async function generateMetadata({ params }: RouteParams) {
   const locale = await resolveRouteLocale(params);
-  const t = await getTranslations("pricing");
+  const t = await getTranslations({ locale, namespace: "pricing" });
   return pageMeta({
     title: t("metadataTitle"),
     description: t("metadataDescription"),
