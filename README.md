@@ -84,6 +84,28 @@ state for those pages is resolved in the browser via `/api/account/status`; only
 `/account`, `/account/billing`, `/checkout`, `/login` and the API routes render per
 request.
 
+### Cloudflare Workers（迁移分支 codex/cloudflare-workers）
+
+应用已能在 Cloudflare Workers 上完整运行（vinext，Cloudflare 目前推荐的 Next.js 路径），
+预览环境：`https://text-to-poster.yami198950.workers.dev`。生产域名仍未切换。
+
+- **构建 / 部署**：`pnpm build:vinext` 与 `pnpm deploy:vinext`。后者先带 Workers 开关
+  构建、再用 `--skip-build` 部署——`vinext-cloudflare deploy` 默认会自己重建，会丢掉
+  那个开关。
+- **资源**：应用 Worker `text-to-poster`；边缘缓存服务 `text-to-poster-response-store`
+  （配置已切到 `cdnAdapter()`/Workers Cache，该服务保留备用）；定时调度 Worker
+  `cloudflare/cron-dispatcher`（两条 cron 触发 `/api/cron/*`，沿用 `CRON_SECRET` 校验）。
+- **绑定**：`IMAGES`（Cloudflare Images：水印合成与尺寸读取）、`ASSETS`、
+  `RESPONSE_STORE`（备用）。
+- **密钥**：`wrangler secret bulk` 推送。**不要推 `APIMART_PROXY` / `HTTPS_PROXY`**——
+  那是本地翻墙用的，Workers 上加载不了 undici 的原生 agent（见 `proxy-fetch.ts`）。
+- **已知限制**：vinext 的 `/_next/image` 只接受同源相对路径，远程 R2 图片会被 400
+  拒绝（其 `parseImageParams` 明确校验 origin），因此 Workers 构建关闭内置优化器、
+  图片直出 R2（带宽不计费）。要在 Workers 上恢复 AVIF/WebP 优化，需要自定义
+  `next/image` loader + 一个用 Images binding 做变换的路由。
+- **本地开发**：`vinext dev` 在 workerd 里跑不了 React 开发模式（`eval()` 受限），
+  调试请用 `pnpm build:vinext` + `pnpm start:vinext`。
+
 ## Local setup
 
 1. Copy `.env.example` to `.env.local` and fill Supabase, APIMart, Waffo, R2 (optional), and Umami values.

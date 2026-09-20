@@ -1,0 +1,15 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "text-to-poster-cron",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-20",
+  // 与 vercel.json 里的 crons 一致：每天 03:00 维护、每周一 04:00 同步黑名单
+  "triggers": {
+    "crons": ["0 3 * * *", "0 4 * * 1"]
+  },
+  "vars": {
+    // 切换生产域名时改这里（现在是预览 Worker 的地址）
+    "APP_URL": "https://text-to-poster.yami198950.workers.dev"
+  },
+  "workers_dev": true
+}
