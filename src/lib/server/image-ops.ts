@@ -20,7 +20,7 @@ export type ImageInfo = Readonly<{
 type ImageHandle = Readonly<{
   transform(options: Record<string, unknown>): ImageHandle;
   draw(overlay: ImageHandle, options: Record<string, unknown>): ImageHandle;
-  output(options: { format: string }): Promise<ImageOutput>;
+  output(options: { format: string; quality?: number }): Promise<ImageOutput>;
 }>;
 
 type ImageOutput = Readonly<{ response(headers?: HeadersInit): Response }>;
@@ -39,7 +39,9 @@ type ImagesBinding = Readonly<{
  * vite 构建时用 @vite-ignore 交给运行时解析，Node/Next 构建时这个动态 import
  * 解析不到、被 try/catch 吞掉，于是自动回落到 sharp。
  */
-async function cloudflareImages(): Promise<ImagesBinding | undefined> {
+export async function getCloudflareImages(): Promise<
+  ImagesBinding | undefined
+> {
   try {
     const specifier = ["cloudflare", "workers"].join(":");
     const module = (await import(/* @vite-ignore */ specifier)) as {
@@ -56,7 +58,7 @@ function toStream(bytes: Buffer): ReadableStream {
 }
 
 export async function readImageInfo(bytes: Buffer): Promise<ImageInfo> {
-  const images = await cloudflareImages();
+  const images = await getCloudflareImages();
   if (images) {
     // .info() 不计费，也不做完整解码
     const info = await images.info(toStream(bytes));
@@ -83,7 +85,7 @@ export async function bakeWatermark(image: Buffer): Promise<Buffer> {
   const overlay = watermarkOverlay(targetWidth);
   const inset = Math.max(0, overlay.metrics.margin - overlay.shadowOffset);
 
-  const images = await cloudflareImages();
+  const images = await getCloudflareImages();
   if (images) {
     const output = await images
       .input(toStream(image))
