@@ -1,22 +1,18 @@
 import { ArrowUpRight, MoveDown } from "lucide-react";
 import Image from "next/image";
-import { redirect } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
-import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import { PosterStudio } from "@/components/poster-studio";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Link } from "@/i18n/navigation";
-import { isPosterStyle, type PosterStyle } from "@/lib/domain/poster";
 import { POSTER_EXAMPLES } from "@/lib/domain/poster-examples";
 import { STYLE_LANDINGS } from "@/lib/domain/style-landing";
-import { isUiLocale, localizedPath } from "@/lib/i18n/locale";
+import { localizedPath } from "@/lib/i18n/locale";
+import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 import { pageMeta, siteUrl } from "@/lib/seo";
-import { getAuthContextCached } from "@/lib/server/auth";
 
-export async function generateMetadata() {
-  const rawLocale = await getLocale();
-  const locale = isUiLocale(rawLocale) ? rawLocale : "en";
+export async function generateMetadata({ params }: RouteParams) {
+  const locale = await resolveRouteLocale(params);
   const t = await getTranslations("home");
   return pageMeta({
     title: `${t("heroTitle")} | Text to Poster`,
@@ -58,73 +54,14 @@ const howToSteps = [
 ] as const;
 
 /**
- * 登录态相关的两块各自流式输出。
- * 以前整页 await getAuthContext()（Supabase auth + 订阅 + 积分包三查），
- * hero 和所有静态内容都被这一次查询卡住；现在先吐静态骨架，auth 到了再补齐。
+ * 首页整体静态预渲染：登录态与 ?style= 深链都改由客户端接管
+ * （PosterStudio 内部解析），因此这里不再读 searchParams / cookies。
+ * Supabase 的 site_url 登录错误兜底（?error=…）改到中间件里转发登录页。
  */
-async function HeaderWithAuth() {
-  const auth = await getAuthContextCached();
-  return <SiteHeader initialAuth={auth} />;
-}
-
-async function StudioWithAuth({
-  initialStyle,
-}: Readonly<{ initialStyle: PosterStyle | undefined }>) {
-  const auth = await getAuthContextCached();
-  return (
-    <PosterStudio
-      isPro={auth.isPro}
-      hasPack={auth.hasPack}
-      isGuest={!auth.userId}
-      {...(initialStyle ? { initialStyle } : {})}
-    />
-  );
-}
-
-/** 生图区占位：形状对齐真实布局，auth 到达时不会明显跳动 */
-function StudioPlaceholder() {
-  return (
-    <section className="studio-shell" id="studio" aria-hidden="true">
-      <div className="studio-header">
-        <div className="skeleton-title" />
-      </div>
-      <div className="studio-grid">
-        <div className="studio-controls">
-          <div className="skeleton-sub" />
-          <div className="skeleton-prompt" />
-          <div className="skeleton-sub" />
-        </div>
-        <div className="studio-results">
-          <div className="pending-tile" />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    error?: string;
-    error_description?: string;
-    style?: string;
-  }>;
-}) {
-  // Supabase 的 site_url 错误兜底跳转到根路径（?error=...），转发到登录页显示原因
-  const params = await searchParams;
-  const rawLocale = await getLocale();
-  const locale = isUiLocale(rawLocale) ? rawLocale : "en";
+export default async function Home({ params }: RouteParams) {
+  const locale = await resolveRouteLocale(params);
   const t = await getTranslations("home");
   const styles = await getTranslations("styles");
-  const authError = params.error_description ?? params.error;
-  if (authError) {
-    redirect(
-      localizedPath(`/login?error=${encodeURIComponent(authError)}`, locale),
-    );
-  }
-  const initialStyle =
-    params.style && isPosterStyle(params.style) ? params.style : undefined;
   const localizedFaqs = [
     [t("faq1Question"), t("faq1Answer")],
     [t("faq2Question"), t("faq2Answer")],
@@ -216,10 +153,8 @@ export default async function Home({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      {/* 登录态自己流式到达：首屏 hero 不再等 Supabase 的 auth 查询 */}
-      <Suspense fallback={<SiteHeader />}>
-        <HeaderWithAuth />
-      </Suspense>
+      {/* 静态骨架直出：登录态在客户端补齐，hero 与生图区不再等 Supabase 查询 */}
+      <SiteHeader />
 
       <section className="hero" aria-labelledby="hero-heading">
         <div className="hero-grid">
@@ -250,9 +185,7 @@ export default async function Home({
         </div>
       </section>
 
-      <Suspense fallback={<StudioPlaceholder />}>
-        <StudioWithAuth initialStyle={initialStyle} />
-      </Suspense>
+      <PosterStudio />
 
       <section
         className="content-section use-cases-section"

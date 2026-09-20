@@ -70,11 +70,13 @@ import {
   recentGenerationsSchema,
   referenceImageLimit,
   STYLES,
+  isPosterStyle,
 } from "@/lib/domain/poster";
 import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
 import { notifyError } from "./error-toast";
 import { LoginForm } from "./login-form";
 import { UrlPipelineModal } from "./url-pipeline-modal";
+import { useAccountStatus } from "./use-account-status";
 
 export type PosterStudioExample = Readonly<{
   id?: string;
@@ -87,13 +89,30 @@ export type PosterStudioExample = Readonly<{
 }>;
 
 type Props = Readonly<{
+  initialStyle?: PosterStyle;
+  examples?: readonly PosterStudioExample[];
+}>;
+
+/**
+ * 登录态由浏览器端解析（见组件内的 syncAccount）。
+ *
+ * 首页与风格落地页要能被 CDN 静态命中，服务端就不能为每个访客跑一次 Supabase
+ * 查询。静态 HTML 先按访客渲染，挂载后再用 /api/account/status 校准成登录用户的
+ * 档位；生成、扣费、访客限额都由服务端接口最终裁决，所以这里短暂停留在访客态
+ * 不会放开任何额度。
+ */
+type AccountSummary = Readonly<{
   isPro: boolean;
   /** 用户是否购买过积分包（解锁全档位 + 无水印） */
   hasPack: boolean;
   isGuest: boolean;
-  initialStyle?: PosterStyle;
-  examples?: readonly PosterStudioExample[];
 }>;
+
+const GUEST_ACCOUNT: AccountSummary = {
+  isPro: false,
+  hasPack: false,
+  isGuest: true,
+};
 
 const STUDIO_JOB_EXAMPLES: readonly PosterStudioExample[] = [
   {
@@ -138,6 +157,7 @@ const GUEST_MAX_IMAGES = 1;
 type AccountStatusPayload = Readonly<{
   signedIn: boolean;
   isPro: boolean;
+  hasPack?: boolean;
   balance?: {
     available: number;
     bucket: string;
@@ -1787,13 +1807,9 @@ function StudioHistoryPanel({
   );
 }
 
-export function PosterStudio({
-  isPro,
-  hasPack,
-  isGuest,
-  initialStyle,
-  examples: providedExamples,
-}: Props) {
+export function PosterStudio({ initialStyle, examples: providedExamples }: Props) {
+  const [account, setAccount] = useState<AccountSummary>(GUEST_ACCOUNT);
+  const { isPro, hasPack, isGuest } = account;
   // 积分包用户与订阅用户同享全档位 / 无水印 / 长保留期
   const paid = isPro || hasPack;
   const accountMode = isGuest ? "guest" : paid ? "pro" : "free";
@@ -1886,26 +1902,45 @@ export function PosterStudio({
   const inputTypeByGeneration = useRef(new Map<string, InputType>());
   const examples = providedExamples ?? STUDIO_JOB_EXAMPLES;
 
+  // 首页的 ?style= 深链以前由服务端 searchParams 传入；静态页改为挂载后自行读取，
+  // 避免只为读一个查询参数就把整页变成动态渲染。
   useEffect(() => {
-    if (isGuest) {
+    if (initialStyle) {
       return;
     }
-    void fetchAccountStatus().then((data) => {
-      if (!data?.signedIn || !data.balance) {
-        return;
-      }
-      setCreditBalance(data.balance.available);
-      const welcome = data.balance.grants.find(
-        (grant) => grant.source === "welcome",
-      );
-      if (welcome) {
-        setWelcomeGrant({
-          amount: welcome.amount,
-          createdAt: welcome.createdAt,
-        });
-      }
+    const requested = new URLSearchParams(window.location.search).get("style");
+    if (requested && isPosterStyle(requested)) {
+      setStyle(requested);
+    }
+  }, [initialStyle]);
+
+  // 静态页没有服务端注入的登录态：挂载后拉一次，并在登录/登出时重新校准
+  // （同页邮箱验证码、Google 回跳、用户菜单登出都会触发 onAuthStateChange）
+  const status = useAccountStatus();
+  useEffect(() => {
+    if (!status) {
+      return;
+    }
+    setAccount({
+      isPro: Boolean(status.isPro),
+      hasPack: Boolean(status.hasPack),
+      isGuest: !status.signedIn,
     });
-  }, [isGuest]);
+    if (!status.balance) {
+      setCreditBalance(null);
+      return;
+    }
+    setCreditBalance(status.balance.available);
+    const welcome = status.balance.grants.find(
+      (grant) => grant.source === "welcome",
+    );
+    if (welcome) {
+      setWelcomeGrant({
+        amount: welcome.amount,
+        createdAt: welcome.createdAt,
+      });
+    }
+  }, [status]);
 
   // 注册成功后自动续跑访客被拦下的那次生成：
   // 邮箱验证码是同页完成、Google 登录是整页回跳，两条路径都以 isGuest 翻转作为触发点。

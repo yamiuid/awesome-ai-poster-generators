@@ -1,22 +1,25 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { CancelSubscriptionButton } from "@/components/cancel-subscription-button";
 import { SiteHeader } from "@/components/site-header";
 import { Link } from "@/i18n/navigation";
 import { creditsForTier } from "@/lib/domain/plans";
-import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
+import { localizedPath } from "@/lib/i18n/locale";
+import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 import { getAuthContext } from "@/lib/server/auth";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: RouteParams): Promise<Metadata> {
+  await resolveRouteLocale(params);
   const t = await getTranslations("billing");
   return { title: t("metadataTitle"), robots: { index: false, follow: false } };
 }
 
-export default async function BillingPage() {
-  const rawLocale = await getLocale();
-  const locale: UiLocale = isUiLocale(rawLocale) ? rawLocale : "en";
+export default async function BillingPage({ params }: RouteParams) {
+  const locale = await resolveRouteLocale(params);
   const t = await getTranslations("billing");
   const auth = await getAuthContext();
   if (!auth.userId) {

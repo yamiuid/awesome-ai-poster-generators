@@ -1,15 +1,14 @@
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { PosterStudio } from "@/components/poster-studio";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Link } from "@/i18n/navigation";
 import { getStyleLanding } from "@/lib/domain/style-landing";
 import { getStyleLandingCopy } from "@/lib/domain/style-landing-copy";
-import { toUiLocale } from "@/lib/i18n/locale";
+import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 import { pageMeta, siteUrl } from "@/lib/seo";
-import { getAuthContext } from "@/lib/server/auth";
 
 const movieFaqs = [
   [
@@ -112,8 +111,8 @@ const movieDirections = [
   },
 ] as const;
 
-export async function generateMetadata() {
-  const locale = toUiLocale(await getLocale());
+export async function generateMetadata({ params }: RouteParams) {
+  const locale = await resolveRouteLocale(params);
   const t = await getTranslations("styles");
   const style = t("movie");
   return pageMeta({
@@ -124,9 +123,8 @@ export async function generateMetadata() {
   });
 }
 
-export default async function MoviePosterMakerPage() {
-  const auth = await getAuthContext();
-  const locale = toUiLocale(await getLocale());
+export default async function MoviePosterMakerPage({ params }: RouteParams) {
+  const locale = await resolveRouteLocale(params);
   const styles = await getTranslations("styles");
   const landing = getStyleLanding("movie-poster-maker");
   const style = styles(landing.style);
@@ -164,7 +162,7 @@ export default async function MoviePosterMakerPage() {
     return (
       <main className="legal-page movie-page">
         <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-        <SiteHeader initialAuth={auth} />
+        <SiteHeader />
         <article className="legal-copy movie-landing-copy">
           <nav className="breadcrumbs" aria-label={styles("moreHeading")}>
             <Link href="/">Text to Poster</Link>
@@ -195,9 +193,6 @@ export default async function MoviePosterMakerPage() {
               <p>{copy.cta}</p>
             </div>
             <PosterStudio
-              isPro={auth.isPro}
-              hasPack={auth.hasPack}
-              isGuest={!auth.userId}
               initialStyle="movie"
             />
           </section>
@@ -246,7 +241,7 @@ export default async function MoviePosterMakerPage() {
       <script type="application/ld+json">
         {JSON.stringify(breadcrumbJsonLd)}
       </script>
-      <SiteHeader initialAuth={auth} />
+      <SiteHeader />
 
       <article className="legal-copy movie-landing-copy">
         <nav className="breadcrumbs" aria-label={styles("moreHeading")}>
@@ -280,9 +275,6 @@ export default async function MoviePosterMakerPage() {
             <p>{copy.cta}</p>
           </div>
           <PosterStudio
-            isPro={auth.isPro}
-            hasPack={auth.hasPack}
-            isGuest={!auth.userId}
             initialStyle="movie"
             examples={movieDirections}
           />

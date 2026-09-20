@@ -1,4 +1,3 @@
-import { cache } from "react";
 import { z } from "zod";
 import { AppError } from "./errors";
 import { createSupabaseServerClient } from "./supabase/server";
@@ -142,13 +141,6 @@ export async function getAuthContext(): Promise<AuthContext> {
     subscriptionState,
   };
 }
-
-/**
- * 同一请求内多处要登录态时只查一次（React 请求级缓存）。
- * 首页把 header 与生图区分进各自的 Suspense 边界后，两边都用它取，
- * 避免为了流式输出把 auth 查询做两遍。
- */
-export const getAuthContextCached = cache(getAuthContext);
 
 export async function requireUser(): Promise<
   Readonly<{

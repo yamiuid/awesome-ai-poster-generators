@@ -1,12 +1,11 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { isUiLocale } from "@/lib/i18n/locale";
+import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 import { pageMeta } from "@/lib/seo";
 
-export async function generateMetadata() {
-  const rawLocale = await getLocale();
-  const locale = isUiLocale(rawLocale) ? rawLocale : "en";
+export async function generateMetadata({ params }: RouteParams) {
+  const locale = await resolveRouteLocale(params);
   const t = await getTranslations("about");
   return pageMeta({
     title: `${t("title")} | Text to Poster`,
@@ -16,7 +15,8 @@ export async function generateMetadata() {
   });
 }
 
-export default async function AboutPage() {
+export default async function AboutPage({ params }: RouteParams) {
+  await resolveRouteLocale(params);
   const t = await getTranslations("about");
   return (
     <main className="legal-page">

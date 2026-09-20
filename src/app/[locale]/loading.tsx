@@ -4,8 +4,9 @@ import { SiteHeader } from "@/components/site-header";
  * 路由级骨架屏。
  *
  * 导航点击后立刻切到这个占位，而不是在导航栏上转圈等人。
- * 页面都是动态渲染（每页都读登录态），没有占位时用户会看到"点了没反应"。
- * 账号页有更贴合的骨架（app/account/loading.tsx），会覆盖这一层。
+ * 首页、风格页、定价页现在是静态预渲染、切页很快；真正需要这个占位的是
+ * 仍然按请求渲染的账号/结算路径，没有它用户会看到"点了没反应"。
+ * 账号页有更贴合的骨架（app/[locale]/account/loading.tsx），会覆盖这一层。
  */
 export default function RootLoading() {
   return (

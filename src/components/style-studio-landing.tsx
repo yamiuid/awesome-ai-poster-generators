@@ -8,7 +8,6 @@ import { STYLE_LANDINGS, type StyleLanding } from "@/lib/domain/style-landing";
 import { getStyleLandingCopy } from "@/lib/domain/style-landing-copy";
 import { toUiLocale } from "@/lib/i18n/locale";
 import { siteUrl } from "@/lib/seo";
-import { getAuthContext } from "@/lib/server/auth";
 
 /**
  * 风格落地页 + 内嵌生成器。
@@ -18,7 +17,6 @@ import { getAuthContext } from "@/lib/server/auth";
 export async function StyleStudioLanding({
   landing,
 }: Readonly<{ landing: StyleLanding }>) {
-  const auth = await getAuthContext();
   const locale = toUiLocale(await getLocale());
   const styles = await getTranslations("styles");
   const style = styles(landing.style);
@@ -61,7 +59,7 @@ export async function StyleStudioLanding({
       <script type="application/ld+json">
         {JSON.stringify(breadcrumbJsonLd)}
       </script>
-      <SiteHeader initialAuth={auth} />
+      <SiteHeader />
 
       <article className="legal-copy movie-landing-copy">
         <nav className="breadcrumbs" aria-label={styles("moreHeading")}>
@@ -94,12 +92,7 @@ export async function StyleStudioLanding({
             </h2>
             <p>{copy.cta}</p>
           </div>
-          <PosterStudio
-            isPro={auth.isPro}
-            hasPack={auth.hasPack}
-            isGuest={!auth.userId}
-            initialStyle={landing.style}
-          />
+          <PosterStudio initialStyle={landing.style} />
         </section>
 
         <section aria-labelledby="style-prompt-heading">

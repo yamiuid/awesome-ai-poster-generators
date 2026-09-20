@@ -1,13 +1,13 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { StyleStudioLanding } from "@/components/style-studio-landing";
 import { getStyleLanding } from "@/lib/domain/style-landing";
-import { toUiLocale } from "@/lib/i18n/locale";
+import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 import { pageMeta } from "@/lib/seo";
 
-const landing = getStyleLanding("vintage-poster-maker");
+const landing = getStyleLanding("anime-poster-maker");
 
-export async function generateMetadata() {
-  const locale = toUiLocale(await getLocale());
+export async function generateMetadata({ params }: RouteParams) {
+  const locale = await resolveRouteLocale(params);
   const t = await getTranslations("styles");
   const style = t(landing.style);
   return pageMeta({
@@ -18,6 +18,7 @@ export async function generateMetadata() {
   });
 }
 
-export default function VintagePosterMakerPage() {
+export default async function AnimePosterMakerPage({ params }: RouteParams) {
+  await resolveRouteLocale(params);
   return <StyleStudioLanding landing={landing} />;
 }

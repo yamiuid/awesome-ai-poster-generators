@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { AccountTabs } from "@/components/account-tabs";
 import { CreditActivity } from "@/components/credit-activity";
 import {
@@ -10,7 +10,8 @@ import {
 } from "@/components/history-gallery";
 import { SiteHeader } from "@/components/site-header";
 import { Link } from "@/i18n/navigation";
-import { localizedPath, type UiLocale } from "@/lib/i18n/locale";
+import { localizedPath } from "@/lib/i18n/locale";
+import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 import { getAuthContext } from "@/lib/server/auth";
 import {
   getAccountBalance,
@@ -19,24 +20,20 @@ import {
 import { createPosterUrls } from "@/lib/server/storage";
 import { createSupabaseServerClient } from "@/lib/server/supabase/server";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: RouteParams): Promise<Metadata> {
+  await resolveRouteLocale(params);
   const t = await getTranslations("account");
   return { title: t("metadataTitle"), robots: { index: false, follow: false } };
 }
 
-type PageProps = Readonly<{
+type PageProps = RouteParams & {
   searchParams: Promise<Readonly<{ tab?: string | undefined }>>;
-}>;
+};
 
-export default async function AccountPage({ searchParams }: PageProps) {
-  const rawLocale = await getLocale();
-  const locale: UiLocale =
-    rawLocale === "zh-TW" ||
-    rawLocale === "ja" ||
-    rawLocale === "es" ||
-    rawLocale === "ar"
-      ? rawLocale
-      : "en";
+export default async function AccountPage({ params, searchParams }: PageProps) {
+  const locale = await resolveRouteLocale(params);
   const t = await getTranslations("account");
   const auth = await getAuthContext();
   if (!auth.userId) {

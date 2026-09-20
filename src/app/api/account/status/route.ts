@@ -10,6 +10,7 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({
       signedIn: false,
       isPro: false,
+      hasPack: false,
       subscriptionState: auth.subscriptionState,
     });
   }
@@ -39,6 +40,8 @@ export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
     signedIn: true,
     isPro: auth.isPro,
+    // 静态页没有服务端注入，客户端要靠这两个字段决定界面档位
+    hasPack: auth.hasPack,
     subscriptionState: auth.subscriptionState,
     subscription,
     balance,

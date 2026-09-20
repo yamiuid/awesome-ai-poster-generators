@@ -34,6 +34,10 @@ const nextConfig: NextConfig = {
         : []),
     ],
     formats: ["image/avif", "image/webp"],
+    // Vercel 图片优化器默认只缓存 60 秒（minimumCacheTTL 默认值），而 R2 的对象
+    // key 含随机 UUID、内容不可变。缓存拉长到 31 天，避免同一张海报被反复送去
+    // 跑一次 sharp 解码 + 缩放（那是实打实的 CPU）。
+    minimumCacheTTL: 2678400,
   },
   // Vercel 打包 serverless 函数时会裁剪 node_modules，sharp 的原生二进制
   // （@img/sharp-linux-x64 / @img/sharp-libvips-linux-x64）属于平台 optional 依赖，

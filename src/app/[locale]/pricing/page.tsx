@@ -1,4 +1,4 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { PricingPlans } from "@/components/pricing-plans";
 import { SiteHeader } from "@/components/site-header";
 import {
@@ -9,18 +9,16 @@ import {
   yearlyDiscountPercent,
   yearlySavings,
 } from "@/lib/domain/plans";
-import { isUiLocale } from "@/lib/i18n/locale";
+import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
 import { pageMeta } from "@/lib/seo";
-import { getAuthContext } from "@/lib/server/auth";
 import {
   isCreditPackConfigured,
   isScalePlanConfigured,
   isStudioPlanConfigured,
 } from "@/lib/server/env";
 
-export async function generateMetadata() {
-  const rawLocale = await getLocale();
-  const locale = isUiLocale(rawLocale) ? rawLocale : "en";
+export async function generateMetadata({ params }: RouteParams) {
+  const locale = await resolveRouteLocale(params);
   const t = await getTranslations("pricing");
   return pageMeta({
     title: t("metadataTitle"),
@@ -37,9 +35,8 @@ const PACK_NAMES: Readonly<Record<CreditPackPlan, string>> = {
   pack_max: "Max",
 };
 
-export default async function PricingPage() {
-  const rawLocale = await getLocale();
-  const locale = isUiLocale(rawLocale) ? rawLocale : "en";
+export default async function PricingPage({ params }: RouteParams) {
+  const locale = await resolveRouteLocale(params);
   const t = await getTranslations("pricing");
   const formatNumber = new Intl.NumberFormat(locale);
   const currency = new Intl.NumberFormat("en-US", {
@@ -49,7 +46,6 @@ export default async function PricingPage() {
   const creatorCredits = formatNumber.format(creditsForTier("creator"));
   const studioCredits = formatNumber.format(creditsForTier("studio"));
   const scaleCredits = formatNumber.format(creditsForTier("scale"));
-  const auth = await getAuthContext();
   // 预计可生成图片数：1K/标准品质 = 2 积分/张
   const welcomeImages = formatNumber.format(10);
   const creatorImages = formatNumber.format(250);
@@ -263,7 +259,7 @@ export default async function PricingPage() {
   }));
   return (
     <main className="pricing-page">
-      <SiteHeader initialAuth={auth} />
+      <SiteHeader />
       <section className="pricing-intro">
         <p className="eyebrow">{t("eyebrow")}</p>
         <h1>{t("heading")}</h1>
@@ -273,8 +269,6 @@ export default async function PricingPage() {
         freePlan={freePlan}
         plans={paidPlans}
         packs={packs}
-        subscriptionState={auth.subscriptionState}
-        isSignedIn={Boolean(auth.userId)}
       />
       <section
         className="content-section"

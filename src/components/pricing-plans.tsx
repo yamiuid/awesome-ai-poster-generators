@@ -13,13 +13,12 @@ import {
 import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
 import type { SubscriptionLifecycleState } from "@/lib/server/waffo-subscription";
 import { PricingAction } from "./pricing-actions";
+import { useAccountStatus } from "./use-account-status";
 
 type Props = Readonly<{
   freePlan: FreePricingPlan;
   plans: readonly PaidPricingPlan[];
   packs?: readonly PackPricingPlan[];
-  subscriptionState: SubscriptionLifecycleState;
-  isSignedIn: boolean;
 }>;
 
 function assertNever(value: never): never {
@@ -151,14 +150,14 @@ function PricingPlanCard({
   }
 }
 
-export function PricingPlans({
-  freePlan,
-  plans,
-  packs = [],
-  subscriptionState,
-  isSignedIn,
-}: Props) {
+export function PricingPlans({ freePlan, plans, packs = [] }: Props) {
   const t = useTranslations("pricing");
+  // 定价页现在是静态预渲染，登录态与订阅状态在挂载后校准（默认按未登录渲染）；
+  // "当前方案"这类标记只影响展示，结算与否仍由服务端接口按 cookie 裁决。
+  const status = useAccountStatus();
+  const isSignedIn = status?.signedIn ?? false;
+  const subscriptionState: SubscriptionLifecycleState =
+    status?.subscriptionState ?? "none";
   const [tab, setTab] = useState<"monthly" | "yearly" | "packs">("monthly");
   const visiblePlans = getVisiblePricingPlans(
     freePlan,

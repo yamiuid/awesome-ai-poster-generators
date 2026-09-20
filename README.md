@@ -55,12 +55,16 @@ A paid English-language MVP built with Next.js, Supabase, Cloudflare R2, and GPT
 ### Repository layout
 
 ```text
-src/app/                 pages + API routes
+src/app/[locale]/        localized pages (en / zh-TW / ja / es / ar)
   page.tsx               studio (idea / url / reference image)
   account/               billing, history
-  about/ privacy/ terms/ refunds/ ai-policy/   legal + transparency pages
-  movie|minimal|anime|business|vintage|neon-poster-maker/   style landing pages
-  api/
+  pricing/ login/ checkout/ qa-header-check/
+  about/ movie|minimal|anime|business|vintage|neon-poster-maker/   marketing + style landings
+src/app/(unlocalized)/   privacy/ terms/ refunds/ ai-policy/   English only, no locale prefix
+src/app/global-not-found.tsx   full-document 404 (multiple root layouts)
+src/components/site-document.tsx   shared <html>/<body> shell used by both root layouts
+src/middleware.ts        locale prefix normalization (as-needed) + session refresh for /account, /checkout
+src/app/api/             route handlers
     brief/               AI brief from text or URL
     url/analyze/         streamed URL → poster brief pipeline
     url-preview/         page fetch + extract (cheerio)
@@ -73,6 +77,12 @@ src/lib/domain/          schemas, pricing/credit rules, styles, brief, url-analy
 supabase/migrations/     SQL migrations (run in filename order)
 scripts/                 migrate-posters-to-r2.mjs
 ```
+
+Marketing and style landing pages are statically prerendered per locale (one HTML per
+language, served from the CDN), so a page view no longer costs a server render. Sign-in
+state for those pages is resolved in the browser via `/api/account/status`; only
+`/account`, `/account/billing`, `/checkout`, `/login` and the API routes render per
+request.
 
 ## Local setup
 
