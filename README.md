@@ -99,15 +99,18 @@ request.
   `RESPONSE_STORE`（备用）。
 - **密钥**：`wrangler secret bulk` 推送。**不要推 `APIMART_PROXY` / `HTTPS_PROXY`**——
   那是本地翻墙用的，Workers 上加载不了 undici 的原生 agent（见 `proxy-fetch.ts`）。
-- **已知限制（图片优化）**：vinext 的 `/_next/image` 只接受同源相对路径——它的
-  `parseImageParams` 会校验 origin，远程 R2 图片一律 400（同一个 URL 在 Vercel
-  返回 200/avif，在 Worker 上是 400）。改用 `images.loader` 自定义 loader 也不行：
-  客户端 bundle 里确实打进了 `/api/img`，但 vinext 的**服务端 SSR 忽略
-  `images.loader`**，HTML 仍输出 `/_next/image`，前后端不一致。因此当前 Workers
-  构建关闭内置优化器、图片直出 R2（PNG 原图；带宽在 Cloudflare 不计费）。
-  `src/app/api/img/route.ts`（用 Images binding 做变换 + Workers Cache）与
-  `src/lib/image-loader.ts` 已经写好但**未接线**，等 vinext 的 SSR 支持自定义
-  loader 后再打开。
+- **图片交付**：展示路径走 zone 的 `/cdn-cgi/image/`（`width` + `format=auto` +
+  `quality=82`，见 `src/lib/image-delivery.ts`），原图仍在 R2、下载仍给原图 PNG。
+  实测访客海报 1987 KB PNG → **34 KB（320w）/ 153 KB（1600w）AVIF**，且边缘缓存命中。
+  该变换由 Cloudflare 完成，Worker 不做像素运算；只有构建时注入
+  `NEXT_PUBLIC_IMAGE_TRANSFORM_ORIGIN` 才启用（Workers 构建），Vercel 构建继续用
+  next/image 内置优化器。
+- **未启用的两条路**：① next/image 内置优化器——vinext 的 `/_next/image` 只接受同源
+  相对路径（其 `parseImageParams` 校验 origin），远程 R2 图片一律 400（同一 URL 在
+  Vercel 是 200/avif）；② `images.loader` 自定义 loader——客户端 bundle 里确实打进了
+  `/api/img`，但 vinext 的**服务端 SSR 忽略 `images.loader`**，HTML 仍输出
+  `/_next/image`，前后端不一致。`src/app/api/img/route.ts` 与
+  `src/lib/image-loader.ts` 已写好但未接线，等 vinext 支持后再打开。
 - **本地开发**：`vinext dev` 在 workerd 里跑不了 React 开发模式（`eval()` 受限），
   调试请用 `pnpm build:vinext` + `pnpm start:vinext`。
 

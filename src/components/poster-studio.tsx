@@ -73,6 +73,7 @@ import {
   isPosterStyle,
 } from "@/lib/domain/poster";
 import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
+import { posterSrc } from "@/lib/image-delivery";
 import { notifyError } from "./error-toast";
 import { LoginForm } from "./login-form";
 import { UrlPipelineModal } from "./url-pipeline-modal";
@@ -1577,7 +1578,7 @@ function StudioHistoryThumbnails({
             <CircleAlert size={22} aria-hidden="true" />
           ) : (
             <Image
-              src={item.poster.image.url}
+              src={posterSrc(item.poster.image.url, 320)}
               alt=""
               width={96}
               height={120}
@@ -1735,7 +1736,7 @@ function StudioHistoryPanel({
               )}
               <Image
                 key={`poster-attempt-${attempt}`}
-                src={selectedPoster.image.url}
+                src={posterSrc(selectedPoster.image.url, 1600)}
                 alt={selectedPoster.image.alt}
                 width={1024}
                 height={1280}
@@ -3636,7 +3637,7 @@ export function PosterStudio({ initialStyle, examples: providedExamples }: Props
               </span>
             )}
             <Image
-              src={lightbox}
+              src={posterSrc(lightbox, 1600)}
               alt={t("posterPreview")}
               width={1024}
               height={1280}

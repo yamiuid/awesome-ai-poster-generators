@@ -5,6 +5,7 @@ import { ArrowDownToLine, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { posterSrc } from "@/lib/image-delivery";
 
 export type HistoryImage = Readonly<{
   id: string;
@@ -164,7 +165,7 @@ export function HistoryGallery({
                   aria-label={`View ${image.alt} full size`}
                 >
                   <Image
-                    src={image.url}
+                    src={posterSrc(image.url, 640)}
                     alt={image.alt}
                     width={1024}
                     height={1280}
@@ -273,7 +274,7 @@ export function HistoryGallery({
             </span>
           )}
           <Image
-            src={lightbox}
+            src={posterSrc(lightbox, 1600)}
             alt={t("posterPreview")}
             width={1024}
             height={1280}
