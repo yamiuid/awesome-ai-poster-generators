@@ -177,7 +177,7 @@ export async function LegalPage({ kind }: Readonly<{ kind: Kind }>) {
   const footer = await getTranslations("footer");
   return (
     <main className="legal-page">
-      <SiteHeader />
+      <SiteHeader showLocaleSwitcher={false} />
       <article className="legal-copy">
         <p className="legal-language-note">{footer("legalEnglish")}</p>
         <p className="eyebrow">Text to Poster / {kind}</p>

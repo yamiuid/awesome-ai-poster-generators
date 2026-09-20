@@ -26,6 +26,7 @@ export type HeaderAccount = Readonly<
 type SiteHeaderProps = Readonly<{
   variant?: "global" | "minimal";
   initialAuth?: HeaderAccount;
+  showLocaleSwitcher?: boolean;
 }>;
 
 const headerStatusSchema = z.object({
@@ -220,6 +221,7 @@ function HeaderNavLink({
 export function SiteHeader({
   variant = "global",
   initialAuth,
+  showLocaleSwitcher = true,
 }: SiteHeaderProps) {
   const t = useTranslations("header");
   const pathname = usePathname();
@@ -306,7 +308,7 @@ export function SiteHeader({
                 {t(item.key)}
               </HeaderNavLink>
             ))}
-            <LocaleSwitcher />
+            {showLocaleSwitcher && <LocaleSwitcher />}
             {account?.userId && account.credits !== null && (
               <HeaderCredits
                 credits={account.credits ?? 0}
@@ -317,7 +319,9 @@ export function SiteHeader({
             <HeaderAccount
               account={account}
               mobileLocaleSlot={
-                <LocaleSwitcher idPrefix="account-locale-switcher" />
+                showLocaleSwitcher ? (
+                  <LocaleSwitcher idPrefix="account-locale-switcher" />
+                ) : undefined
               }
             />
             {account !== null && !account.userId && (

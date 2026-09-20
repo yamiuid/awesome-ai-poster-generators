@@ -1,10 +1,10 @@
 "use client";
 
 import { Check, ChevronDown } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { KeyboardEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
   isUiLocale,
   localizedPath,
@@ -33,9 +33,11 @@ export function LocaleSwitcher({
   const rawLocale = useLocale();
   const locale: UiLocale = isUiLocale(rawLocale) ? rawLocale : "en";
   const pathname = usePathname();
+  const router = useRouter();
   const t = useTranslations("header");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isPending, startTransition] = useTransition();
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedIndex = Math.max(0, UI_LOCALES.indexOf(locale));
   const listboxId = `${idPrefix}-listbox`;
@@ -52,7 +54,10 @@ export function LocaleSwitcher({
       return;
     }
     localStorage.setItem("site-locale", nextLocale);
-    window.location.assign(localizedPath(pathname, nextLocale));
+    setOpen(false);
+    startTransition(() => {
+      router.push(localizedPath(pathname, nextLocale));
+    });
   }
 
   useEffect(() => {
@@ -131,6 +136,7 @@ export function LocaleSwitcher({
       <button
         type="button"
         className="option-control"
+        disabled={isPending}
         role="combobox"
         aria-label={t("languageMenu")}
         aria-haspopup="listbox"
@@ -162,6 +168,7 @@ export function LocaleSwitcher({
               type="button"
               id={optionId(index)}
               role="option"
+              disabled={isPending}
               aria-selected={option === locale}
               className={`option-item ${index === activeIndex ? "is-active" : ""}`}
               onClick={() => selectAt(index)}
