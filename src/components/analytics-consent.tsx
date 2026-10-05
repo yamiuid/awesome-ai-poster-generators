@@ -1,15 +1,10 @@
 "use client";
 
-import { useLocale } from "next-intl";
-import { useEffect, useState } from "react";
-import { ANALYTICS_CONSENT_COPY } from "@/lib/i18n/analytics-consent-copy";
-import { isUiLocale, type UiLocale } from "@/lib/i18n/locale";
+import { useEffect } from "react";
 
-const CONSENT_STORAGE_KEY = "ttp-analytics-consent";
 const GOOGLE_ANALYTICS_ID = "G-P36HDHF4KN";
 const CLARITY_PROJECT_ID = "y0nc1qmg8a";
 
-type ConsentState = "loading" | "unset" | "granted" | "denied";
 type ClarityFunction = {
   (...args: unknown[]): void;
   q?: unknown[][];
@@ -18,16 +13,17 @@ type ClarityFunction = {
 declare global {
   interface Window {
     clarity?: ClarityFunction;
-    dataLayer?: unknown[][];
+    dataLayer?: unknown[];
   }
 }
 
-function loadOptionalAnalytics(): void {
+export function loadOptionalAnalytics(): void {
   if (!document.getElementById("google-analytics-script")) {
     window.dataLayer ??= [];
-    const gtag = (...args: unknown[]): void => {
-      window.dataLayer?.push(args);
-    };
+    function gtag(_command: string, _value: unknown): void {
+      // biome-ignore lint/complexity/noArguments: gtag.js recognizes Arguments commands, not arrays.
+      window.dataLayer?.push(arguments);
+    }
     gtag("js", new Date());
     gtag("config", GOOGLE_ANALYTICS_ID);
     const googleScript = document.createElement("script");
@@ -52,80 +48,10 @@ function loadOptionalAnalytics(): void {
   }
 }
 
-function unloadOptionalAnalytics(): void {
-  document.getElementById("google-analytics-script")?.remove();
-  document.getElementById("microsoft-clarity-script")?.remove();
-  delete window.dataLayer;
-  delete window.clarity;
-}
-
 export function AnalyticsConsent() {
-  const rawLocale = useLocale();
-  const locale: UiLocale = isUiLocale(rawLocale) ? rawLocale : "en";
-  const copy = ANALYTICS_CONSENT_COPY[locale];
-  const [consent, setConsent] = useState<ConsentState>("loading");
-
   useEffect(() => {
-    const stored = window.localStorage.getItem(CONSENT_STORAGE_KEY);
-    if (stored === "granted") {
-      setConsent("granted");
-      loadOptionalAnalytics();
-      return;
-    }
-    setConsent(stored === "denied" ? "denied" : "unset");
+    loadOptionalAnalytics();
   }, []);
 
-  if (consent === "loading") {
-    return null;
-  }
-
-  if (consent !== "unset") {
-    return (
-      <button
-        type="button"
-        className="analytics-consent-manage"
-        onClick={() => {
-          window.localStorage.removeItem(CONSENT_STORAGE_KEY);
-          unloadOptionalAnalytics();
-          setConsent("unset");
-        }}
-      >
-        {copy.manage}
-      </button>
-    );
-  }
-
-  const choose = (next: "granted" | "denied"): void => {
-    window.localStorage.setItem(CONSENT_STORAGE_KEY, next);
-    setConsent(next);
-    if (next === "granted") {
-      loadOptionalAnalytics();
-    }
-  };
-
-  return (
-    <aside className="analytics-consent" role="dialog" aria-live="polite">
-      <div>
-        <p className="analytics-consent-title">{copy.title}</p>
-        <p className="analytics-consent-body">{copy.body}</p>
-      </div>
-      <div className="analytics-consent-actions">
-        <button
-          type="button"
-          className="analytics-consent-accept"
-          onClick={() => choose("granted")}
-        >
-          {copy.accept}
-        </button>
-        <button
-          type="button"
-          className="analytics-consent-decline"
-          onClick={() => choose("denied")}
-        >
-          {copy.decline}
-        </button>
-        <a href="/privacy">{copy.privacy}</a>
-      </div>
-    </aside>
-  );
+  return null;
 }
