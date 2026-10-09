@@ -87,18 +87,14 @@ export async function StyleStudioLanding({
         >
           <div className="movie-studio-intro">
             <p className="eyebrow">{styles("tryHeading")}</p>
-            <h2 id="style-studio-heading">
-              {styles("promptHeading", { style })}
-            </h2>
+            <h2 id="style-studio-heading">{styles("studioPromptHeading")}</h2>
             <p>{copy.cta}</p>
           </div>
           <PosterStudio initialStyle={landing.style} />
         </section>
 
         <section aria-labelledby="style-prompt-heading">
-          <h2 id="style-prompt-heading">
-            {styles("promptHeading", { style })}
-          </h2>
+          <h2 id="style-prompt-heading">{styles("promptHeading")}</h2>
           <p>{copy.promptLead}</p>
           <ul className="style-landing-list">
             {copy.promptTips.map((tip) => (

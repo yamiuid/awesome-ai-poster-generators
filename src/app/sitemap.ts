@@ -31,9 +31,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
         priority,
       })),
   );
-  return [...localizedEntries, ...legalEntries].map(({ path, priority }) => ({
-    url: `${siteUrl}${path}`,
-    changeFrequency: "monthly",
-    priority,
-  }));
+  const englishContentEntries: SitemapEntry[] = [
+    { path: "/event-poster-maker", priority: 0.7 },
+    { path: "/how-to-make-a-poster", priority: 0.6 },
+    { path: "/poster-design-ideas", priority: 0.6 },
+  ];
+  return [...localizedEntries, ...englishContentEntries, ...legalEntries].map(
+    ({ path, priority }) => ({
+      url: `${siteUrl}${path}`,
+      changeFrequency: "monthly",
+      priority,
+    }),
+  );
 }

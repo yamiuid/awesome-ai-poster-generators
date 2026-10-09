@@ -84,6 +84,18 @@ async function refreshSession(
 }
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
+  const hostname = request.nextUrl.hostname.toLowerCase();
+  if (
+    hostname === "www.texttoposter.com" ||
+    (hostname === "texttoposter.com" && request.nextUrl.protocol === "http:")
+  ) {
+    const canonical = request.nextUrl.clone();
+    canonical.hostname = "texttoposter.com";
+    canonical.protocol = "https:";
+    canonical.port = "";
+    return NextResponse.redirect(canonical, 308);
+  }
+
   const { pathname } = request.nextUrl;
   const prefix = LOCALE_PREFIX.exec(pathname);
   const locale: UiLocale = prefix ? localeFromPath(pathname) : DEFAULT_LOCALE;
@@ -128,6 +140,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  // api / auth 由各自 route handler 处理登录态刷新，根级静态文件也不进中间件
-  matcher: ["/((?!api/|auth/|_next/|.*\\.[^/]*$).*)"],
+  // api / auth 由各自 route handler 处理登录态刷新；robots / sitemap 需要统一 HTTPS。
+  matcher: [
+    "/((?!api/|auth/|_next/|.*\\.[^/]*$).*)",
+    "/robots.txt",
+    "/sitemap.xml",
+  ],
 };

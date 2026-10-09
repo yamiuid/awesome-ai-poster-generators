@@ -388,9 +388,9 @@ const englishMessages = {
   },
   home: {
     heroEyebrow: "Free AI poster generator from text",
-    heroTitle: "AI Poster Generator — Create Posters from Text",
+    heroTitle: "AI Poster Maker — Create Posters from Text",
     heroBody:
-      "Describe your poster. AI creates the artwork, layout, and typography in seconds, then gives you multiple directions to compare.",
+      "Turn text into a poster with our AI poster maker. Describe your idea, choose an art direction, and compare generated artwork, layouts, and typography before downloading your favorite.",
     heroNote:
       "Free to try, no sign-up required. Start with a sentence and refine the direction that lands.",
     generate: "Generate a poster",
@@ -529,7 +529,8 @@ const englishMessages = {
     art_deco: "Art Deco",
     y2k: "Y2K",
     eyebrow: "Text to Poster / {style}",
-    promptHeading: "How to write a {style} poster prompt",
+    studioPromptHeading: "Describe your poster idea",
+    promptHeading: "Poster prompt tips",
     faqHeading: "{style} poster FAQs",
     tryHeading: "Try it in the studio",
     tryAction: "Start a {style} brief",
@@ -859,7 +860,8 @@ const translated = {
       exampleBusinessAlt: "有建築剪影、藍色網格與橙色點綴的商業會議海報。",
       exampleVintageAlt: "有太陽、吉他、花朵與溫暖紙張顆粒的復古現場音樂海報。",
       exampleNeonAlt: "雨夜街道上有薩克斯風演奏者和青紫燈光的霓虹爵士海報。",
-      promptHeading: "如何撰寫{style}海報提示詞",
+      studioPromptHeading: "描述你的海報想法",
+      promptHeading: "海報提示詞撰寫技巧",
       faqHeading: "{style}海報常見問題",
       tryHeading: "在工作室試用",
       tryAction: "開始{style}簡報",
@@ -1229,7 +1231,8 @@ const translated = {
       vintage: "ヴィンテージ",
       neon: "ネオン",
       eyebrow: "Text to Poster／{style}",
-      promptHeading: "{style}ポスターのプロンプトを書く方法",
+      studioPromptHeading: "ポスターのアイデアを説明してください",
+      promptHeading: "プロンプト作成のコツ",
       faqHeading: "{style}ポスター よくある質問",
       tryHeading: "スタジオで試す",
       tryAction: "{style}のブリーフを始める",
@@ -1357,7 +1360,8 @@ const translated = {
       currentPlan: "現在のプラン",
       popularBadge: "人気No.1",
       longTermHistory: "契約中は履歴をすべて保存",
-      commercialUse: "商用プロジェクトに利用可能（モデル提供元の規約に準じます）",
+      commercialUse:
+        "商用プロジェクトに利用可能（モデル提供元の規約に準じます）",
       creatorMonthlyDescription:
         "毎月{credits}クレジット。継続的なポスター制作に。",
       creatorYearlyDescription:
@@ -1406,7 +1410,8 @@ const translated = {
       faq2Question: "クレジットはどう差し引かれますか？",
       faq2Answer:
         "生成ごとに解像度と品質に応じてクレジットが消費されます。標準の1Kポスターは2クレジット、4K Maxは115クレジットです。Image → Posterモードでは参照画像1枚につき1クレジットが加算され、添付できる枚数はプランによって異なります（ゲスト1枚、無料アカウント2枚、有料プランは最大5枚）。失敗した生成には課金されません。",
-      faq3Question: "クレジットパックとサブスクリプション、どちらが良いですか？",
+      faq3Question:
+        "クレジットパックとサブスクリプション、どちらが良いですか？",
       faq3Answer:
         "パックは期限なしのクレジットを都度購入する形式で、時々ポスターを作る方に向いています。サブスクリプションでは2K／4K解像度とHigh〜Max品質が使えるようになり、定期的な制作に十分な毎月のクレジットが付きます。",
       faq4Question: "クレジットに有効期限はありますか？",
@@ -1619,7 +1624,8 @@ const translated = {
       vintage: "Vintage",
       neon: "Neón",
       eyebrow: "Text to Poster／{style}",
-      promptHeading: "Cómo escribir un prompt de póster {style}",
+      studioPromptHeading: "Describe la idea de tu póster",
+      promptHeading: "Consejos para escribir un prompt",
       faqHeading: "Preguntas frecuentes sobre pósters {style}",
       tryHeading: "Pruébalo en el estudio",
       tryAction: "Empezar un brief {style}",
@@ -1732,8 +1738,10 @@ const translated = {
       scaleYearlyEyebrow: "Scale／anual",
       monthCadence: "／mes",
       yearCadence: "／año",
-      creatorAudience: "Una asignación mensual ligera para creadores individuales.",
-      studioAudience: "Para creadores profesionales que lanzan campañas con regularidad.",
+      creatorAudience:
+        "Una asignación mensual ligera para creadores individuales.",
+      studioAudience:
+        "Para creadores profesionales que lanzan campañas con regularidad.",
       scaleAudience: "Para equipos y producción de alto volumen.",
       yearlyNote: "Facturado {yearly} al año — ahorras {savings}",
       creditsPerMonth: "{credits} créditos / mes",
@@ -2005,7 +2013,8 @@ const translated = {
       vintage: "قديم",
       neon: "نيون",
       eyebrow: "Text to Poster / {style}",
-      promptHeading: "كيفية كتابة طلب ملصق {style}",
+      studioPromptHeading: "صف فكرة الملصق",
+      promptHeading: "نصائح لكتابة وصف الملصق",
       faqHeading: "الأسئلة الشائعة حول ملصق {style}",
       tryHeading: "جرّبه في الاستوديو",
       tryAction: "ابدأ وصف {style}",
@@ -2225,8 +2234,7 @@ const translated = {
       deleteCancel: "إلغاء",
       deleting: "جارٍ الحذف…",
       deleteFailed: "تعذر حذف الملصق. حاول مرة أخرى.",
-      imagesExpired:
-        "تجاوزت صور هذا الملصق مدة الاحتفاظ ولم تعد محفوظة.",
+      imagesExpired: "تجاوزت صور هذا الملصق مدة الاحتفاظ ولم تعد محفوظة.",
       generations: "عمليات الإنشاء",
       credits: "الأرصدة",
       nothingHere: "لا يوجد شيء هنا بعد",
@@ -2337,8 +2345,7 @@ const coverageTranslations = {
       noCharge: "這次生成不會扣除點數。",
       providerContentRejected:
         "圖像服務因內容政策拒絕了這次請求。請調整提示詞或參考圖後再試一次。",
-      providerTimeout:
-        "圖像服務沒有回應，這次生成不會扣除點數，請再試一次。",
+      providerTimeout: "圖像服務沒有回應，這次生成不會扣除點數，請再試一次。",
       noSavedPosters: "還沒有已儲存的海報",
       noSavedPostersBody: "生成海報後，就能在這裡快速比較。",
       guestHistory: "訪客海報會保留在此瀏覽器 24 小時。",
@@ -2560,7 +2567,8 @@ const coverageTranslations = {
       googleUnavailable: "Google 登入暫時無法使用，請檢查 Supabase 設定。",
       captchaLabel: "機器人驗證",
       captchaRequired: "請先完成機器人驗證。",
-      captchaUnavailable: "機器人驗證載入失敗，請關閉內容阻擋外掛後重新載入頁面。",
+      captchaUnavailable:
+        "機器人驗證載入失敗，請關閉內容阻擋外掛後重新載入頁面。",
       emailDomainBlocked:
         "此電子郵件服務無法用來建立帳戶，請改用長期使用的電子郵件地址。",
       emailPlaceholder: "you@example.com",
@@ -2928,9 +2936,9 @@ const coverageTranslations = {
       trackEveryRun: "各生成のコストを確認できます。",
       noCreditsSpent: "まだクレジットを使っていません。",
       creditActivityEmpty: "ここに生成ごとの正確なコストが表示されます。",
-      permanentBalanceMeta:
-        "ウェルカム／パックの{credits}クレジット・期限なし",
-      subscriptionBalanceMeta: "{tier}・{periodStart} → {periodEnd}・{credits}付与",
+      permanentBalanceMeta: "ウェルカム／パックの{credits}クレジット・期限なし",
+      subscriptionBalanceMeta:
+        "{tier}・{periodStart} → {periodEnd}・{credits}付与",
       menuCredits: "残り{credits}クレジット",
       date: "日付",
       prompt: "プロンプト",
@@ -3665,8 +3673,7 @@ const coverageTranslations = {
       pricingFeature4: "تصدير بدقة 1K و2K و4K",
       pricingFeature5: "تشطيبات Medium وHigh وMax",
       pricingFeature6: "حتى 5 صور مرجعية في كل عملية إنشاء",
-      pricingFeature7:
-        "حزم أرصدة لمرة واحدة تبدأ من $4.90 — لا تنتهي صلاحيتها",
+      pricingFeature7: "حزم أرصدة لمرة واحدة تبدأ من $4.90 — لا تنتهي صلاحيتها",
       faqIntro:
         "ابدأ بخطوة صغيرة، وتعلّم من النتيجة الأولى، ونقّح ما يحتاج إلى تغيير فقط. تغطي هذه الإجابات التفاصيل العملية لإنشاء ملصق من النص باستخدام الاستوديو المجاني.",
       faq1Question: "هل الخدمة مجانية حقًا؟",

@@ -9,14 +9,10 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: [
         "/account",
-        "/login",
-        "/checkout",
         "/auth",
         "/api",
-        ...UI_LOCALES.filter((locale) => locale !== "en").flatMap((locale) =>
-          ["/account", "/login", "/checkout"].map(
-            (path) => `/${locale}${path}`,
-          ),
+        ...UI_LOCALES.filter((locale) => locale !== "en").map(
+          (locale) => `/${locale}/account`,
         ),
       ],
     },

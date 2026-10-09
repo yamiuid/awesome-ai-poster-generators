@@ -6,8 +6,11 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Link } from "@/i18n/navigation";
 import { getStyleLanding } from "@/lib/domain/style-landing";
-import { getStyleLandingCopy } from "@/lib/domain/style-landing-copy";
-import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
+import {
+  getStyleLandingCopy,
+  getStyleLandingMetadata,
+} from "@/lib/domain/style-landing-copy";
+import { type RouteParams, resolveRouteLocale } from "@/lib/i18n/route-locale";
 import { pageMeta, siteUrl } from "@/lib/seo";
 
 const movieFaqs = [
@@ -28,8 +31,8 @@ const movieFaqs = [
     "Yes. Text to Poster is a browser-based movie poster maker. Open this page, write the brief, choose Movie in Art direction, and generate without installing a desktop editor.",
   ],
   [
-    "Is this the best movie poster generator?",
-    "The best movie poster generator depends on your workflow. Text to Poster is a strong fit when you want to compare several visual directions from one logline before choosing a composition, rather than accept the first result.",
+    "Can I create a film screening or festival poster?",
+    "Yes. Include the film title, screening date, venue, and a short call to action in your brief. Review every word and number before sharing, and add any real ticket link or QR code in an editor.",
   ],
   [
     "Can I include a film title and tagline?",
@@ -117,10 +120,12 @@ export const dynamic = "force-static";
 export async function generateMetadata({ params }: RouteParams) {
   const locale = await resolveRouteLocale(params);
   const t = await getTranslations({ locale, namespace: "styles" });
-  const style = t("movie");
+  const landing = getStyleLanding("movie-poster-maker");
+  const style = t(landing.style);
+  const metadata = getStyleLandingMetadata(locale, landing);
   return pageMeta({
-    title: t("metadataTitle", { style }),
-    description: t("metadataDescription", { style }),
+    title: metadata?.title ?? t("metadataTitle", { style }),
+    description: metadata?.description ?? t("metadataDescription", { style }),
     path: "/movie-poster-maker",
     locale,
   });
@@ -149,7 +154,7 @@ export default async function MoviePosterMakerPage({ params }: RouteParams) {
       {
         "@type": "ListItem",
         position: 1,
-        name: copy.h1,
+        name: "Text to Poster",
         item: `${siteUrl}/`,
       },
       {
@@ -190,19 +195,13 @@ export default async function MoviePosterMakerPage({ params }: RouteParams) {
           >
             <div className="movie-studio-intro">
               <p className="eyebrow">{styles("tryHeading")}</p>
-              <h2 id="movie-studio-heading">
-                {styles("promptHeading", { style })}
-              </h2>
+              <h2 id="movie-studio-heading">{styles("studioPromptHeading")}</h2>
               <p>{copy.cta}</p>
             </div>
-            <PosterStudio
-              initialStyle="movie"
-            />
+            <PosterStudio initialStyle="movie" />
           </section>
           <section aria-labelledby="movie-prompt-heading">
-            <h2 id="movie-prompt-heading">
-              {styles("promptHeading", { style })}
-            </h2>
+            <h2 id="movie-prompt-heading">{styles("promptHeading")}</h2>
             <p>{copy.promptLead}</p>
             <ul className="style-landing-list">
               {copy.promptTips.map((tip) => (
@@ -248,7 +247,7 @@ export default async function MoviePosterMakerPage({ params }: RouteParams) {
 
       <article className="legal-copy movie-landing-copy">
         <nav className="breadcrumbs" aria-label={styles("moreHeading")}>
-          <Link href="/">{copy.h1}</Link>
+          <Link href="/">Text to Poster</Link>
           <span aria-hidden="true">/</span>
           <span>{style}</span>
         </nav>
@@ -272,15 +271,10 @@ export default async function MoviePosterMakerPage({ params }: RouteParams) {
         >
           <div className="movie-studio-intro">
             <p className="eyebrow">{styles("tryHeading")}</p>
-            <h2 id="movie-studio-heading">
-              {styles("promptHeading", { style })}
-            </h2>
+            <h2 id="movie-studio-heading">{styles("studioPromptHeading")}</h2>
             <p>{copy.cta}</p>
           </div>
-          <PosterStudio
-            initialStyle="movie"
-            examples={movieDirections}
-          />
+          <PosterStudio initialStyle="movie" examples={movieDirections} />
         </section>
 
         <section id="directions" aria-labelledby="directions-heading">
@@ -384,9 +378,7 @@ export default async function MoviePosterMakerPage({ params }: RouteParams) {
 
         <section aria-labelledby="free-movie-heading">
           <p className="eyebrow">Try the first direction free</p>
-          <h2 id="free-movie-heading">
-            Movie Poster Generator Free: Start Without a Subscription
-          </h2>
+          <h2 id="free-movie-heading">Try the movie poster maker free</h2>
           <p>
             You can test the movie poster generator free before deciding whether
             it belongs in your production workflow. Guests get 2 watermarked 1K
@@ -561,7 +553,12 @@ export default async function MoviePosterMakerPage({ params }: RouteParams) {
           <p className="eyebrow">Keep exploring</p>
           <h2 id="related-heading">{styles("moreHeading")}</h2>
           <p className="style-links">
-            <Link href="/">AI poster generator</Link> /{" "}
+            <Link href="/">AI poster maker</Link> /{" "}
+            <Link href="/event-poster-maker">Event poster maker</Link> /{" "}
+            <Link href="/how-to-make-a-poster">
+              How to make a poster with AI
+            </Link>{" "}
+            /{" "}
             <Link href="/minimal-poster-generator">
               Minimal poster generator
             </Link>{" "}

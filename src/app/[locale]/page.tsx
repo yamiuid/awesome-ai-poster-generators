@@ -22,8 +22,14 @@ export async function generateMetadata({ params }: RouteParams) {
   const locale = await resolveRouteLocale(params);
   const t = await getTranslations({ locale, namespace: "home" });
   return pageMeta({
-    title: `${t("heroTitle")} | Text to Poster`,
-    description: t("heroBody"),
+    title:
+      locale === "en"
+        ? "AI Poster Maker from Text | Text to Poster"
+        : `${t("heroTitle")} | Text to Poster`,
+    description:
+      locale === "en"
+        ? "Create posters from text with our AI poster maker. Explore styles, compare designs and download your favorite. Try free; account and export limits apply."
+        : t("heroBody"),
     path: "/",
     locale,
   });
@@ -217,6 +223,11 @@ export default async function Home({ params }: RouteParams) {
             <span className="eyebrow">{t("eventsEyebrow")}</span>
             <h3>{t("eventsTitle")}</h3>
             <p>{t("eventsBody")}</p>
+            {locale === "en" && (
+              <Link className="pricing-link" href="/event-poster-maker">
+                Event poster maker <ArrowUpRight size={15} />
+              </Link>
+            )}
           </article>
           <Link className="use-case-card" href="/business-poster-generator">
             <article>
@@ -336,6 +347,13 @@ export default async function Home({ params }: RouteParams) {
             </span>
           ))}
         </p>
+        {locale === "en" && (
+          <p className="section-intro">
+            <Link className="pricing-link" href="/poster-design-ideas">
+              Explore poster design ideas and example prompts
+            </Link>
+          </p>
+        )}
       </section>
 
       <section
@@ -364,6 +382,13 @@ export default async function Home({ params }: RouteParams) {
             </li>
           ))}
         </ol>
+        {locale === "en" && (
+          <p className="section-intro">
+            <Link className="pricing-link" href="/how-to-make-a-poster">
+              Read the complete guide to making a poster with AI
+            </Link>
+          </p>
+        )}
       </section>
 
       <section

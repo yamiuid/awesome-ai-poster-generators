@@ -21,10 +21,10 @@ export const STYLE_LANDINGS: readonly StyleLanding[] = [
     style: "movie",
     label: "Movie",
     linkLabel: "Movie poster maker",
-    title: "Movie Poster Maker - Generate Film Posters from Text",
+    title: "AI Movie Poster Maker from Text & Photos | Text to Poster",
     h1: "Movie Poster Maker - Turn a Logline into a Film Poster",
     description:
-      "Turn a logline, title, or single scene into multiple movie-poster directions. Compare cinematic layouts and pick the one that feels like the film.",
+      "Create film posters from a logline, title or reference photo with our AI movie poster maker. Compare genres and layouts, try free, and download your favorite.",
     intro:
       "A movie poster has to do a lot in one frame: name the film, set the mood, and make someone stop scrolling. The movie style turns a short brief into several cinematic directions so you can choose the composition that fits before you commit to a finished design.",
     promptLead: "For a stronger movie-poster brief, include:",

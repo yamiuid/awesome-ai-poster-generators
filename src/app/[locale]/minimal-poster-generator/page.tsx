@@ -1,7 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import { StyleStudioLanding } from "@/components/style-studio-landing";
 import { getStyleLanding } from "@/lib/domain/style-landing";
-import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
+import { getStyleLandingMetadata } from "@/lib/domain/style-landing-copy";
+import { type RouteParams, resolveRouteLocale } from "@/lib/i18n/route-locale";
 import { pageMeta } from "@/lib/seo";
 
 const landing = getStyleLanding("minimal-poster-generator");
@@ -13,9 +14,10 @@ export async function generateMetadata({ params }: RouteParams) {
   const locale = await resolveRouteLocale(params);
   const t = await getTranslations({ locale, namespace: "styles" });
   const style = t(landing.style);
+  const metadata = getStyleLandingMetadata(locale, landing);
   return pageMeta({
-    title: t("metadataTitle", { style }),
-    description: t("metadataDescription", { style }),
+    title: metadata?.title ?? t("metadataTitle", { style }),
+    description: metadata?.description ?? t("metadataDescription", { style }),
     path: `/${landing.slug}`,
     locale,
   });

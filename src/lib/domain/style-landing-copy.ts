@@ -1,10 +1,60 @@
 import type { UiLocale } from "@/lib/i18n/locale";
 import type { StyleLanding } from "./style-landing";
 
+type StyleLandingMetadata = Pick<StyleLanding, "title" | "description">;
+
+const spanishMetadata: Readonly<
+  Partial<Record<StyleLanding["style"], StyleLandingMetadata>>
+> = {
+  movie: {
+    title: "Generador de pósters de cine con IA | Text to Poster",
+    description:
+      "Crea pósters de cine a partir de una sinopsis, un título o una escena. Compara varias composiciones antes de elegir un diseño.",
+  },
+  minimal: {
+    title: "Generador de pósters minimalistas con IA | Text to Poster",
+    description:
+      "Crea pósters minimalistas a partir de una idea. Compara diseños limpios con tipografía marcada, formas geométricas y espacio negativo.",
+  },
+  anime: {
+    title: "Generador de pósters de anime con IA | Text to Poster",
+    description:
+      "Convierte una idea en varios pósters de anime. Describe un personaje, una escena y la paleta de color para comparar estilos.",
+  },
+  business: {
+    title: "Generador de pósters corporativos con IA | Text to Poster",
+    description:
+      "Crea pósters para empresas y conferencias a partir de texto. Describe el evento, el público y el tono para comparar diseños profesionales.",
+  },
+  vintage: {
+    title: "Generador de pósters vintage con IA | Text to Poster",
+    description:
+      "Crea pósters retro y serigrafiados a partir de texto. Describe el tema y la época para obtener composiciones cálidas y texturizadas.",
+  },
+  neon: {
+    title: "Generador de pósters de neón con IA | Text to Poster",
+    description:
+      "Crea pósters de neón a partir de una idea. Describe una escena nocturna, el tema y los colores para comparar diseños luminosos.",
+  },
+};
+
 type StyleLandingCopy = Pick<
   StyleLanding,
   "h1" | "intro" | "promptLead" | "promptTips" | "cta" | "faqs"
 >;
+
+export function getStyleLandingMetadata(
+  locale: UiLocale,
+  landing: StyleLanding,
+): StyleLandingMetadata | null {
+  if (locale === "en") {
+    return { title: landing.title, description: landing.description };
+  }
+  if (locale === "es") {
+    return spanishMetadata[landing.style] ?? null;
+  }
+  return null;
+}
 
 export function getStyleLandingCopy(
   locale: UiLocale,

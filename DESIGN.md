@@ -53,6 +53,7 @@ Text to Poster is an editorial poster studio for people who need a striking visu
 - `GenerationProgressCard`: result grid with centered one-line generation state, in-place result reveal, and hover/focus download affordance.
 - `SectionKicker`: small uppercase label with an accent rule.
 - `LegalPage`: consistent narrow reading column and last-updated metadata.
+- `PosterContentPage`: English editorial content using the existing movie landing layout, one H1, labeled breadcrumbs, and related links. Reuses paper/ink tokens, native FAQ details, sized artwork, and existing button/focus styles.
 - `SiteFooter`: copyright with separate site and friendly-link groups.
 
 ## 6. Accessibility
