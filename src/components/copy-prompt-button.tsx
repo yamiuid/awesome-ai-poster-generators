@@ -6,7 +6,17 @@ import { useState } from "react";
 export function CopyPromptButton({
   prompt,
   label,
-}: Readonly<{ prompt: string; label: string }>) {
+  messages,
+}: Readonly<{
+  prompt: string;
+  label: string;
+  messages?: {
+    copy: string;
+    copied: string;
+    unavailable: string;
+    ariaLabel: string;
+  };
+}>) {
   const [status, setStatus] = useState("");
 
   async function copyPrompt() {
@@ -25,16 +35,22 @@ export function CopyPromptButton({
         className="outline-button"
         type="button"
         onClick={copyPrompt}
-        aria-label={`Copy ${label} prompt`}
+        aria-label={messages?.ariaLabel ?? `Copy ${label} prompt`}
       >
         {status === "Copied" ? (
           <Check size={15} aria-hidden="true" />
         ) : (
           <Copy size={15} aria-hidden="true" />
         )}
-        Copy prompt
+        {messages?.copy ?? "Copy prompt"}
       </button>
-      <span role="status">{status}</span>
+      <span role="status">
+        {status === "Copied"
+          ? (messages?.copied ?? status)
+          : status
+            ? (messages?.unavailable ?? status)
+            : ""}
+      </span>
     </div>
   );
 }

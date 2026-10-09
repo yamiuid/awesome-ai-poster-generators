@@ -1,9 +1,11 @@
 import type { UiLocale } from "@/lib/i18n/locale";
+import { POSTER_IDEAS_MESSAGES } from "./poster-ideas-messages";
 
 type MessageValue = string | { readonly [key: string]: MessageValue };
 type MessageTree = { readonly [key: string]: MessageValue };
 
 const englishMessages = {
+  posterIdeas: POSTER_IDEAS_MESSAGES.en,
   common: {
     language: "Language",
     english: "English",
@@ -750,6 +752,7 @@ const translated = {
   en: englishMessages,
   "zh-TW": {
     ...englishMessages,
+    posterIdeas: POSTER_IDEAS_MESSAGES["zh-TW"],
     common: {
       ...englishMessages.common,
       language: "語言",
@@ -1135,6 +1138,7 @@ const translated = {
   },
   ja: {
     ...englishMessages,
+    posterIdeas: POSTER_IDEAS_MESSAGES.ja,
     common: {
       ...englishMessages.common,
       language: "言語",
@@ -1525,6 +1529,7 @@ const translated = {
   },
   es: {
     ...englishMessages,
+    posterIdeas: POSTER_IDEAS_MESSAGES.es,
     common: {
       ...englishMessages.common,
       language: "Idioma",
@@ -1917,6 +1922,7 @@ const translated = {
   },
   ar: {
     ...englishMessages,
+    posterIdeas: POSTER_IDEAS_MESSAGES.ar,
     common: {
       ...englishMessages.common,
       language: "اللغة",

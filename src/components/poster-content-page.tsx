@@ -1,17 +1,20 @@
 import { ArrowUpRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Link } from "@/i18n/navigation";
+import { localizedPath, type UiLocale } from "@/lib/i18n/locale";
 import { siteUrl } from "@/lib/seo";
 
-export function PosterContentPage({
+export async function PosterContentPage({
   path,
   title,
   intro,
   studioAction,
   contentClassName,
   compactHero = false,
+  locale = "en",
   children,
 }: Readonly<{
   path: string;
@@ -20,8 +23,10 @@ export function PosterContentPage({
   studioAction?: string;
   contentClassName?: string;
   compactHero?: boolean;
+  locale?: UiLocale;
   children: ReactNode;
 }>) {
+  const t = await getTranslations({ locale, namespace: "posterIdeas" });
   const breadcrumb = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -30,13 +35,13 @@ export function PosterContentPage({
         "@type": "ListItem",
         position: 1,
         name: "Text to Poster",
-        item: `${siteUrl}/`,
+        item: `${siteUrl}${localizedPath("/", locale)}`,
       },
       {
         "@type": "ListItem",
         position: 2,
         name: title,
-        item: `${siteUrl}${path}`,
+        item: `${siteUrl}${localizedPath(path, locale)}`,
       },
     ],
   };
@@ -68,13 +73,18 @@ export function PosterContentPage({
         </section>
         {children}
         <section aria-labelledby="related-heading">
-          <h2 id="related-heading">Keep creating</h2>
+          <h2 id="related-heading">{t("related")}</h2>
           <p className="style-links">
-            <Link href="/">AI poster maker</Link> /{" "}
-            <Link href="/movie-poster-maker">Movie poster maker</Link> /{" "}
-            <Link href="/event-poster-maker">Event poster maker</Link> /{" "}
-            <Link href="/how-to-make-a-poster">How to make a poster</Link> /{" "}
-            <Link href="/poster-design-ideas">Poster design ideas</Link>
+            <Link href="/">{t("maker")}</Link> /{" "}
+            <Link href="/movie-poster-maker">
+              {t("tools.movie-poster-maker")}
+            </Link>{" "}
+            /{" "}
+            <Link href="/event-poster-maker">
+              {t("tools.event-poster-maker")}
+            </Link>{" "}
+            / <Link href="/how-to-make-a-poster">{t("tutorial")}</Link> /{" "}
+            <Link href="/poster-design-ideas">{t("title")}</Link>
           </p>
         </section>
       </article>

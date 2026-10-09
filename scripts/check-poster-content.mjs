@@ -134,8 +134,67 @@ try {
     .getByRole("status")
     .filter({ hasText: "Copy unavailable" })
     .waitFor();
+  const localizedPage = await context.newPage();
+  for (const [locale, title] of Object.entries({
+    "zh-TW": "海報設計靈感",
+    ja: "ポスターデザインのアイデア",
+    es: "Ideas de diseño de pósteres",
+    ar: "أفكار لتصميم الملصقات",
+  })) {
+    for (const width of [375, 1280]) {
+      await localizedPage.setViewportSize({ width, height: 900 });
+      await localizedPage.goto(`${base}/${locale}/poster-design-ideas`);
+      assert.equal(await localizedPage.locator("h1").innerText(), title);
+      assert.equal(
+        await localizedPage.locator(".poster-ideas-grid figure").count(),
+        12,
+      );
+      assert.equal(
+        await localizedPage
+          .locator('link[rel="canonical"]')
+          .getAttribute("href"),
+        `https://texttoposter.com/${locale}/poster-design-ideas`,
+      );
+      assert.equal(
+        await localizedPage.locator('link[rel="alternate"][hreflang]').count(),
+        6,
+      );
+      assert.equal(
+        await localizedPage.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth,
+        ),
+        false,
+      );
+      assert.equal(
+        await localizedPage.locator("html").getAttribute("dir"),
+        locale === "ar" ? "rtl" : "ltr",
+      );
+      const first = localizedPage.locator(".poster-ideas-grid figure").first();
+      const prompt = await first.locator(".idea-prompt").innerText();
+      await first.getByRole("button").click();
+      await localizedPage.waitForFunction(
+        (expected) =>
+          navigator.clipboard.readText().then((text) => text === expected),
+        prompt,
+      );
+      assert.ok(await first.getByRole("status").innerText());
+      assert.notEqual(
+        await first.getByRole("button").innerText(),
+        "Copy prompt",
+      );
+    }
+  }
+  await localizedPage.getByRole("combobox").filter({ visible: true }).click();
+  await localizedPage
+    .getByRole("option", { name: "日本語", exact: true })
+    .click();
+  await localizedPage.waitForURL(`${base}/ja/poster-design-ideas`);
+  assert.equal(
+    await localizedPage.locator("h1").innerText(),
+    "ポスターデザインのアイデア",
+  );
   console.log(
-    "Poster content checks passed: responsive pages, fourteen prompt copies, twelve loaded idea images, three matching studio examples, sample download and clipboard fallback.",
+    "Poster content checks passed: responsive pages, fourteen prompt copies, twelve loaded idea images, three matching studio examples, sample download, clipboard fallback and four localized pages at two breakpoints.",
   );
 } finally {
   await browser.close();

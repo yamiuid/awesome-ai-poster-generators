@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { CopyPromptButton } from "@/components/copy-prompt-button";
 import { PosterContentPage } from "@/components/poster-content-page";
@@ -11,13 +10,16 @@ import { type RouteParams, resolveRouteLocale } from "@/lib/i18n/route-locale";
 import { pageMeta } from "@/lib/seo";
 
 export const dynamic = "force-static";
-export const metadata = pageMeta({
-  title: "Poster Design Ideas & AI Prompts | Text to Poster",
-  description:
-    "Explore 12 creative poster design ideas for sales, cafes, hiring, events and more. Browse AI artwork, copy the prompts and create your own poster online.",
-  path: "/poster-design-ideas",
-  localizedAlternates: false,
-});
+export async function generateMetadata({ params }: RouteParams) {
+  const locale = await resolveRouteLocale(params);
+  const t = await getTranslations({ locale, namespace: "posterIdeas" });
+  return pageMeta({
+    title: `${t("metaTitle")} | Text to Poster`,
+    description: t("description"),
+    path: "/poster-design-ideas",
+    locale,
+  });
+}
 
 const ideaExamples = POSTER_EXAMPLES.map((example) => {
   if (example.style === "minimal") {
@@ -79,8 +81,8 @@ const ideaGroups = [
 ] as const;
 
 export default async function PosterIdeasPage({ params }: RouteParams) {
-  if ((await resolveRouteLocale(params)) !== "en")
-    redirect("/poster-design-ideas");
+  const locale = await resolveRouteLocale(params);
+  const t = await getTranslations({ locale, namespace: "posterIdeas" });
   const studio = await getTranslations({ locale: "en", namespace: "studio" });
   const generatorPrompts: Partial<Record<PosterStyle, string>> = {
     minimal: studio("exampleArticlePrompt"),
@@ -98,18 +100,19 @@ export default async function PosterIdeasPage({ params }: RouteParams) {
   return (
     <PosterContentPage
       path="/poster-design-ideas"
-      title="Poster Design Ideas"
-      intro="Find a look you love. Copy the prompt. Make it yours."
+      title={t("title")}
+      intro={t("intro")}
+      locale={locale}
       contentClassName="poster-ideas-page"
       compactHero
     >
       <nav
         className="poster-content-nav idea-category-nav"
-        aria-label="Poster ideas by purpose"
+        aria-label={t("categories")}
       >
         {ideaGroups.map((group) => (
           <a key={group.id} href={`#${group.id}-ideas`}>
-            {group.title}
+            {t(`groups.${group.id}`)}
           </a>
         ))}
       </nav>
@@ -124,12 +127,13 @@ export default async function PosterIdeasPage({ params }: RouteParams) {
               <span className="idea-group-number" aria-hidden="true">
                 0{index + 1}
               </span>
-              {group.title}
+              {t(`groups.${group.id}`)}
             </h2>
             <div className="idea-group-links">
               {group.links.map((link) => (
                 <Link key={link.href} href={link.href}>
-                  {link.label} <span aria-hidden="true">↗</span>
+                  {t(`tools.${link.href.slice(1)}`)}{" "}
+                  <span aria-hidden="true">↗</span>
                 </Link>
               ))}
             </div>
@@ -147,25 +151,41 @@ export default async function PosterIdeasPage({ params }: RouteParams) {
                   <Image
                     className="example-poster-image"
                     src={example.image}
-                    alt={example.alt}
+                    alt={
+                      locale === "en"
+                        ? example.alt
+                        : t("artworkAlt", { name: t(`examples.${example.id}`) })
+                    }
                     width={1024}
                     height={1280}
                     sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 33vw"
                   />
                   <figcaption>
-                    <h3>{example.label}</h3>
-                    <p className="idea-prompt">{example.prompt}</p>
+                    <h3>{t(`examples.${example.id}`)}</h3>
+                    <p className="idea-prompt" dir="ltr" lang="en">
+                      {example.prompt}
+                    </p>
                     <div className="idea-actions">
                       <CopyPromptButton
                         prompt={example.prompt}
                         label={example.label.toLowerCase()}
+                        messages={{
+                          copy: t("copy"),
+                          copied: t("copied"),
+                          unavailable: t("unavailable"),
+                          ariaLabel: t("copyLabel", {
+                            name: t(`examples.${example.id}`),
+                          }),
+                        }}
                       />
                       <Link
                         className="solid-button"
                         href={`/?style=${example.style}#studio`}
-                        aria-label={`Create ${example.label.toLowerCase()} poster`}
+                        aria-label={t("createLabel", {
+                          name: t(`examples.${example.id}`),
+                        })}
                       >
-                        Create poster
+                        {t("create")}
                       </Link>
                     </div>
                   </figcaption>
@@ -177,18 +197,12 @@ export default async function PosterIdeasPage({ params }: RouteParams) {
       ))}
       <section className="idea-usage" aria-labelledby="adapt-heading">
         <div>
-          <h2 id="adapt-heading">Your idea. Your poster.</h2>
-          <p>
-            Replace the sample text, dates and venue, then review your result
-            before sharing.
-          </p>
-          <p className="idea-usage-note">
-            AI artwork, not editable templates. Results vary. The educational
-            example uses an article URL as its input.
-          </p>
+          <h2 id="adapt-heading">{t("usageTitle")}</h2>
+          <p>{t("usage")}</p>
+          <p className="idea-usage-note">{t("note")}</p>
         </div>
         <Link className="outline-button" href="/how-to-make-a-poster">
-          How to make a poster <span aria-hidden="true">↗</span>
+          {t("tutorial")} <span aria-hidden="true">↗</span>
         </Link>
       </section>
     </PosterContentPage>

@@ -9,6 +9,7 @@ const coreEntries: SitemapEntry[] = [
   { path: "/", priority: 1 },
   { path: "/about", priority: 0.8 },
   { path: "/pricing", priority: 0.8 },
+  { path: "/poster-design-ideas", priority: 0.6 },
 ];
 
 const styleEntries: SitemapEntry[] = STYLE_LANDINGS.map((landing) => ({
@@ -34,7 +35,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const englishContentEntries: SitemapEntry[] = [
     { path: "/event-poster-maker", priority: 0.7 },
     { path: "/how-to-make-a-poster", priority: 0.6 },
-    { path: "/poster-design-ideas", priority: 0.6 },
   ];
   return [...localizedEntries, ...englishContentEntries, ...legalEntries].map(
     ({ path, priority }) => ({
