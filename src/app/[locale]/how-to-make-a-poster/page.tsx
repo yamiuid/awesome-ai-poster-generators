@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
+import { CopyPromptButton } from "@/components/copy-prompt-button";
 import { PosterContentPage } from "@/components/poster-content-page";
 import { Link } from "@/i18n/navigation";
 import { type RouteParams, resolveRouteLocale } from "@/lib/i18n/route-locale";
@@ -14,6 +15,9 @@ export const metadata = pageMeta({
   localizedAlternates: false,
 });
 
+const musicPrompt =
+  "Live music session, 1970s screen print, sun, guitar, olive and burnt orange.";
+
 export default async function PosterTutorialPage({ params }: RouteParams) {
   if ((await resolveRouteLocale(params)) !== "en")
     redirect("/how-to-make-a-poster");
@@ -23,6 +27,19 @@ export default async function PosterTutorialPage({ params }: RouteParams) {
       title="How to Make a Poster with AI"
       intro="Start with one message, describe its visual direction, and generate a first draft. This guide shows how to use Text to Poster, with an existing live-music poster as an example and a checklist for reviewing your download."
     >
+      <section aria-labelledby="tutorial-steps-heading">
+        <p className="eyebrow">A live-music poster / step by step</p>
+        <h2 id="tutorial-steps-heading">
+          From the first brief to a finished file.
+        </h2>
+        <nav className="poster-content-nav" aria-label="Tutorial steps">
+          <a href="#brief-heading">1. Write a brief</a>
+          <a href="#format-heading">2. Choose settings</a>
+          <a href="#compare-heading">3. Generate and refine</a>
+          <a href="#review-heading">4. Review</a>
+          <a href="#download-heading">5. Download</a>
+        </nav>
+      </section>
       <section aria-labelledby="brief-heading">
         <h2 id="brief-heading">1. Write the message before the image</h2>
         <p>
@@ -33,11 +50,23 @@ export default async function PosterTutorialPage({ params }: RouteParams) {
         </p>
         <p>A suggested brief for a live-music poster like our example is:</p>
         <pre className="movie-prompt-example">
-          <code>
-            Live music session, 1970s screen print, sun, guitar, olive and burnt
-            orange.
-          </code>
+          <code>{musicPrompt}</code>
         </pre>
+        <CopyPromptButton prompt={musicPrompt} label="live-music" />
+        <figure className="tutorial-figure">
+          <Image
+            className="how-step-image"
+            src="/tutorial/poster-brief.webp"
+            alt="Text to Poster studio with the live-music prompt entered, Vintage selected and the Generate poster button below."
+            width={534}
+            height={571}
+            sizes="(max-width: 600px) 100vw, 34rem"
+          />
+          <figcaption>
+            Enter your brief in Text → Poster. This is the real studio interface
+            before generation.
+          </figcaption>
+        </figure>
         <p>
           For your own version, replace the music session with your subject and
           name the headline you need. Avoid a long paragraph of small copy: it
@@ -61,16 +90,31 @@ export default async function PosterTutorialPage({ params }: RouteParams) {
           Poster and attach the reference. A reference guides generation; it
           does not turn the result into an editable document.
         </p>
+        <figure className="tutorial-figure">
+          <Image
+            className="how-step-image"
+            src="/tutorial/poster-settings.webp"
+            alt="Open Output settings showing portrait and landscape ratios, resolution options and quality levels; this guest example uses 2:3, 1K and Low."
+            width={573}
+            height={733}
+            sizes="(max-width: 600px) 100vw, 34rem"
+          />
+          <figcaption>
+            Open Output to choose the ratio, resolution and quality. The
+            screenshot uses 2:3 / 1K / Low; locked options depend on your plan.
+          </figcaption>
+        </figure>
       </section>
       <section aria-labelledby="compare-heading">
         <h2 id="compare-heading">3. Generate and compare the composition</h2>
         <p>
-          Generate a first draft. If you request several results, compare the
-          main subject, headline contrast and empty space. The example below
-          uses warm colors, a guitar and a sun to make the music theme
-          recognizable.
+          Click Generate poster to make a first draft. Wait for the result
+          before starting another generation. If you request several results,
+          compare the main subject, headline contrast and empty space. The
+          example below uses warm colors, a guitar and a sun to make the music
+          theme recognizable.
         </p>
-        <figure className="example-poster">
+        <figure className="example-poster tutorial-figure">
           <Image
             className="example-poster-image"
             src="/examples/vintage-sunroom-sessions.webp"
@@ -92,6 +136,17 @@ export default async function PosterTutorialPage({ params }: RouteParams) {
           and compare. Each generation uses the allowance or credits shown in
           the studio.
         </p>
+        <p>
+          For a second draft, keep the subject and colors but ask for a clearer
+          reading order:
+        </p>
+        <pre className="movie-prompt-example">
+          <code>{`${musicPrompt} One large guitar and sun. Large headline: SUNROOM SESSIONS. Leave clear space below for the date and venue. Avoid small decorative text.`}</code>
+        </pre>
+        <CopyPromptButton
+          prompt={`${musicPrompt} One large guitar and sun. Large headline: SUNROOM SESSIONS. Leave clear space below for the date and venue. Avoid small decorative text.`}
+          label="refined live-music"
+        />
       </section>
       <section aria-labelledby="review-heading">
         <h2 id="review-heading">4. Review every word and detail</h2>
@@ -109,6 +164,11 @@ export default async function PosterTutorialPage({ params }: RouteParams) {
           image editor when you need exact typography or final production
           changes.
         </p>
+        <p>
+          In the example, check “SUNROOM SESSIONS” and “SATURDAY”. A real
+          invitation also needs the exact date, time and venue; add those
+          details and verify them before sharing.
+        </p>
       </section>
       <section aria-labelledby="download-heading">
         <h2 id="download-heading">5. Download for the intended use</h2>
@@ -124,9 +184,23 @@ export default async function PosterTutorialPage({ params }: RouteParams) {
           print size. Text to Poster provides digital files and does not handle
           physical printing.
         </p>
-        <Link className="solid-button" href="/?style=vintage#studio">
-          Make your first poster
-        </Link>
+        <p>
+          Want to inspect a file before generating? Download the existing sample
+          below. It is the example artwork shown in this guide, not a new
+          generation.
+        </p>
+        <div className="copy-prompt-action">
+          <a
+            className="outline-button"
+            href="/examples/vintage-sunroom-sessions.webp"
+            download="sunroom-sessions-example.webp"
+          >
+            Download example artwork
+          </a>
+          <Link className="solid-button" href="/?style=vintage#studio">
+            Make your first poster
+          </Link>
+        </div>
       </section>
     </PosterContentPage>
   );

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { PosterContentPage } from "@/components/poster-content-page";
 import { PosterStudio } from "@/components/poster-studio";
@@ -27,19 +28,44 @@ export default async function EventPosterPage({ params }: RouteParams) {
       path="/event-poster-maker"
       title="AI Event Poster Maker"
       intro="Turn an event brief into a poster for a live show, festival, exhibition or conference. Describe the audience, atmosphere and essential details, then compare AI-generated designs in your browser."
+      studioAction="Start an event brief"
     >
-      <section aria-labelledby="event-start-heading">
-        <h2 id="event-start-heading">Create your event poster online</h2>
-        <p>
-          Choose an example below to load its prompt, or write your own event
-          brief. The examples are generated artwork, not editable templates.
-          Choose Vintage for a music session, Neon for a night event, or
-          Business for a conference.
-        </p>
-        <a className="solid-button" href="#studio">
-          Try the event poster maker
-        </a>
+      <section
+        className="movie-studio-section"
+        aria-label="Create your event poster online"
+      >
         <PosterStudio initialStyle="vintage" examples={eventExamples} />
+      </section>
+      <section aria-labelledby="event-examples-heading">
+        <p className="eyebrow">One event / different directions</p>
+        <h2 id="event-examples-heading">Set the mood before the doors open.</h2>
+        <p>
+          Compare a warm screen-print music poster, a neon jazz night and an
+          anime-inspired rooftop event. Use an example in the studio to load its
+          brief, then choose the matching art direction and replace the event
+          details. These are generated images, not editable templates.
+        </p>
+        <div className="examples-grid movie-direction-grid">
+          {eventExamples.map((example, index) => (
+            <figure
+              className={`example-poster example-poster-${index + 1}`}
+              key={example.style}
+            >
+              <Image
+                className="example-poster-image"
+                src={example.image}
+                alt={example.alt}
+                width={1024}
+                height={1280}
+                sizes="(max-width: 520px) 100vw, (max-width: 800px) 50vw, 33vw"
+              />
+              <figcaption>
+                <p className="eyebrow">{example.label} / event poster</p>
+                <p>{example.prompt}</p>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
       </section>
       <section aria-labelledby="event-brief-heading">
         <h2 id="event-brief-heading">
@@ -139,6 +165,16 @@ export default async function EventPosterPage({ params }: RouteParams) {
             </p>
           </details>
         </div>
+      </section>
+      <section aria-labelledby="event-cta-heading">
+        <h2 id="event-cta-heading">Give your next event a first impression.</h2>
+        <p>
+          Start with the event name, audience and atmosphere. Refine the details
+          after you choose a direction.
+        </p>
+        <a className="solid-button" href="#studio">
+          Start an event brief
+        </a>
       </section>
     </PosterContentPage>
   );

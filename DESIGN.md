@@ -38,13 +38,14 @@ Text to Poster is an editorial poster studio for people who need a striking visu
 
 - Display: self-hosted Geist, `clamp(2.5rem, 6.5vw, 6rem)`, tight leading.
 - Section heading: self-hosted Geist, `clamp(2rem, 4vw, 4rem)`.
+- Gallery group and usage-strip heading: self-hosted Geist, `1.25rem`, `600` weight.
 - Body: self-hosted Geist, `1rem`, `1.6` leading.
 - Label: self-hosted Geist, `0.75rem`, uppercase, `0.12em` tracking.
 - Mono metadata: self-hosted Geist, `0.75rem`, tabular figures.
 
 ## 5. Reusable patterns
 
-- `SiteHeader`: fixed `Generators`, `Examples`, `Pricing`, and `About` links,
+- `SiteHeader`: fixed `Generators`, `Poster ideas`, `Pricing`, and `About` links,
   a logged-in account menu, a guest-only `Free to start` sign-in dialog
   trigger, accessible mobile navigation, and a minimal wordmark-only mode for
   sign-in and payment confirmation flows.
@@ -54,6 +55,7 @@ Text to Poster is an editorial poster studio for people who need a striking visu
 - `SectionKicker`: small uppercase label with an accent rule.
 - `LegalPage`: consistent narrow reading column and last-updated metadata.
 - `PosterContentPage`: English editorial content using the existing movie landing layout, one H1, labeled breadcrumbs, and related links. Reuses paper/ink tokens, native FAQ details, sized artwork, and existing button/focus styles.
+- Poster inspiration groups 12 examples into four editorial rows, each with a numbered section heading and contextual tool links. Uses 3/2/1 columns on desktop/tablet/mobile, equal 4:5 artwork, and compact captions containing only a title, a prompt clamped to two lines, and aligned actions. Copying preserves the complete prompt. Six practical sales, cafe, hiring, community market, fitness and workshop images are generated from their displayed prompts. Compact hero, category anchors and a short usage strip keep artwork dominant.
 - `SiteFooter`: copyright with separate site and friendly-link groups.
 
 ## 6. Accessibility

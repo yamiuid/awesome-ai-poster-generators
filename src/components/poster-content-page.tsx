@@ -1,3 +1,4 @@
+import { ArrowUpRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -8,11 +9,17 @@ export function PosterContentPage({
   path,
   title,
   intro,
+  studioAction,
+  contentClassName,
+  compactHero = false,
   children,
 }: Readonly<{
   path: string;
   title: string;
   intro: string;
+  studioAction?: string;
+  contentClassName?: string;
+  compactHero?: boolean;
   children: ReactNode;
 }>) {
   const breadcrumb = {
@@ -37,16 +44,27 @@ export function PosterContentPage({
     <main className="legal-page movie-page">
       <script type="application/ld+json">{JSON.stringify(breadcrumb)}</script>
       <SiteHeader />
-      <article className="legal-copy movie-landing-copy">
-        <nav className="breadcrumbs" aria-label="Breadcrumb">
-          <Link href="/">Text to Poster</Link>
-          <span aria-hidden="true">/</span>
-          <span>{title}</span>
-        </nav>
+      <article
+        className={`legal-copy movie-landing-copy ${contentClassName ?? ""}`}
+      >
+        {!compactHero && (
+          <nav className="breadcrumbs" aria-label="Breadcrumb">
+            <Link href="/">Text to Poster</Link>
+            <span aria-hidden="true">/</span>
+            <span>{title}</span>
+          </nav>
+        )}
         <section className="movie-hero">
-          <p className="eyebrow">Text to Poster / AI poster design</p>
+          {!compactHero && (
+            <p className="eyebrow">Text to Poster / AI poster design</p>
+          )}
           <h1>{title}</h1>
           <p className="legal-intro">{intro}</p>
+          {studioAction && (
+            <a className="solid-button" href="#studio">
+              {studioAction} <ArrowUpRight size={15} />
+            </a>
+          )}
         </section>
         {children}
         <section aria-labelledby="related-heading">

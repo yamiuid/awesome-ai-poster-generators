@@ -4640,8 +4640,7 @@ dialog.modal-backdrop:not([open]) {
   font-size: clamp(2.75rem, 5.6vw, 5rem);
 }
 .movie-landing-copy > .movie-hero {
-  margin-bottom: clamp(4.5rem, 10vw, 8rem);
-  padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+  margin-bottom: clamp(3rem, 6vw, 5rem);
 }
 .movie-landing-copy .studio-controls .pro-note {
   margin-top: 1.35rem;
@@ -4652,6 +4651,12 @@ dialog.modal-backdrop:not([open]) {
 .movie-landing-copy > section {
   max-width: none;
   margin-bottom: clamp(3.5rem, 8vw, 6rem);
+}
+.legal-copy.movie-landing-copy > section > * + * {
+  margin-top: calc(var(--space-unit) * 6);
+}
+.legal-copy.movie-landing-copy > section > .eyebrow + * {
+  margin-top: calc(var(--space-unit) * 3);
 }
 .movie-landing-copy > section > p:not(.eyebrow) {
   max-width: 48rem;
@@ -4713,6 +4718,208 @@ dialog.modal-backdrop:not([open]) {
 }
 .movie-use-case-grid {
   max-width: 58rem;
+}
+.poster-content-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space-unit) * 3) calc(var(--space-unit) * 6);
+}
+.movie-landing-copy > section[id],
+.movie-landing-copy > section > h2[id] {
+  scroll-margin-top: calc(var(--space-unit) * 24);
+}
+.poster-content-nav a {
+  padding-block: calc(var(--space-unit) * 3);
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+.tutorial-figure {
+  max-width: 34rem;
+}
+.tutorial-figure figcaption {
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.poster-ideas-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(var(--space-unit) * 8) calc(var(--space-unit) * 6);
+  align-items: stretch;
+}
+.poster-ideas-grid .example-poster {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  scroll-margin-top: calc(var(--space-unit) * 24);
+}
+.poster-ideas-grid .example-poster-image {
+  aspect-ratio: 4 / 5;
+  object-fit: contain;
+}
+.poster-ideas-grid figcaption {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: calc(var(--space-unit) * 2);
+  margin: 0;
+  padding: calc(var(--space-unit) * 4);
+  border-top: none;
+}
+.legal-copy .poster-ideas-grid figcaption p {
+  margin: 0;
+  line-height: 1.6;
+}
+.poster-ideas-grid h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.idea-prompt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.idea-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--space-unit) * 3);
+  margin-top: auto;
+  padding-top: calc(var(--space-unit) * 2);
+}
+.poster-ideas-page > .movie-hero {
+  margin-bottom: calc(var(--space-unit) * 4);
+}
+.poster-ideas-page .movie-hero h1 {
+  font-size: clamp(2.5rem, 4.4vw, 4rem);
+}
+.poster-ideas-page .legal-intro {
+  font-size: 1rem;
+  margin-top: calc(var(--space-unit) * 3);
+}
+.legal-copy.poster-ideas-page > .movie-hero > .legal-intro {
+  margin: calc(var(--space-unit) * 3) 0 0;
+}
+.poster-ideas-page > .idea-group {
+  margin-bottom: 0;
+}
+.legal-copy.poster-ideas-page > .idea-group > .poster-ideas-grid {
+  margin-top: 0;
+}
+.poster-ideas-page > .idea-category-nav {
+  margin: 0 0 calc(var(--space-unit) * 8);
+  gap: calc(var(--space-unit) * 2);
+}
+.poster-ideas-page > .idea-group + .idea-group {
+  margin-top: calc(var(--space-unit) * 12);
+}
+.idea-group-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: calc(var(--space-unit) * 3);
+  margin-bottom: calc(var(--space-unit) * 4);
+  padding-top: calc(var(--space-unit) * 4);
+  border-top: 1px solid var(--line);
+}
+.legal-copy .idea-group-header h2 {
+  scroll-margin-top: calc(var(--space-unit) * 24);
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--space-unit) * 3);
+  margin: 0;
+  max-width: none;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.idea-group-number {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.idea-group-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space-unit) * 2) calc(var(--space-unit) * 4);
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+.idea-group-links a {
+  padding-block: calc(var(--space-unit) * 3);
+}
+.poster-ideas-page > .idea-usage {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(var(--space-unit) * 6);
+  margin-top: calc(var(--space-unit) * 12);
+  padding: calc(var(--space-unit) * 6);
+  background: var(--paper-deep);
+}
+.legal-copy .idea-usage h2 {
+  font-size: 1.25rem;
+  margin: 0 0 calc(var(--space-unit) * 2);
+}
+.legal-copy .idea-usage p {
+  font-size: 0.82rem;
+  margin: 0;
+}
+.legal-copy .idea-usage .idea-usage-note {
+  font-size: 0.75rem;
+  margin-top: calc(var(--space-unit) * 2);
+}
+.poster-ideas-page > section[aria-labelledby="related-heading"] {
+  margin-top: calc(var(--space-unit) * 6);
+}
+.poster-ideas-page #related-heading {
+  font-size: 1rem;
+  margin-bottom: calc(var(--space-unit) * 2);
+}
+.poster-ideas-page .style-links {
+  font-size: 0.82rem;
+}
+.poster-ideas-page .poster-content-nav a {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: calc(var(--space-unit) * 3) calc(var(--space-unit) * 4);
+  text-decoration: none;
+}
+.poster-ideas-page .poster-content-nav a:hover {
+  background: var(--paper-deep);
+}
+@media (max-width: 1000px) {
+  .poster-ideas-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .poster-ideas-page > .idea-category-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .poster-ideas-page .idea-category-nav a {
+    font-size: 0.75rem;
+    padding: calc(var(--space-unit) * 3);
+  }
+  .poster-ideas-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.copy-prompt-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--space-unit) * 3);
+}
+.copy-prompt-action [role="status"] {
+  color: var(--ink-muted);
+  font-size: 0.82rem;
 }
 
 /* 定价页积分包 tab 的说明文字 */

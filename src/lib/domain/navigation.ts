@@ -2,7 +2,7 @@ import { stripLocalePrefix } from "@/lib/i18n/locale";
 
 export const PRIMARY_NAV_ITEMS = [
   { key: "generators", label: "Generators", href: "/#studio" },
-  { key: "examples", label: "Examples", href: "/#examples" },
+  { key: "examples", label: "Poster ideas", href: "/poster-design-ideas" },
   { key: "pricing", label: "Pricing", href: "/pricing" },
   { key: "about", label: "About", href: "/about" },
 ] as const;
@@ -11,6 +11,7 @@ export type PrimaryNavKey = (typeof PRIMARY_NAV_ITEMS)[number]["key"];
 
 export function activePrimaryNav(pathname: string): PrimaryNavKey | null {
   const path = stripLocalePrefix(pathname);
+  if (path === "/poster-design-ideas") return "examples";
   if (path === "/pricing") {
     return "pricing";
   }

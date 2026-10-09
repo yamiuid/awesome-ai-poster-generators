@@ -20,7 +20,7 @@ const englishMessages = {
   },
   header: {
     generators: "Generators",
-    examples: "Examples",
+    examples: "Poster ideas",
     pricing: "Pricing",
     about: "About",
     freeToStart: "Free to start",
@@ -758,7 +758,7 @@ const translated = {
     header: {
       ...englishMessages.header,
       generators: "生成器",
-      examples: "範例",
+      examples: "海報靈感",
       pricing: "價格",
       about: "關於",
       freeToStart: "免費開始",
@@ -1146,7 +1146,7 @@ const translated = {
     header: {
       ...englishMessages.header,
       generators: "ジェネレーター",
-      examples: "例",
+      examples: "ポスターのアイデア",
       pricing: "料金",
       about: "概要",
       freeToStart: "無料で始める",
@@ -1536,7 +1536,7 @@ const translated = {
     header: {
       ...englishMessages.header,
       generators: "Generadores",
-      examples: "Ejemplos",
+      examples: "Ideas de póster",
       pricing: "Precios",
       about: "Acerca de",
       freeToStart: "Empezar gratis",
@@ -1928,7 +1928,7 @@ const translated = {
     header: {
       ...englishMessages.header,
       generators: "الأدوات",
-      examples: "أمثلة",
+      examples: "أفكار الملصقات",
       pricing: "الأسعار",
       about: "حول الأداة",
       freeToStart: "ابدأ مجانًا",
