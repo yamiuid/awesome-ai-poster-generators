@@ -1389,7 +1389,6 @@ textarea:focus-visible {
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
   transition:
     border-color 0.15s ease,
     background-color 0.15s ease,

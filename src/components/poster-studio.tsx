@@ -1151,7 +1151,7 @@ function ModeSwitch({
         className={`mode-switch-option ${mode === "text" ? "is-active" : ""}`}
         onClick={() => onChange("text")}
       >
-        <Sparkles size={15} aria-hidden="true" /> {t("modeTextToPoster")}
+        {t("modeTextToPoster")}
       </button>
       <button
         type="button"
@@ -1160,7 +1160,7 @@ function ModeSwitch({
         className={`mode-switch-option ${mode === "image" ? "is-active" : ""}`}
         onClick={() => onChange("image")}
       >
-        <ImagePlus size={15} aria-hidden="true" /> {t("modeImageToPoster")}
+        {t("modeImageToPoster")}
       </button>
     </div>
   );
@@ -1427,7 +1427,7 @@ function StudioExamplesPanel({
           aria-label={t("useExample", { label: exampleLabel })}
         >
           <Image
-            src={example.image}
+            src={posterSrc(example.image, 768)}
             alt={displayExample.alt}
             width={example.width ?? 1024}
             height={example.height ?? 1280}

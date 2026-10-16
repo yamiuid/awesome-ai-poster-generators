@@ -110,7 +110,7 @@ const englishMessages = {
     noSavedPostersBody:
       "Generate a poster and it will appear here for quick comparison.",
     guestHistory: "Guest posters stay in this browser for 24 hours.",
-    signInToKeep: "Free account: clean HD file + 20 credits (~10 posters)",
+    signInToKeep: "Sign up free · Get 20 credits →",
     download: "Download",
     useAsReference: "Use as reference",
     editAgain: "Edit again",
@@ -125,12 +125,12 @@ const englishMessages = {
     outputPolicy: "Read the AI use policy.",
     readPolicy: "Read the AI use policy.",
     freeAccount: "Free account",
-    guestLimitTitle: "Your 2 free previews are used up.",
+    guestLimitTitle: "Free previews used up? Sign up for 20 credits.",
     guestLimitBody:
-      "Create a free account to claim 20 credits — about 10 more 1K posters, no watermark. We’ll run this one right away.",
-    guestOfferTitle: "Get the clean HD file + 20 credits",
+      "Sign up free and get 20 credits for about 10 basic posters. New posters have no watermark, and your credits never expire. We’ll start this generation after you sign up.",
+    guestOfferTitle: "Keep creating — start your next poster free",
     guestOfferBody:
-      "A free account drops the watermark, keeps your previews, and adds 20 credits — about 10 more 1K posters.",
+      "Sign up free and get 20 credits for about 10 basic posters. New posters have no watermark, and your credits never expire.",
     guestReferenceTitle: "Guests can attach 1 reference image.",
     guestReferenceBody:
       "Create a free account to attach 2 reference images — plus 20 welcome credits and watermark-free downloads.",
@@ -213,8 +213,8 @@ const englishMessages = {
     characters: "characters",
     pipelineError: "Something went wrong while processing this page.",
     generationMode: "Generation mode",
-    modeTextToPoster: "Text → Poster",
-    modeImageToPoster: "Image → Poster",
+    modeTextToPoster: "Text To Poster",
+    modeImageToPoster: "Image To Poster",
     outputAspect: "Aspect ratio",
     outputResolution: "Resolution",
     matchReference: "Match reference",
@@ -2355,7 +2355,7 @@ const coverageTranslations = {
       noSavedPosters: "還沒有已儲存的海報",
       noSavedPostersBody: "生成海報後，就能在這裡快速比較。",
       guestHistory: "訪客海報會保留在此瀏覽器 24 小時。",
-      signInToKeep: "免費帳戶：無水印高清檔 + 20 點（約 10 張）",
+      signInToKeep: "免費註冊，領取 20 點 →",
       download: "下載",
       useAsReference: "作為參考圖",
       editAgain: "再次編輯",
@@ -2363,12 +2363,12 @@ const coverageTranslations = {
       describeBrief: "描述你想要的海報：主題、氣氛或文案。",
       waitForCurrent: "請等待目前的生成完成，再開始下一次。",
       outputPolicy: "閱讀 AI 使用政策。",
-      guestLimitTitle: "2 次免費預覽已用完。",
+      guestLimitTitle: "免費預覽已用完，註冊再領 20 點",
       guestLimitBody:
-        "建立免費帳戶即可獲得 20 點——約可再生成 10 張 1K 海報，且不含水印。我們會立刻為你重跑這一張。",
-      guestOfferTitle: "取得無水印高清檔 + 20 點",
+        "註冊即送 20 點，約可生成 10 張基礎海報。新生成作品無水印，點數永久有效。註冊後，我們會接著開始這次生成。",
+      guestOfferTitle: "繼續創作，下一張免費開始",
       guestOfferBody:
-        "免費帳戶可移除水印、保留你的預覽紀錄，並贈送 20 點——約可再生成 10 張 1K 海報。",
+        "註冊即送 20 點，約可生成 10 張基礎海報。新生成作品無水印，點數永久有效。",
       guestReferenceTitle: "訪客僅能上傳 1 張參考圖。",
       guestReferenceBody:
         "建立免費帳戶即可上傳 2 張參考圖，並獲得 20 點歡迎點數與無浮水印下載。",
@@ -2710,7 +2710,7 @@ const coverageTranslations = {
       noSavedPosters: "保存されたポスターはまだありません",
       noSavedPostersBody: "ポスターを生成すると、ここで簡単に比較できます。",
       guestHistory: "ゲストのポスターはこのブラウザに24時間保存されます。",
-      signInToKeep: "無料アカウント：透かしなしHD + 20クレジット（約10枚）",
+      signInToKeep: "無料登録で20クレジットを受け取る →",
       download: "ダウンロード",
       useAsReference: "参考画像にする",
       editAgain: "もう一度編集",
@@ -2719,12 +2719,12 @@ const coverageTranslations = {
         "作りたいポスターを、テーマ・雰囲気・コピーで説明してください。",
       waitForCurrent: "現在の生成が終わるまでお待ちください。",
       outputPolicy: "AI 利用ポリシーを読む。",
-      guestLimitTitle: "無料プレビュー2回を使い切りました。",
+      guestLimitTitle: "無料プレビューは終了しました。登録で20クレジット",
       guestLimitBody:
-        "無料アカウントを作成すると20クレジットを進呈します。1Kポスター約10枚分で、透かしも消えます。この1枚はすぐに再生成します。",
-      guestOfferTitle: "透かしなしHDと20クレジットを取得",
+        "無料登録で20クレジットをプレゼント。基本ポスター約10枚分です。登録後に生成する作品は透かしなしで、クレジットに有効期限はありません。登録後、この生成を開始します。",
+      guestOfferTitle: "創作を続けよう。次の1枚は無料でスタート",
       guestOfferBody:
-        "無料アカウントで透かしが消え、プレビューが保存され、20クレジット（1Kポスター約10枚分）が付きます。",
+        "無料登録で20クレジットをプレゼント。基本ポスター約10枚分です。登録後に生成する作品は透かしなしで、クレジットに有効期限はありません。",
       guestReferenceTitle: "ゲストは参照画像を1枚まで添付できます。",
       guestReferenceBody:
         "無料アカウントを作成すると参照画像を2枚まで添付でき、ウェルカムクレジット20と透かしなしダウンロードも付きます。",
@@ -3094,8 +3094,7 @@ const coverageTranslations = {
         "Genera un póster y aparecerá aquí para compararlo rápidamente.",
       guestHistory:
         "Los pósteres de invitados permanecen en este navegador durante 24 horas.",
-      signInToKeep:
-        "Cuenta gratis: archivo HD sin marca + 20 créditos (~10 pósteres)",
+      signInToKeep: "Regístrate gratis · Recibe 20 créditos →",
       download: "Descargar",
       useAsReference: "Usar como referencia",
       editAgain: "Editar de nuevo",
@@ -3105,12 +3104,13 @@ const coverageTranslations = {
       waitForCurrent:
         "Espera a que termine la generación actual antes de iniciar otra.",
       outputPolicy: "Leer la política de uso de IA.",
-      guestLimitTitle: "Tus 2 previsualizaciones gratis se agotaron.",
+      guestLimitTitle:
+        "Sin vistas previas gratis. Regístrate y recibe 20 créditos.",
       guestLimitBody:
-        "Crea una cuenta gratuita para recibir 20 créditos: unos 10 pósteres 1K más y sin marca de agua. Volveremos a generar este ahora mismo.",
-      guestOfferTitle: "Consigue el HD sin marca de agua + 20 créditos",
+        "Regístrate gratis y recibe 20 créditos para unos 10 pósteres básicos. Tus nuevos pósteres no tendrán marca de agua y los créditos no caducan. Iniciaremos esta generación cuando te registres.",
+      guestOfferTitle: "Sigue creando: empieza tu próximo póster gratis",
       guestOfferBody:
-        "Una cuenta gratuita quita la marca de agua, conserva tus previsualizaciones y añade 20 créditos: unos 10 pósteres 1K más.",
+        "Regístrate gratis y recibe 20 créditos para unos 10 pósteres básicos. Tus nuevos pósteres no tendrán marca de agua y los créditos no caducan.",
       guestReferenceTitle:
         "Los invitados pueden adjuntar 1 imagen de referencia.",
       guestReferenceBody:
@@ -3503,8 +3503,7 @@ const coverageTranslations = {
       noSavedPosters: "لا توجد ملصقات محفوظة بعد",
       noSavedPostersBody: "أنشئ ملصقًا وسيظهر هنا للمقارنة السريعة.",
       guestHistory: "تبقى ملصقات الزائر في هذا المتصفح لمدة 24 ساعة.",
-      signInToKeep:
-        "حساب مجاني: ملف HD بدون علامة مائية + 20 رصيدًا (نحو 10 ملصقات)",
+      signInToKeep: "سجّل مجانًا واحصل على 20 رصيدًا ←",
       download: "تنزيل",
       useAsReference: "استخدامه كصورة مرجعية",
       editAgain: "تعديل مرة أخرى",
@@ -3512,12 +3511,12 @@ const coverageTranslations = {
       describeBrief: "صف الملصق الذي تريده: موضوعًا أو مزاجًا أو نصًا.",
       waitForCurrent: "انتظر انتهاء العملية الحالية قبل بدء عملية أخرى.",
       outputPolicy: "اقرأ سياسة استخدام الذكاء الاصطناعي.",
-      guestLimitTitle: "لقد استُهلكت المعاينتان المجانيتان.",
+      guestLimitTitle: "انتهت المعاينات المجانية. سجّل لتحصل على 20 رصيدًا",
       guestLimitBody:
-        "أنشئ حسابًا مجانيًا للحصول على 20 رصيدًا — نحو 10 ملصقات إضافية بدقة 1K وبدون علامة مائية. سنعيد إنشاء هذا الملصق فورًا.",
-      guestOfferTitle: "احصل على ملف HD بدون علامة مائية + 20 رصيدًا",
+        "سجّل مجانًا واحصل على 20 رصيدًا لإنشاء نحو 10 ملصقات أساسية. الملصقات الجديدة بلا علامة مائية، والأرصدة لا تنتهي صلاحيتها. سنبدأ هذه العملية بعد التسجيل.",
+      guestOfferTitle: "واصل الإبداع وابدأ ملصقك التالي مجانًا",
       guestOfferBody:
-        "الحساب المجاني يزيل العلامة المائية، ويحفظ معايناتك، ويضيف 20 رصيدًا — نحو 10 ملصقات بدقة 1K.",
+        "سجّل مجانًا واحصل على 20 رصيدًا لإنشاء نحو 10 ملصقات أساسية. الملصقات الجديدة بلا علامة مائية، والأرصدة لا تنتهي صلاحيتها.",
       guestReferenceTitle: "يمكن للزائر إرفاق صورة مرجعية واحدة.",
       guestReferenceBody:
         "أنشئ حسابًا مجانيًا لإرفاق صورتين مرجعيتين، مع 20 رصيدًا ترحيبيًا وتنزيلات بلا علامة مائية.",
