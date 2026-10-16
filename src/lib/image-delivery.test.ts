@@ -34,10 +34,19 @@ describe("posterSrc", () => {
     );
   });
 
-  it("leaves same-origin assets untouched", async () => {
+  it("resolves same-origin assets through the transform origin", async () => {
     const { posterSrc } = await loadHelper(ORIGIN);
+    const source = `${ORIGIN}/examples/neon-after-dark.webp`;
     expect(posterSrc("/examples/neon-after-dark.webp", 640)).toBe(
-      "/examples/neon-after-dark.webp",
+      `${ORIGIN}/cdn-cgi/image/width=640,format=auto,quality=82/${encodeURIComponent(source)}`,
+    );
+  });
+
+  it("creates srcset candidates for requested widths", async () => {
+    const { posterSrc, posterSrcSet } = await loadHelper(ORIGIN);
+    const source = "/examples/neon-after-dark.webp";
+    expect(posterSrcSet(source, [320, 640])).toBe(
+      `${posterSrc(source, 320)} 320w, ${posterSrc(source, 640)} 640w`,
     );
   });
 });

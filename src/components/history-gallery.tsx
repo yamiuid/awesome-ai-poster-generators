@@ -55,7 +55,9 @@ export function HistoryGallery({
   const t = useTranslations("account");
   const [lightbox, setLightbox] = useState<string | null>(null);
   // 大图 onLoad 前先显示加载文案（与首页历史预览一致）
-  const [lightboxLoaded, setLightboxLoaded] = useState(false);
+  const [lightboxStatus, setLightboxStatus] = useState<
+    "loading" | "loaded" | "failed"
+  >("loading");
   // 已删除的卡片直接从列表里摘掉，不必等整页刷新
   const [deletedIds, setDeletedIds] = useState<readonly string[]>([]);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -159,7 +161,7 @@ export function HistoryGallery({
                   type="button"
                   className="history-zoom"
                   onClick={() => {
-                    setLightboxLoaded(false);
+                    setLightboxStatus("loading");
                     setLightbox(image.url);
                   }}
                   aria-label={`View ${image.alt} full size`}
@@ -268,21 +270,38 @@ export function HistoryGallery({
           >
             <X size={20} />
           </button>
-          {lightboxLoaded ? null : (
+          {lightboxStatus === "loading" && (
             <span className="lightbox-loading" role="status">
               {t("loadingPoster")}
             </span>
           )}
-          <Image
-            src={posterSrc(lightbox, 1600)}
-            alt={t("posterPreview")}
-            width={1024}
-            height={1280}
-            className={
-              lightboxLoaded ? "lightbox-image is-loaded" : "lightbox-image"
-            }
-            onLoad={() => setLightboxLoaded(true)}
-          />
+          {lightboxStatus === "failed" && (
+            <button
+              type="button"
+              className="outline-button lightbox-loading"
+              onClick={(event) => {
+                event.stopPropagation();
+                setLightboxStatus("loading");
+              }}
+            >
+              {t("retryPoster")}
+            </button>
+          )}
+          {lightboxStatus !== "failed" && (
+            <Image
+              src={posterSrc(lightbox, 1600)}
+              alt={t("posterPreview")}
+              width={1024}
+              height={1280}
+              className={
+                lightboxStatus === "loaded"
+                  ? "lightbox-image is-loaded"
+                  : "lightbox-image"
+              }
+              onLoad={() => setLightboxStatus("loaded")}
+              onError={() => setLightboxStatus("failed")}
+            />
+          )}
         </div>
       )}
     </section>

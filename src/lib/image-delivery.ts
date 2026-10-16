@@ -12,9 +12,21 @@
 const TRANSFORM_ORIGIN = process.env["NEXT_PUBLIC_IMAGE_TRANSFORM_ORIGIN"];
 
 export function posterSrc(url: string, width: number): string {
-  if (!TRANSFORM_ORIGIN || !url.startsWith("https://")) {
+  if (!TRANSFORM_ORIGIN) {
     return url;
   }
+  const sourceUrl = url.startsWith("/")
+    ? new URL(url, TRANSFORM_ORIGIN).href
+    : url;
+  if (!sourceUrl.startsWith("https://")) return url;
   const options = `width=${width},format=auto,quality=82`;
-  return `${TRANSFORM_ORIGIN}/cdn-cgi/image/${options}/${encodeURIComponent(url)}`;
+  return `${TRANSFORM_ORIGIN}/cdn-cgi/image/${options}/${encodeURIComponent(sourceUrl)}`;
+}
+
+export function posterSrcSet(
+  url: string,
+  widths: readonly number[],
+): string | undefined {
+  if (!TRANSFORM_ORIGIN) return undefined;
+  return widths.map((width) => `${posterSrc(url, width)} ${width}w`).join(", ");
 }

@@ -10,7 +10,11 @@ import { sendAlert } from "./alerts";
 import { getTask, providerTaskPhase } from "./apimart";
 import { AppError } from "./errors";
 import { applyProviderTask, failGeneration } from "./generation-task";
-import type { GenerationActor, GenerationRow } from "./generation-types";
+import type {
+  AssetRow,
+  GenerationActor,
+  GenerationRow,
+} from "./generation-types";
 import {
   loadConsumedCredits,
   ownsGeneration,
@@ -263,10 +267,49 @@ export async function listRecentGenerations(
   const recentRows = await Promise.all(
     (recentResult.data ?? []).map(recoverTimedOutGeneration),
   );
-  const [active, recentRowsWithAssets] = await Promise.all([
-    Promise.all(activeRows.map((row) => responseFor(row))),
-    Promise.all(recentRows.map((row) => responseFor(row))),
+  const rows = [...activeRows, ...recentRows];
+  if (rows.length === 0) {
+    return { active: [], recent: [] };
+  }
+  const ids = rows.map((row) => row.id);
+  const [{ data: assets, error: assetError }, consumed] = await Promise.all([
+    admin
+      .from("generated_assets")
+      .select("*")
+      .in("generation_id", ids)
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+      .order("created_at"),
+    loadConsumedCredits(admin, ids),
   ]);
+  if (assetError) {
+    throw new AppError(
+      "ASSET_READ_FAILED",
+      "We could not read the generated images.",
+      503,
+    );
+  }
+  const allAssets = assets ?? [];
+  const urls = await createPosterUrls(
+    allAssets.map((asset) => asset.storage_path),
+  );
+  const assetsByGeneration = new Map<string, AssetRow[]>();
+  const urlsByAsset = new Map<string, string>();
+  for (const [index, asset] of allAssets.entries()) {
+    const group = assetsByGeneration.get(asset.generation_id) ?? [];
+    group.push(asset);
+    assetsByGeneration.set(asset.generation_id, group);
+    urlsByAsset.set(asset.id, urls[index] ?? "");
+  }
+  const responses = rows.map((generation) => {
+    const rowAssets = assetsByGeneration.get(generation.id) ?? [];
+    return toGenerationResponse(
+      { generation, assets: rowAssets },
+      rowAssets.map((asset) => urlsByAsset.get(asset.id) ?? ""),
+      consumed,
+    );
+  });
+  const active = responses.slice(0, activeRows.length);
+  const recentRowsWithAssets = responses.slice(activeRows.length);
   const recent =
     actor.mode === "guest"
       ? recentRowsWithAssets.filter(isVisibleGuestRecent)
