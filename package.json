@@ -56,7 +56,7 @@
     "next-intl": "^4.14.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "react-server-dom-webpack": "^19.3.0",
+    "react-server-dom-webpack": "19.3.0",
     "sharp": "0.35.4",
     "undici": "8.9.0",
     "vinext": "1.0.0-beta.10",

@@ -58,7 +58,7 @@ importers:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
       react-server-dom-webpack:
-        specifier: ^19.3.0
+        specifier: 19.3.0
         version: 19.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(webpack@5.111.1(esbuild@0.28.1)(sharp@0.35.4(@types/node@20.19.43)))
       sharp:
         specifier: 0.35.4
