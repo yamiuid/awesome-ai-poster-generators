@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
-import { config, middleware } from "./middleware";
+import { config, proxy } from "./proxy";
 
 describe("canonical URL redirects", () => {
   it.each([
@@ -19,7 +19,7 @@ describe("canonical URL redirects", () => {
   ])(
     "redirects $requestUrl to the canonical origin",
     async ({ requestUrl, location }) => {
-      const response = await middleware(new NextRequest(requestUrl));
+      const response = await proxy(new NextRequest(requestUrl));
 
       expect(response.status).toBe(308);
       expect(response.headers.get("location")).toBe(location);

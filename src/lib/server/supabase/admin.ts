@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
 import { getServerEnv } from "@/lib/server/env";
+import { createProxiedFetch } from "../proxy-fetch";
 import type { Database } from "./types";
 
 let adminClient: SupabaseClient<Database> | undefined;
@@ -15,6 +16,7 @@ export function createSupabaseAdminClient(): SupabaseClient<Database> {
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.SUPABASE_SERVICE_ROLE_KEY,
     {
+      global: { fetch: createProxiedFetch() ?? fetch },
       auth: { autoRefreshToken: false, persistSession: false },
     },
   );

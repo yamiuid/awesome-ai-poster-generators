@@ -27,7 +27,8 @@ function Avatar({
   size?: number;
 }>) {
   const initial = (email ?? "?").charAt(0).toUpperCase();
-  if (avatarUrl) {
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
+  if (avatarUrl && failedAvatarUrl !== avatarUrl) {
     return (
       <Image
         src={avatarUrl}
@@ -36,6 +37,7 @@ function Avatar({
         height={size}
         className="user-menu-avatar-img"
         unoptimized
+        onError={() => setFailedAvatarUrl(avatarUrl)}
       />
     );
   }

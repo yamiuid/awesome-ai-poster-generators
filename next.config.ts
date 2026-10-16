@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
       "https://www.clarity.ms",
       "https://*.clarity.ms",
       "https://challenges.cloudflare.com",
+      ...(process.env["NODE_ENV"] === "development" ? ["'unsafe-eval'"] : []),
     ];
     return [
       {
@@ -47,7 +48,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               `script-src ${scriptSources.join(" ")}`,
               "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://*.clarity.ms https://*.bing.com https://challenges.cloudflare.com",
-              "img-src 'self' data: blob: https://images.texttoposter.com https://*.r2.dev https://*.supabase.co https://*.clarity.ms https://*.bing.com https://www.google-analytics.com",
+              "img-src 'self' data: blob: https://images.texttoposter.com https://*.r2.dev https://*.supabase.co https://*.clarity.ms https://*.bing.com https://www.google-analytics.com https://lh3.googleusercontent.com",
               "font-src 'self' data:",
               "style-src 'self' 'unsafe-inline'",
               "frame-src 'self' https://challenges.cloudflare.com https://*.supabase.co https://accounts.google.com",

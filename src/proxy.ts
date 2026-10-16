@@ -10,6 +10,7 @@ import {
   UI_LOCALES,
   type UiLocale,
 } from "@/lib/i18n/locale";
+import { createProxiedFetch } from "@/lib/server/proxy-fetch";
 import { getPublicEnv } from "@/lib/server/supabase/public-env";
 
 /**
@@ -60,6 +61,7 @@ async function refreshSession(
     throw error;
   }
   const supabase = createServerClient(publicEnv.url, publicEnv.anonKey, {
+    global: { fetch: createProxiedFetch() ?? fetch },
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -83,7 +85,7 @@ async function refreshSession(
   return response;
 }
 
-export async function middleware(request: NextRequest): Promise<NextResponse> {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const hostname = request.nextUrl.hostname.toLowerCase();
   if (
     hostname === "www.texttoposter.com" ||

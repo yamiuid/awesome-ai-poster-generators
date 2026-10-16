@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { createProxiedFetch } from "../proxy-fetch";
 import { getPublicEnv } from "./public-env";
 import type { Database } from "./types";
 
@@ -11,6 +12,7 @@ export async function createSupabaseServerClient(): Promise<
   const publicEnv = getPublicEnv();
 
   return createServerClient<Database>(publicEnv.url, publicEnv.anonKey, {
+    global: { fetch: createProxiedFetch() ?? fetch },
     cookies: {
       getAll() {
         return cookieStore.getAll();
