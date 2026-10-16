@@ -198,7 +198,7 @@ export default async function MoviePosterMakerPage({ params }: RouteParams) {
               <h2 id="movie-studio-heading">{styles("studioPromptHeading")}</h2>
               <p>{copy.cta}</p>
             </div>
-            <PosterStudio initialStyle="movie" />
+            <PosterStudio initialStyle="movie" examples={movieDirections} />
           </section>
           <section aria-labelledby="movie-prompt-heading">
             <h2 id="movie-prompt-heading">{styles("promptHeading")}</h2>

@@ -79,11 +79,8 @@ export async function PosterContentPage({
             <Link href="/movie-poster-maker">
               {t("tools.movie-poster-maker")}
             </Link>{" "}
-            /{" "}
-            <Link href="/event-poster-maker">
-              {t("tools.event-poster-maker")}
-            </Link>{" "}
-            / <Link href="/how-to-make-a-poster">{t("tutorial")}</Link> /{" "}
+            / <a href="/event-poster-maker">{t("tools.event-poster-maker")}</a>{" "}
+            / <a href="/how-to-make-a-poster">{t("tutorial")}</a> /{" "}
             <Link href="/poster-design-ideas">{t("title")}</Link>
           </p>
         </section>

@@ -7,6 +7,7 @@ import type { PosterStyle } from "@/lib/domain/poster";
 import { POSTER_EXAMPLES } from "@/lib/domain/poster-examples";
 import { PRACTICAL_POSTER_IDEAS } from "@/lib/domain/poster-ideas";
 import { type RouteParams, resolveRouteLocale } from "@/lib/i18n/route-locale";
+import { posterSrc, posterSrcSet } from "@/lib/image-delivery";
 import { pageMeta } from "@/lib/seo";
 
 export const dynamic = "force-static";
@@ -130,36 +131,63 @@ export default async function PosterIdeasPage({ params }: RouteParams) {
               {t(`groups.${group.id}`)}
             </h2>
             <div className="idea-group-links">
-              {group.links.map((link) => (
-                <Link key={link.href} href={link.href}>
-                  {t(`tools.${link.href.slice(1)}`)}{" "}
-                  <span aria-hidden="true">↗</span>
-                </Link>
-              ))}
+              {group.links.map((link) =>
+                link.href === "/event-poster-maker" ? (
+                  <a key={link.href} href={link.href}>
+                    {t(`tools.${link.href.slice(1)}`)}{" "}
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                ) : (
+                  <Link key={link.href} href={link.href}>
+                    {t(`tools.${link.href.slice(1)}`)}{" "}
+                    <span aria-hidden="true">↗</span>
+                  </Link>
+                ),
+              )}
             </div>
           </div>
+          <p>{t(`groupDescriptions.${group.id}`)}</p>
           <div className="examples-grid poster-ideas-grid">
             {group.examples.map((id) => {
               const example = galleryExamples.find((item) => item.id === id);
               if (!example) return null;
+              const transformedSrcSet = posterSrcSet(
+                example.image,
+                [640, 1024],
+              );
               return (
                 <figure
                   className="example-poster"
                   id={`${example.id}-idea`}
                   key={example.id}
                 >
-                  <Image
-                    className="example-poster-image"
-                    src={example.image}
-                    alt={
-                      locale === "en"
-                        ? example.alt
-                        : t("artworkAlt", { name: t(`examples.${example.id}`) })
-                    }
-                    width={1024}
-                    height={1280}
-                    sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 33vw"
-                  />
+                  {transformedSrcSet ? (
+                    // biome-ignore lint/performance/noImgElement: Workers use Cloudflare's generated responsive srcset while the Next image optimizer is disabled.
+                    <img
+                      className="example-poster-image"
+                      src={posterSrc(example.image, 1024)}
+                      srcSet={transformedSrcSet}
+                      sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 33vw"
+                      alt={t(`exampleAlts.${example.id}`)}
+                      width={1024}
+                      height={1280}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <Image
+                      className="example-poster-image"
+                      src={example.image}
+                      alt={
+                        locale === "en"
+                          ? example.alt
+                          : t(`exampleAlts.${example.id}`)
+                      }
+                      width={1024}
+                      height={1280}
+                      sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 33vw"
+                    />
+                  )}
                   <figcaption>
                     <h3>{t(`examples.${example.id}`)}</h3>
                     <p className="idea-prompt" dir="ltr" lang="en">

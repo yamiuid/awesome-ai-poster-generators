@@ -6,6 +6,17 @@ const nextConfig: NextConfig = {
   // 导致浏览器报 ERR_INVALID_HTTP_RESPONSE（服务端返回裸 Unauthorized）
   allowedDevOrigins: ["localhost", "127.0.0.1"],
   typescript: { ignoreBuildErrors: false },
+  async redirects() {
+    const untranslatedLocales = ["zh-TW", "ja", "es", "ar"];
+    const englishOnlyPaths = ["/event-poster-maker", "/how-to-make-a-poster"];
+    return untranslatedLocales.flatMap((locale) =>
+      englishOnlyPaths.map((path) => ({
+        source: `/${locale}${path}`,
+        destination: path,
+        permanent: true,
+      })),
+    );
+  },
   async headers() {
     const scriptSources = [
       "'self'",

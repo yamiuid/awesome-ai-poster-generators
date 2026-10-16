@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 import { Link } from "@/i18n/navigation";
 import { STYLE_LANDINGS, type StyleLanding } from "@/lib/domain/style-landing";
 import { getStyleLandingCopy } from "@/lib/domain/style-landing-copy";
+import { getStyleLandingExamples } from "@/lib/domain/style-landing-examples";
 import { toUiLocale } from "@/lib/i18n/locale";
 import { siteUrl } from "@/lib/seo";
 
@@ -90,7 +91,10 @@ export async function StyleStudioLanding({
             <h2 id="style-studio-heading">{styles("studioPromptHeading")}</h2>
             <p>{copy.cta}</p>
           </div>
-          <PosterStudio initialStyle={landing.style} />
+          <PosterStudio
+            initialStyle={landing.style}
+            examples={getStyleLandingExamples(landing.style)}
+          />
         </section>
 
         <section aria-labelledby="style-prompt-heading">
