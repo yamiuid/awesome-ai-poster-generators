@@ -36,6 +36,9 @@ describe("isPrivateAddress", () => {
   it("handles IPv4-mapped IPv6 addresses", () => {
     expect(isPrivateAddress("::ffff:127.0.0.1")).toBe(true);
     expect(isPrivateAddress("::ffff:8.8.8.8")).toBe(false);
+    expect(isPrivateAddress("::ffff:7f00:1")).toBe(true);
+    expect(isPrivateAddress("::ffff:c0a8:101")).toBe(true);
+    expect(isPrivateAddress("::ffff:808:808")).toBe(false);
   });
 });
 

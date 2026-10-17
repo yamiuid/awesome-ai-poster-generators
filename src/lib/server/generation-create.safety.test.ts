@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   query: {
     insert: vi.fn(),
+    update: vi.fn(),
     select: vi.fn(),
     eq: vi.fn(),
     single: vi.fn(),
@@ -196,5 +197,34 @@ describe("generation prompt safety integration", () => {
 
     expect(created.id).toBe(generation.id);
     expect(mocks.submitGeneration).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the credit reservation when an accepted provider task cannot be saved", async () => {
+    mocks.enforcePromptSafety.mockResolvedValue(undefined);
+    mocks.submitGeneration.mockResolvedValue({ taskId: "task-accepted" });
+    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    let providerTaskUpdates = 0;
+    mocks.query.update.mockImplementation((values: Record<string, unknown>) => {
+      if ("provider_task_id" in values) {
+        providerTaskUpdates += 1;
+      }
+      return mocks.query;
+    });
+    mocks.query.single.mockImplementation(async () =>
+      providerTaskUpdates > 0
+        ? { data: null, error: { message: "database unavailable" } }
+        : { data: generation, error: null },
+    );
+    const actor = getActorForRequest("user-1", identity, true);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(createGeneration(actor, request)).rejects.toMatchObject({
+      code: "GENERATION_STATE_FAILED",
+      status: 503,
+    });
+
+    expect(providerTaskUpdates).toBe(2);
+    expect(mocks.failLimitedGeneration).not.toHaveBeenCalled();
+    expect(mocks.settleGenerationCredits).not.toHaveBeenCalled();
   });
 });

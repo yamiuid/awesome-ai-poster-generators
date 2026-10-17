@@ -142,6 +142,13 @@ export type Database = {
         created_at: string;
         updated_at: string;
       }>;
+      guest_ip_rate_limits: TableDefinition<{
+        ip_hash: string;
+        action: "generation" | "upload";
+        window_started_at: string;
+        request_count: number;
+        updated_at: string;
+      }>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -199,6 +206,10 @@ export type Database = {
       apply_credit_pack_grant: {
         Args: { p_user_id: string; p_order_id: string; p_amount: number };
         Returns: number;
+      };
+      consume_guest_ip_rate_limit: {
+        Args: { p_ip_hash: string; p_action: "generation" | "upload" };
+        Returns: boolean;
       };
     };
     Enums: Record<string, never>;

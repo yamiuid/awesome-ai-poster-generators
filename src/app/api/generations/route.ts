@@ -31,7 +31,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     const auth = await getAuthContext();
-    if (!auth.userId && isGuestGenerationRateLimited(request)) {
+    if (!auth.userId && (await isGuestGenerationRateLimited(request))) {
       throw new AppError(
         "GUEST_RATE_LIMITED",
         "Too many guest generations from this network. Sign in or try again later.",

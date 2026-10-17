@@ -5,7 +5,6 @@ import { watermarkOverlay } from "./watermark-png";
  *
  * - Workers：Cloudflare Images binding。它在边缘解码/编码，Worker 本身不做像素运算，
  *   因此不受 128MB 内存和 CPU 限制影响，也不需要把 sharp 的原生库搬上去。
- * - Node（Vercel）：sharp。迁移期间线上仍是 Vercel，保持行为不变；切换完成后可以删掉。
  *
  * 两个后端共用同一份水印叠加层（watermark-png.ts），所以访客海报的水印外观一致。
  */

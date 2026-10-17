@@ -1,3 +1,5 @@
+import { ipVersion } from "./net-guard";
+
 type RateLimitEntry = Readonly<{ count: number; windowStart: number }>;
 
 export type RateLimiter = Readonly<{
@@ -33,11 +35,17 @@ export function createRateLimiter(config: {
 }
 
 export function clientIpFromRequest(request: Request): string {
+  const cloudflareIp = request.headers.get("cf-connecting-ip")?.trim();
+  if (cloudflareIp && ipVersion(cloudflareIp) !== 0) {
+    return cloudflareIp;
+  }
+
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) {
-      return first;
+    const addresses = forwarded.split(",").map((address) => address.trim());
+    const last = addresses.at(-1);
+    if (last && ipVersion(last) !== 0) {
+      return last;
     }
   }
   return "local";

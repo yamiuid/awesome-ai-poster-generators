@@ -21,7 +21,7 @@ export async function deleteGeneration(
   const admin = createSupabaseAdminClient();
   const { data: generation, error } = await admin
     .from("generations")
-    .select("id, user_id, guest_key")
+    .select("id, user_id, guest_key, status")
     .eq("id", generationId)
     .maybeSingle();
   if (error) {
@@ -36,6 +36,13 @@ export async function deleteGeneration(
       "GENERATION_NOT_FOUND",
       "That generation is not available.",
       404,
+    );
+  }
+  if (generation.status === "submitted" || generation.status === "processing") {
+    throw new AppError(
+      "GENERATION_IN_PROGRESS",
+      "An active generation cannot be deleted.",
+      409,
     );
   }
 

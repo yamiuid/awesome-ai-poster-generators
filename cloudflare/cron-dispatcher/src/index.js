@@ -13,8 +13,8 @@ export default {
   async scheduled(event, env, ctx) {
     const isDailyMaintenance = event.cron === "0 3 * * *";
     const path = isDailyMaintenance ? TASKS[0] : TASKS[1];
-    ctx.waitUntil(
-      (async () => {
+    const dispatch = async () => {
+      try {
         const response = await fetch(`${env.APP_URL}${path}`, {
           method: "GET",
           headers: { authorization: `Bearer ${env.CRON_SECRET}` },
@@ -26,10 +26,29 @@ export default {
           status: response.status,
           body: body.slice(0, 500),
         });
+        if (
+          body.includes('"fetch failed"') ||
+          body.includes('"write failed') ||
+          body.includes('"empty list"')
+        ) {
+          console.warn("cron dispatched with partial failures", {
+            cron: event.cron,
+            path,
+            body: body.slice(0, 500),
+          });
+        }
         if (!response.ok) {
           throw new Error(`Cron task ${path} failed with ${response.status}`);
         }
-      })(),
-    );
+      } catch (error) {
+        console.error("cron dispatch failed", {
+          cron: event.cron,
+          path,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    };
+
+    ctx.waitUntil(dispatch());
   },
 };

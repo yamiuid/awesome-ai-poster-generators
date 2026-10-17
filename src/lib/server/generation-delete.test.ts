@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     id: string;
     user_id: string | null;
     guest_key: string | null;
+    status: string;
   },
   assets: [] as { storage_path: string }[],
   readError: null as null | { message: string },
@@ -76,6 +77,7 @@ describe("deleteGeneration", () => {
       id: "gen-1",
       user_id: "user-1",
       guest_key: null,
+      status: "succeeded",
     };
     mocks.assets = [{ storage_path: "user-1/gen-1/0.png" }];
     mocks.readError = null;
@@ -106,11 +108,27 @@ describe("deleteGeneration", () => {
     expect(mocks.order).toEqual(["read", "read-assets", "delete-row"]);
   });
 
+  it("keeps an active generation and its reservation intact", async () => {
+    mocks.generation = {
+      id: "gen-1",
+      user_id: "user-1",
+      guest_key: null,
+      status: "processing",
+    };
+
+    await expect(deleteGeneration("gen-1", actor)).rejects.toMatchObject({
+      code: "GENERATION_IN_PROGRESS",
+      status: 409,
+    });
+    expect(mocks.order).toEqual(["read"]);
+  });
+
   it("refuses a generation owned by somebody else", async () => {
     mocks.generation = {
       id: "gen-1",
       user_id: "user-2",
       guest_key: null,
+      status: "succeeded",
     };
 
     await expect(deleteGeneration("gen-1", actor)).rejects.toMatchObject({

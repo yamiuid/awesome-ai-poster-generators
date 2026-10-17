@@ -5,6 +5,17 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "routes": [
+    {
+      "pattern": "texttoposter.com/*",
+      "zone_name": "texttoposter.com"
+    },
+    {
+      "pattern": "www.texttoposter.com/*",
+      "zone_name": "texttoposter.com"
+    }
+  ],
+  "workers_dev": true,
   "main": "vinext/server/fetch-handler",
   "assets": {
     "directory": "dist/client",
@@ -26,5 +37,19 @@
       "service": "text-to-poster-response-store",
       "entrypoint": "ResponseStoreService"
     }
-  ]
+  ],
+  "observability": {
+    "enabled": true,
+    "redact_query_string": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
+  }
 }

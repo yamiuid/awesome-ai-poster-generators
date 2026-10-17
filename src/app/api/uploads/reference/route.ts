@@ -21,7 +21,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const referenceLimit = referenceImageLimit(
       auth.userId ? (auth.isPro || auth.hasPack ? "pro" : "free") : "guest",
     );
-    if (!auth.userId && isGuestUploadRateLimited(request)) {
+    if (!auth.userId && (await isGuestUploadRateLimited(request))) {
       throw new AppError(
         "UPLOAD_RATE_LIMITED",
         "Too many uploads from this network. Please try again later.",

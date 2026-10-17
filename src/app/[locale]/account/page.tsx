@@ -58,7 +58,6 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
       .limit(30),
   ]);
   // SSR 只读状态，不在此做下载/水印/上传等重活（生产 serverless 会超时）。
-  // 推进由前端 HistoryGallery 调 /advance + Vercel cron 双通道完成。
   const rows = generations ?? [];
   const hasPendingGeneration = rows.some((generation) =>
     ["submitted", "processing"].includes(generation.status),

@@ -268,6 +268,7 @@ export async function createGeneration(
     }
   }
 
+  let providerTaskId: string;
   try {
     await enforcePromptSafety(request.prompt);
     const textLanguage = await detectPosterLanguage(
@@ -281,24 +282,7 @@ export async function createGeneration(
         textLanguage,
       }),
     );
-    const { data: updated, error: updateError } = await admin
-      .from("generations")
-      .update({
-        provider_task_id: provider.taskId,
-        status: "processing",
-        next_poll_at: new Date().toISOString(),
-      })
-      .eq("id", inserted.id)
-      .select()
-      .single();
-    if (updateError || !updated) {
-      throw new AppError(
-        "GENERATION_STATE_FAILED",
-        "We could not save the generation state.",
-        500,
-      );
-    }
-    return updated;
+    providerTaskId = provider.taskId;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Provider error";
     // 提交阶段的失败原因同样要归因：本地安全审查、provider 拒绝、网络错误
@@ -321,4 +305,41 @@ export async function createGeneration(
       503,
     );
   }
+
+  let persistenceError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const { data: updated, error } = await admin
+        .from("generations")
+        .update({
+          provider_task_id: providerTaskId,
+          status: "processing",
+          next_poll_at: new Date().toISOString(),
+        })
+        .eq("id", inserted.id)
+        .select()
+        .single();
+      if (!error && updated) {
+        return updated;
+      }
+      persistenceError =
+        error ?? new Error("The generation row was not returned.");
+    } catch (error) {
+      persistenceError = error;
+    }
+  }
+
+  console.error("Provider task was accepted but its state could not be saved", {
+    generationId: inserted.id,
+    providerTaskId,
+    message:
+      persistenceError instanceof Error
+        ? persistenceError.message
+        : "Unknown database error",
+  });
+  throw new AppError(
+    "GENERATION_STATE_FAILED",
+    "Your generation was submitted, but we could not save its tracking details. Please contact support before retrying.",
+    503,
+  );
 }

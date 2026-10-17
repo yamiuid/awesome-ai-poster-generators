@@ -9,7 +9,11 @@ export async function GET(request: NextRequest): Promise<Response> {
   try {
     const auth = await getAuthContext();
     const identity = getGuestIdentity(request);
-    const actor = getActorForRequest(auth.userId, identity, auth.isPro);
+    const actor = getActorForRequest(
+      auth.userId,
+      identity,
+      auth.isPro || auth.hasPack,
+    );
     return Response.json(await listRecentGenerations(actor), {
       headers: { "Cache-Control": "private, no-store" },
     });

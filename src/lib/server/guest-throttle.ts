@@ -1,28 +1,48 @@
-import { clientIpFromRequest, createRateLimiter } from "./rate-limit";
+import { createHmac } from "node:crypto";
+import { getServerEnv } from "./env";
+import { AppError } from "./errors";
+import { clientIpFromRequest } from "./rate-limit";
+import { createSupabaseAdminClient } from "./supabase/admin";
 
-/**
- * 访客生图/上传的 IP 维度兜底限流。
- *
- * 身份 cookie 一旦被清掉（脚本调用、无痕窗口）访客就变成「新用户」，免费额度随之重置，
- * 而每次生成都是真金白银的 provider 调用、每次上传都写对象存储。
- * 这里按 IP 再兜一层：内存计数、按实例生效（和现有上传限流同一套实现），
- * 阈值刻意放宽到正常用户碰不到的量级，只拦自动化滥用。
- */
-const GUEST_WINDOW_MS = 60 * 60 * 1_000;
+type GuestAction = "generation" | "upload";
 
-const guestGenerationLimiter = createRateLimiter({
-  windowMs: GUEST_WINDOW_MS,
-  max: 30,
-});
-const guestUploadLimiter = createRateLimiter({
-  windowMs: GUEST_WINDOW_MS,
-  max: 60,
-});
+async function isGuestRateLimited(
+  request: Request,
+  action: GuestAction,
+): Promise<boolean> {
+  const ip = clientIpFromRequest(request);
+  if (ip === "local" && process.env.NODE_ENV === "production") {
+    throw new AppError(
+      "CLIENT_IP_UNAVAILABLE",
+      "We could not determine your network address. Please try again later.",
+      503,
+    );
+  }
 
-export function isGuestGenerationRateLimited(request: Request): boolean {
-  return !guestGenerationLimiter.check(clientIpFromRequest(request)).ok;
+  const ipHash = createHmac("sha256", getServerEnv().RATE_LIMIT_PEPPER)
+    .update(ip)
+    .digest("hex");
+  const { data, error } = await createSupabaseAdminClient().rpc(
+    "consume_guest_ip_rate_limit",
+    { p_ip_hash: ipHash, p_action: action },
+  );
+  if (error || typeof data !== "boolean") {
+    console.error("Guest IP rate limit check failed", error?.message);
+    throw new AppError(
+      "GUEST_RATE_LIMIT_UNAVAILABLE",
+      "Guest requests are temporarily unavailable. Please try again later.",
+      503,
+    );
+  }
+  return !data;
 }
 
-export function isGuestUploadRateLimited(request: Request): boolean {
-  return !guestUploadLimiter.check(clientIpFromRequest(request)).ok;
+export function isGuestGenerationRateLimited(
+  request: Request,
+): Promise<boolean> {
+  return isGuestRateLimited(request, "generation");
+}
+
+export function isGuestUploadRateLimited(request: Request): Promise<boolean> {
+  return isGuestRateLimited(request, "upload");
 }

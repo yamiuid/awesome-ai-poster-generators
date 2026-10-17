@@ -1,5 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { createRateLimiter } from "./rate-limit";
+import { clientIpFromRequest, createRateLimiter } from "./rate-limit";
+
+describe("clientIpFromRequest", () => {
+  it("prefers Cloudflare's client address over forwarded values", () => {
+    const request = new Request("https://example.com", {
+      headers: {
+        "cf-connecting-ip": "198.51.100.8",
+        "x-forwarded-for": "203.0.113.2, 198.51.100.8",
+      },
+    });
+    expect(clientIpFromRequest(request)).toBe("198.51.100.8");
+  });
+
+  it("uses the final forwarded address when Cloudflare is absent", () => {
+    const request = new Request("https://example.com", {
+      headers: { "x-forwarded-for": "203.0.113.2, 198.51.100.8" },
+    });
+    expect(clientIpFromRequest(request)).toBe("198.51.100.8");
+  });
+});
 
 describe("createRateLimiter", () => {
   it("allows requests up to the limit and then blocks", () => {

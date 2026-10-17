@@ -49,7 +49,17 @@ function isPrivateIpv6(ip: string): boolean {
   }
   if (normalized.startsWith("::ffff:")) {
     const v4 = normalized.slice("::ffff:".length);
-    return ipVersion(v4) === 4 && isPrivateIpv4(v4);
+    if (ipVersion(v4) === 4) {
+      return isPrivateIpv4(v4);
+    }
+    const hexGroups = /^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i.exec(v4);
+    if (!hexGroups) {
+      return true;
+    }
+    const high = Number.parseInt(hexGroups[1] ?? "", 16);
+    const low = Number.parseInt(hexGroups[2] ?? "", 16);
+    const mappedIpv4 = [high >> 8, high & 0xff, low >> 8, low & 0xff].join(".");
+    return isPrivateIpv4(mappedIpv4);
   }
   return false;
 }

@@ -84,10 +84,11 @@ state for those pages is resolved in the browser via `/api/account/status`; only
 `/account`, `/account/billing`, `/checkout`, `/login` and the API routes render per
 request.
 
-### Cloudflare Workers（迁移分支 codex/cloudflare-workers）
+### Cloudflare Workers（生产运行时）
 
 应用已能在 Cloudflare Workers 上完整运行（vinext，Cloudflare 目前推荐的 Next.js 路径），
-预览环境：`https://text-to-poster.yami198950.workers.dev`。生产域名仍未切换。
+生产域名：`https://texttoposter.com`；应用 Worker 同时保留
+`https://text-to-poster.yami198950.workers.dev` 作为预览入口。
 
 - **构建 / 部署**：`pnpm build:vinext` 与 `pnpm deploy:vinext`。后者先带 Workers 开关
   构建、再用 `--skip-build` 部署——`vinext-cloudflare deploy` 默认会自己重建，会丢掉
@@ -97,7 +98,7 @@ request.
   `cloudflare/cron-dispatcher`（两条 cron 触发 `/api/cron/*`，沿用 `CRON_SECRET` 校验）。
 - **绑定**：`IMAGES`（Cloudflare Images：水印合成与尺寸读取）、`ASSETS`、
   `RESPONSE_STORE`（备用）。
-- **密钥**：`wrangler secret bulk` 推送。**不要推 `APIMART_PROXY` / `HTTPS_PROXY`**——
+- **密钥**：应用 Worker 和 Cron Dispatcher 分别配置生产 secrets。**不要推 `APIMART_PROXY` / `HTTPS_PROXY`**——
   那是本地翻墙用的，Workers 上加载不了 undici 的原生 agent（见 `proxy-fetch.ts`）。
 - **图片交付**：展示路径走 zone 的 `/cdn-cgi/image/`（`width` + `format=auto` +
   `quality=82`，见 `src/lib/image-delivery.ts`），原图仍在 R2、下载仍给原图 PNG。
@@ -158,6 +159,6 @@ Vercel and other hosted build environments provide their own clean `NODE_OPTIONS
 ## Deployment notes
 
 - Production domain: `https://texttoposter.com` (`www` 308-redirects to the bare domain)
-- Vercel env must include all keys from `.env.example`; **do not** commit `.env.local`
+- Cloudflare Worker secrets must include the production keys from `.env.example`; **do not** commit `.env.local`
 - Keep `WAFFO_ENVIRONMENT=prod` and a production Waffo API key in production
 - Run every migration in `supabase/migrations/` against the remote database before releasing

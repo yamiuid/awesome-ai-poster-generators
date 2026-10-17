@@ -80,7 +80,6 @@ export function HistoryGallery({
 
   // 对挂起任务触发后台推进（重活：查 APIMart + 下载/水印/上传）。
   // 接口幂等 + 120s 超时静默——服务端继续处理，页面 meta refresh 后可见结果。
-  // 生产由 Vercel cron 兜底，这里只做用户活跃时的即时推进。
   useEffect(() => {
     for (const item of items) {
       if (item.status === "submitted" || item.status === "processing") {

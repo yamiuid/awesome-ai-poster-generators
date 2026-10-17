@@ -25,6 +25,16 @@ export async function GET(request: Request): Promise<Response> {
   const admin = createSupabaseAdminClient();
   const now = new Date();
   const expiredBefore = now.toISOString();
+  const { error: rateLimitCleanupError } = await admin
+    .from("guest_ip_rate_limits")
+    .delete()
+    .lt(
+      "updated_at",
+      new Date(now.getTime() - 7 * 24 * 60 * 60 * 1_000).toISOString(),
+    );
+  if (rateLimitCleanupError) {
+    console.error("Guest IP rate limit cleanup failed", rateLimitCleanupError);
+  }
   const { data: expiredAssets } = await admin
     .from("generated_assets")
     .select("id, storage_path")
@@ -50,12 +60,13 @@ export async function GET(request: Request): Promise<Response> {
     .from("subscriptions")
     .select("user_id, period_end")
     .in("status", ["canceled", "refunded", "canceling"])
+    .lte(
+      "period_end",
+      new Date(now.getTime() - 30 * 24 * 60 * 60 * 1_000).toISOString(),
+    )
+    .order("period_end", { ascending: true })
     .limit(200);
   for (const subscription of canceledSubscriptions ?? []) {
-    const retentionEnd = new Date(
-      new Date(subscription.period_end).getTime() + 30 * 24 * 60 * 60 * 1_000,
-    );
-    if (retentionEnd > now) continue;
     const { data: assets } = await admin
       .from("generated_assets")
       .select("id, storage_path")

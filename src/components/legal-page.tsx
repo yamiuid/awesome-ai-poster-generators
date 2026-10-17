@@ -33,7 +33,7 @@ const content: Readonly<
       ],
       [
         "Service providers",
-        "Supabase provides authentication, Postgres, and private Storage. APIMart receives the prompt and generation settings and routes them to the gpt-image-2.5-flare (GPT Image 2.5) image-generation endpoint. Waffo processes checkout, payment, and subscription events; it may process payment details as the merchant-of-record provider. Vercel hosts the app. Google Analytics and Microsoft Clarity load automatically and receive usage and session information; Umami receives the listed product events without poster prompts. These providers may process data in countries other than where you live.",
+        "Supabase provides authentication and Postgres. Cloudflare Workers hosts the app and Cloudflare R2 stores generated assets. APIMart receives the prompt and generation settings and routes them to the gpt-image-2.5-flare (GPT Image 2.5) image-generation endpoint. Waffo processes checkout, payment, and subscription events; it may process payment details as the merchant-of-record provider. Google Analytics and Microsoft Clarity load automatically and receive usage and session information; Umami receives the listed product events without poster prompts. These providers may process data in countries other than where you live.",
       ],
       [
         "Why we use it",

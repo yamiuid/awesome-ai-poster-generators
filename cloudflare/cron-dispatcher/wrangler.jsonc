@@ -8,8 +8,21 @@
     "crons": ["0 3 * * *", "0 4 * * 1"]
   },
   "vars": {
-    // 切换生产域名时改这里（现在是预览 Worker 的地址）
-    "APP_URL": "https://text-to-poster.yami198950.workers.dev"
+    "APP_URL": "https://texttoposter.com"
   },
-  "workers_dev": true
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "redact_query_string": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
+  }
 }
