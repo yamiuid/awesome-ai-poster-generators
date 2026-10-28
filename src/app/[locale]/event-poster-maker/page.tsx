@@ -141,8 +141,8 @@ export default async function EventPosterPage({ params }: RouteParams) {
           <details>
             <summary>Can I try the event poster maker free?</summary>
             <p>
-              Yes. Guests can try watermarked generations. Eligible free
-              accounts receive 20 welcome credits and can download without a
+              Yes. Guests can try one watermarked preview after a 45-second queue. Eligible free
+              accounts receive 20 welcome credits via Google and download with a
               watermark. Check the studio and{" "}
               <Link href="/pricing">pricing page</Link> for current limits; free
               use is limited.

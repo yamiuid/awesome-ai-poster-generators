@@ -60,7 +60,7 @@ describe("guest lifetime limit", () => {
       code: "GUEST_LIMIT_REACHED",
       status: 429,
       message:
-        "You have used your 2 free guest generations. Sign in or create an account to claim 20 welcome credits.",
+        "You have used your free guest preview. Continue with Google for 20 welcome credits (about 10 watermarked 1K Low posters).",
     });
   });
 });
@@ -88,10 +88,15 @@ describe("credit-based free mode", () => {
     });
   });
 
-  it("free actors pay credits for their chosen tier and fail with 402 when the balance is insufficient", async () => {
+  it("free actors are limited to 1K Low and pay two credits per poster", async () => {
     const actor = getActorForRequest("user-1", identity, false);
+    const higherTierRequest: GenerationRequest = {
+      ...request,
+      resolution: "2k",
+      quality: "high",
+    };
 
-    await expect(createGeneration(actor, request)).rejects.toMatchObject({
+    await expect(createGeneration(actor, higherTierRequest)).rejects.toMatchObject({
       code: "INSUFFICIENT_CREDITS",
       status: 402,
     });
@@ -99,6 +104,10 @@ describe("credit-based free mode", () => {
     const createCall = mocks.rpc.mock.calls.find(
       ([fn]) => fn === "create_limited_generation",
     );
+    expect(createCall?.[1]).toMatchObject({
+      p_resolution: "1k",
+      p_quality: "low",
+    });
     expect(createCall?.[1].p_reserved_credits).toBe(
       batchCreditCost("1k", "low", 1),
     );

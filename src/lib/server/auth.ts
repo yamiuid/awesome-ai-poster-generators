@@ -115,7 +115,7 @@ export async function getAuthContext(): Promise<AuthContext> {
       .limit(1),
   ]);
   const { data: subscription, error } = subscriptionResult;
-  if (error) {
+  if (error || packResult.error) {
     throw new AppError(
       "SUBSCRIPTION_READ_FAILED",
       "We could not read your subscription.",

@@ -60,6 +60,7 @@ import {
   IMAGE_COUNTS,
   type ImageCount,
   isAspectRatio,
+  isPosterStyle,
   MAX_REFERENCE_IMAGES,
   type OutputAspect,
   type PosterStyle,
@@ -70,7 +71,6 @@ import {
   recentGenerationsSchema,
   referenceImageLimit,
   STYLES,
-  isPosterStyle,
 } from "@/lib/domain/poster";
 import { isUiLocale, localizedPath, type UiLocale } from "@/lib/i18n/locale";
 import { posterSrc } from "@/lib/image-delivery";
@@ -151,8 +151,8 @@ const STUDIO_JOB_EXAMPLES: readonly PosterStudioExample[] = [
   },
 ];
 
-// 游客体验：1K / low / 每次 1 张，终身共 2 次（服务端 guest_usage 计数）；
-// 登录的积分用户解锁全部档位，按积分扣费，余额由 /api/account/status 返回
+// 游客体验：1K / low / 每次 1 张，终身共 1 次（服务端 guest_usage 计数）；
+// 付费用户解锁全部档位，游客与免费账号固定 1K / low；余额由 /api/account/status 返回
 const GUEST_MAX_IMAGES = 1;
 
 type AccountStatusPayload = Readonly<{
@@ -542,7 +542,7 @@ function OutputSettingsSelect({
   aspectRatio: AspectRatio;
   resolution: Resolution;
   quality: Quality;
-  /** pro 全解锁；free 可用 1k + low/medium；guest 锁定 1k/low */
+  /** pro 全解锁；free 与 guest 固定 1k/low */
   tier: "pro" | "free" | "guest";
   disabled?: boolean;
   onChangeAspect: (next: AspectRatio) => void;
@@ -567,19 +567,14 @@ function OutputSettingsSelect({
         group: "resolution" as const,
         value: option,
         label: t(RESOLUTION_LABEL_KEYS[option]),
-        locked: option !== "1k" && tier !== "pro",
+        locked: tier !== "pro" && option !== "1k",
         selected: option === resolution,
       })),
       ...QUALITIES.map((option) => ({
         group: "quality" as const,
         value: option,
         label: t(QUALITY_LABEL_KEYS[option]),
-        locked:
-          tier === "pro"
-            ? false
-            : tier === "guest"
-              ? option !== "low"
-              : option === "high" || option === "xhigh" || option === "max",
+        locked: tier !== "pro" && option !== "low",
         selected: option === quality,
       })),
     ],
@@ -1808,7 +1803,10 @@ function StudioHistoryPanel({
   );
 }
 
-export function PosterStudio({ initialStyle, examples: providedExamples }: Props) {
+export function PosterStudio({
+  initialStyle,
+  examples: providedExamples,
+}: Props) {
   const [account, setAccount] = useState<AccountSummary>(GUEST_ACCOUNT);
   const { isPro, hasPack, isGuest } = account;
   // 积分包用户与订阅用户同享全档位 / 无水印 / 长保留期
@@ -1834,8 +1832,15 @@ export function PosterStudio({ initialStyle, examples: providedExamples }: Props
   const [aspectRatio, setAspectRatio] = useState<OutputAspect>("2:3");
   const [resolution, setResolution] = useState<Resolution>("1k");
   const [quality, setQuality] = useState<Quality>("low");
-  // 默认 1 张；免费用户最大 2 张，Pro 可选 1-4 张
+  // 默认 1 张；免费用户 1 张，付费用户可选 1-4 张
   const [imageCount, setImageCount] = useState<ImageCount>(1);
+  useEffect(() => {
+    if (!paid) {
+      setResolution("1k");
+      setQuality("low");
+      setImageCount(1);
+    }
+  }, [paid, isGuest]);
   const [generations, setGenerations] = useState<GenerationResponse[]>([]);
   const [recentGenerations, setRecentGenerations] = useState<
     GenerationResponse[]
@@ -1952,10 +1957,16 @@ export function PosterStudio({ initialStyle, examples: providedExamples }: Props
       return;
     }
     guestResumeHandled.current = true;
-    const resume = readGuestResume();
-    if (!resume) {
+    const savedResume = readGuestResume();
+    if (!savedResume) {
       return;
     }
+    const resume = paid ? savedResume : {
+      ...savedResume,
+      resolution: "1k" as const,
+      quality: "low" as const,
+      imageCount: 1 as const,
+    };
     clearGuestResume();
     setPrompt(resume.prompt ?? "");
     if (resume.style) {
@@ -2067,7 +2078,6 @@ export function PosterStudio({ initialStyle, examples: providedExamples }: Props
       track("long_text_pasted");
     }
   }
-
 
   // —— 图生图：参考图上传 ——
 
@@ -2865,7 +2875,10 @@ export function PosterStudio({ initialStyle, examples: providedExamples }: Props
       return;
     }
     // 免费用户选了锁定档位：不发起请求，引导开通会员
-    if (!paid && needsPro) {
+    if (
+      !paid && !isGuest &&
+      (generationResolution !== "1k" || generationQuality !== "low" || generationImageCount !== 1)
+    ) {
       upgradePreviousFocus.current = generateButtonRef.current;
       setUpgradePromptReason("options");
       setUpgradePrompt(true);
@@ -3057,7 +3070,7 @@ export function PosterStudio({ initialStyle, examples: providedExamples }: Props
     generations.some(
       (g) => g.status === "submitted" || g.status === "processing",
     ) || pendingSubmission !== null;
-  // 免费积分用户：1K + low/medium 可用；选了 2K/4K 或 high 及以上质量时提示升级。
+  // 免费账号固定 1K / low / 单张；付费解锁其余选项。
   // 积分包用户（paid）与订阅用户解锁全部档位。
   // 余额未加载（null）时放行，由服务端 INSUFFICIENT_CREDITS 402 兜底。
   // 积分预估：图生图按已上传完成的参考图张数加价（每张 +1）
@@ -3070,10 +3083,7 @@ export function PosterStudio({ initialStyle, examples: providedExamples }: Props
   const needsPro =
     !paid &&
     !isGuest &&
-    (resolution !== "1k" ||
-      effectiveQuality === "high" ||
-      effectiveQuality === "xhigh" ||
-      effectiveQuality === "max");
+    (resolution !== "1k" || effectiveQuality !== "low" || imageCount !== 1);
   const insufficientCredits =
     !paid &&
     !isGuest &&
@@ -3314,7 +3324,7 @@ export function PosterStudio({ initialStyle, examples: providedExamples }: Props
                       shortLabel: optionMainValue(
                         t(RESOLUTION_LABEL_KEYS[option]),
                       ),
-                      locked: option !== "1k" && !paid,
+                      locked: !paid && option !== "1k",
                     }))}
                   />
                 </div>
@@ -3380,7 +3390,7 @@ export function PosterStudio({ initialStyle, examples: providedExamples }: Props
                   options={IMAGE_COUNTS.map((count) => ({
                     value: String(count),
                     label: t("imageCount", { count }),
-                    locked: isGuest ? count !== GUEST_MAX_IMAGES : false,
+                    locked: !paid && count !== GUEST_MAX_IMAGES,
                   }))}
                 />
               </div>

@@ -3,7 +3,6 @@ import { batchCreditCost } from "@/lib/domain/credits";
 import {
   type GenerationRequest,
   normalizeReferenceImages,
-  type ProviderQuality,
   referenceImageLimit,
 } from "@/lib/domain/poster";
 import { buildPosterPrompt } from "@/lib/domain/prompts";
@@ -47,24 +46,16 @@ function providerRequest(
     return {
       ...providerBase,
       resolution: "1k",
-      quality: "low" as ProviderQuality,
+      quality: "low",
       imageCount: 1,
     };
   }
   if (actor.mode === "free") {
-    // 免费档位：1K + low/medium。UI 已锁定，这里兜底防止直接调 API 绕过，
-    // 超出部分静默降级，积分按降级后的实际档位扣减。
-    const quality: ProviderQuality =
-      request.quality === "high" ||
-      request.quality === "xhigh" ||
-      request.quality === "max"
-        ? "medium"
-        : request.quality;
     return {
       ...providerBase,
       resolution: "1k",
-      quality,
-      imageCount: request.imageCount,
+      quality: "low",
+      imageCount: 1,
     };
   }
   // pro 订阅用户按用户选择的档位生成，费用由积分承担。
@@ -76,10 +67,12 @@ export async function createGeneration(
   request: GenerationRequest,
 ): Promise<GenerationRow> {
   const admin = createSupabaseAdminClient();
-  if (actor.mode === "guest" && request.imageCount !== 1) {
+  if (actor.mode !== "pro" && request.imageCount !== 1) {
     throw new AppError(
-      "GUEST_IMAGE_COUNT_LIMIT",
-      "Guest generations create one poster at a time.",
+      actor.mode === "guest"
+        ? "GUEST_IMAGE_COUNT_LIMIT"
+        : "PAID_IMAGE_COUNT_LIMIT",
+      "Free generations create one poster at a time. Pay to unlock batches.",
       400,
     );
   }
@@ -152,11 +145,11 @@ export async function createGeneration(
       );
     }
     if (parsed.data.outcome === "quota_exhausted") {
-      // free 模式已无每日配额，quota_exhausted 只会发生在 guest 终身 2 次用完时。
+      // 游客额度在数据库锁内按终身一次计数。
       throw new AppError(
         actor.mode === "guest" ? "GUEST_LIMIT_REACHED" : "INSUFFICIENT_CREDITS",
         actor.mode === "guest"
-          ? "You have used your 2 free guest generations. Sign in or create an account to claim 20 welcome credits."
+          ? "You have used your free guest preview. Continue with Google for 20 welcome credits (about 10 watermarked 1K Low posters)."
           : "You do not have enough credits for this generation.",
         429,
       );
@@ -205,7 +198,8 @@ export async function createGeneration(
         status: "submitted",
         progress: 0,
         reserved_credits: credits,
-        next_poll_at: new Date().toISOString(),
+        // ponytail: lease the submission so a worker cannot submit it twice.
+        next_poll_at: new Date(Date.now() + 15 * 60_000).toISOString(),
       })
       .select()
       .single();
@@ -268,6 +262,45 @@ export async function createGeneration(
     }
   }
 
+  if (actor.mode !== "pro") {
+    // ponytail: reuse the durable task and its existing advance endpoint as the queue.
+    const { data: queued, error } = await admin
+      .from("generations")
+      .update({
+        queued_request: { ...request, ...providerInput },
+        next_poll_at: new Date(
+          Date.now() + (actor.mode === "guest" ? 45_000 : 10_000),
+        ).toISOString(),
+      })
+      .eq("id", inserted.id)
+      .select()
+      .single();
+    if (error || !queued) {
+      await failLimitedGeneration(
+        inserted.id,
+        "failed",
+        "Could not queue generation.",
+      );
+      if (credits > 0) await settleGenerationCredits(inserted.id, 0, 0);
+      throw new AppError(
+        "GENERATION_CREATE_UNAVAILABLE",
+        "Could not queue generation.",
+        503,
+      );
+    }
+    return queued;
+  }
+  return submitCreatedGeneration(inserted, request, providerInput);
+}
+
+export async function submitCreatedGeneration(
+  inserted: GenerationRow,
+  request: GenerationRequest,
+  providerInput: ProviderGenerationRequest,
+): Promise<GenerationRow> {
+  const admin = createSupabaseAdminClient();
+  const referenceImages = normalizeReferenceImages(request);
+  const credits = inserted.reserved_credits;
   let providerTaskId: string;
   try {
     await enforcePromptSafety(request.prompt);
@@ -314,6 +347,8 @@ export async function createGeneration(
         .update({
           provider_task_id: providerTaskId,
           status: "processing",
+          submitted_at: new Date().toISOString(),
+          queued_request: null,
           next_poll_at: new Date().toISOString(),
         })
         .eq("id", inserted.id)

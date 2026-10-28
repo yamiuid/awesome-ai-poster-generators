@@ -60,7 +60,7 @@ const howToSteps = [
   {
     label: "04 / KEEP",
     title: "Download your favorite direction.",
-    body: "Keep the direction that lands, refine the brief, and download. Guest previews are watermarked; a free account downloads clean files, and Pro adds high-definition exports and private history.",
+    body: "Guests get one watermarked 1K Low preview; Google signups receive 20 credits for about ten watermarked 1K Low posters. Credit packs and subscriptions unlock watermark-free downloads, no added queue, and batch generation.",
     image: "/how-to/download-poster.svg",
     alt: "A finished poster being downloaded from the poster studio.",
   },
@@ -411,6 +411,7 @@ export default async function Home({ params }: RouteParams) {
             <li>{t("pricingFeature5")}</li>
             <li>{t("pricingFeature6")}</li>
             <li>{t("pricingFeature7")}</li>
+            <li>{t("pricingFeature8")}</li>
           </ul>
           <Link className="pricing-link" href="/pricing">
             {t("seePlans")} <ArrowUpRight size={15} />

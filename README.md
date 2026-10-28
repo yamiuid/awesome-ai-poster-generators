@@ -20,17 +20,17 @@
 
 Turn a written brief — or any web page — into up to four private poster directions in seconds. Describe the subject, mood, audience, or the words you want to see, paste a URL to analyze, or attach a reference image; the studio generates distinct compositions you can compare, keep, and download — no design skills needed.
 
-A paid English-language MVP built with Next.js, Supabase, Cloudflare R2, and GPT Image 2.5 (via APIMart). Guests can try it free (watermarked previews, 2 lifetime generations, 1 reference image); a free account downloads without a watermark and attaches 2 reference images, while Creator and Studio plans unlock full resolution, high quality, up to 5 reference images, and private history.
+A paid English-language MVP built with Next.js, Supabase, Cloudflare R2, and GPT Image 2.5 (via APIMart). Guests get one watermarked 1K Low preview after a 45-second queue. Google signups receive a one-time 20-credit gift for about ten watermarked 1K Low posters; paid plans and credit packs unlock watermark-free downloads, full output settings, batches, and up to 5 reference images.
 
 ### What's inside
 
 - **Three input modes** — write an idea, paste a URL, or attach a reference image (image-to-image).
 - **AI Brief assistant** — drop raw text or a link and the assistant extracts a structured brief (headline, subtitle, 3 points, CTA) ready to generate.
 - **URL-to-poster pipeline** — paste any page; the server fetches, extracts, understands, and streams a poster brief in six steps.
-- **Up to 4 poster directions per run** — pick 1–4 images; free accounts get 1–2, Pro unlocks up to 4.
+- **Up to 4 poster directions per run** — free accounts generate one 1K Low poster per run; paid accounts can pick 1–4 images.
 - **17 visual styles** — Auto, Movie, Minimal, Anime, Business, Vintage, Neon (featured) plus Swiss, Typography, Collage, Photography, Illustration, Surreal, Fashion, Brutalist, Art Deco, Y2K.
 - **Flexible formats** — 8 aspect ratios (1:1 → 9:16) and 1K–4K resolutions with Low/Medium/High quality.
-- **Free tier without an account** — guests get 2 lifetime watermarked generations, salted & hashed guest key (no raw IP/browser tracking).
+- **Free tier without an account** — guests get one lifetime watermarked 1K Low generation after a 45-second queue, with a salted & hashed guest key (no raw IP/browser tracking).
 - **Magic-link & Google sign-in** — email verification-code login with resend countdown.
 - **Private history** — every generation saved to your account with large previews, full-size lightbox, one-click download.
 - **Paid plans** — Creator $9.90/mo and Studio $19.90/mo (annual options), billed through Waffo (merchant of record).
@@ -162,3 +162,13 @@ Vercel and other hosted build environments provide their own clean `NODE_OPTIONS
 - Cloudflare Worker secrets must include the production keys from `.env.example`; **do not** commit `.env.local`
 - Keep `WAFFO_ENVIRONMENT=prod` and a production Waffo API key in production
 - Run every migration in `supabase/migrations/` against the remote database before releasing
+
+
+### Trial access tiers
+
+- Guest: one lifetime 1K/low poster with a baked-in watermark; 45-second queue before provider submission.
+- Free account: Google signup grants 20 permanent credits once (about ten watermarked 1K/Low posters without references). One poster per run, with a 10-second queue. Existing email accounts can still sign in; email signup is disabled.
+- Paid subscription or credit pack: clean exports, full output settings, batches, and no added submission queue; normal credit reservation still applies.
+- Apply `20261027072033_tiered_trial_access.sql` before deploying this code. It adds `generations.queued_request`, enforces Google signup in Auth, and updates atomic guest limits and welcome grants. Existing balances and grants are preserved; failed guest claims and reserved credits retain the existing refund path.
+- Queued requests advance through the existing `/api/generations/:id/advance` endpoint and the per-minute generation recovery job. Expired submission leases without a provider task ID are held for manual review to prevent duplicate submissions.
+- Local browser regression check: `node scripts/check-trial-ui.mjs http://127.0.0.1:3100` verifies signup resume for free and paid accounts using intercepted API responses, without provider charges.

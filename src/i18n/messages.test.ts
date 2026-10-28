@@ -66,7 +66,9 @@ describe("account plan-ended copy", () => {
         ? (tree["account"] as MessageNode | undefined)
         : undefined;
     const value =
-      typeof account === "object" && account !== null ? account[key] : undefined;
+      typeof account === "object" && account !== null
+        ? account[key]
+        : undefined;
     return typeof value === "string" ? value : "";
   };
 
@@ -79,6 +81,27 @@ describe("account plan-ended copy", () => {
       expect(accountMessage(locale, "expiredPlanCredits")).toContain(
         "{credits}",
       );
+    });
+  }
+});
+
+describe("trial pricing copy", () => {
+  for (const locale of UI_LOCALES) {
+    it(`${locale} resolves the 1K Low trial estimate and 20-credit grant`, () => {
+      // Given: the final merged locale used by the pricing page.
+      const pricing = messagesForLocale(locale)["pricing"];
+      if (typeof pricing !== "object" || pricing === null)
+        throw new Error("Missing pricing messages");
+      // When: the page reads the free trial card strings.
+      const estimate = pricing["freeCreditsNote"];
+      const grant = pricing["welcomeCreditsLine"];
+      const freeOutput = pricing["freeFeature2"];
+      // Then: no missing-key fallback or stale grant is shown.
+      expect(estimate).toContain("{count}");
+      expect(estimate).toContain("1K");
+      expect(freeOutput).toContain("1K");
+      expect(freeOutput).not.toContain("2K");
+      expect(grant).toContain("20");
     });
   }
 });

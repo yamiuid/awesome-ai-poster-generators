@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GenerationRequest } from "@/lib/domain/poster";
 import { AppError } from "./errors";
-import { createGeneration, getActorForRequest } from "./generation-create";
+import {
+  createGeneration,
+  getActorForRequest,
+  submitCreatedGeneration,
+} from "./generation-create";
 import type { GenerationRow } from "./generation-types";
 
 const mocks = vi.hoisted(() => ({
@@ -155,14 +159,15 @@ describe("generation prompt safety integration", () => {
       data: guestGeneration,
       error: null,
     });
-    const actor = getActorForRequest(null, identity, false);
     const guestRequest = {
       ...request,
       resolution: "1k" as const,
       quality: "low" as const,
     };
 
-    await expect(createGeneration(actor, guestRequest)).rejects.toMatchObject({
+    await expect(
+      submitCreatedGeneration(guestGeneration, guestRequest, guestRequest),
+    ).rejects.toMatchObject({
       code: "PROMPT_SAFETY_BLOCKED",
     });
 

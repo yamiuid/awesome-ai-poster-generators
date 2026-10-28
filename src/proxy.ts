@@ -16,7 +16,7 @@ import { getPublicEnv } from "@/lib/server/supabase/public-env";
 /**
  * 路由前缀策略（等价于 next-intl 的 localePrefix: "as-needed"）：
  *
- * - 页面真实路径是 /[locale]/…，默认语言 en 不带前缀（/en/about → 301 /about）
+ * - 页面真实路径是 /[locale]/…，默认语言链接不带前缀
  * - /about       → 内部 rewrite 到 /en/about（浏览器地址栏不变）
  * - /ja/about    → 直接命中 /[locale]/about
  * - /ja/privacy  → 301 /privacy（法务页不做本地化）
@@ -104,8 +104,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const rest = prefix ? stripLocalePrefix(pathname) : pathname;
 
   if (prefix) {
-    // 默认语言前缀、以及不该本地化的路径（法务页 / 静态文件），统一 301 回无前缀地址
-    if (locale === DEFAULT_LOCALE || !isLocalizedRoute(rest)) {
+    // 法务页和静态文件统一回无前缀地址。保留 /en 以支持 Next 内部重写。
+    if (!isLocalizedRoute(rest)) {
       const canonical = request.nextUrl.clone();
       canonical.pathname = rest;
       return NextResponse.redirect(canonical, 301);

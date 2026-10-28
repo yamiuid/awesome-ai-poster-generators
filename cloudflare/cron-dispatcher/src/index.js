@@ -7,12 +7,12 @@
  * 两条任务：maintenance（推进卡住的生成任务，重活由应用 Worker 里的
  * Cloudflare Images 完成）、blocklist-sync（同步一次性邮箱黑名单）。
  */
-const TASKS = ["/api/cron/maintenance", "/api/cron/blocklist-sync"];
+const TASKS = ["/api/cron/maintenance", "/api/cron/blocklist-sync", "/api/cron/generations"];
 
 export default {
   async scheduled(event, env, ctx) {
     const isDailyMaintenance = event.cron === "0 3 * * *";
-    const path = isDailyMaintenance ? TASKS[0] : TASKS[1];
+    const path = event.cron === "* * * * *" ? TASKS[2] : isDailyMaintenance ? TASKS[0] : TASKS[1];
     const dispatch = async () => {
       try {
         const response = await fetch(`${env.APP_URL}${path}`, {

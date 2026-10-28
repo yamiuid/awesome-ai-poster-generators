@@ -73,6 +73,26 @@ async function storeTaskImages(
   }
 
   const admin = createSupabaseAdminClient();
+  let paidExpiry: string | null = null;
+  if (generation.mode === "pro" && generation.user_id) {
+    const [subscription, pack] = await Promise.all([
+      admin.from("subscriptions").select("period_end")
+        .eq("user_id", generation.user_id).maybeSingle(),
+      admin.from("credit_grants").select("created_at")
+        .eq("user_id", generation.user_id).eq("source", "credit_pack")
+        .lte("created_at", generation.created_at)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    if (subscription.error || pack.error) {
+      throw new AppError("RETENTION_READ_FAILED", "We could not determine image retention.", 503);
+    }
+    if (!subscription.data?.period_end || subscription.data.period_end < generation.created_at) {
+      if (!pack.data) {
+        throw new AppError("RETENTION_READ_FAILED", "We could not determine image retention.", 503);
+      }
+      paidExpiry = new Date(new Date(generation.created_at).getTime() + 180 * 24 * 60 * 60 * 1_000).toISOString();
+    }
+  }
   const { data: existing } = await admin
     .from("generated_assets")
     .select("storage_path")
@@ -88,8 +108,7 @@ async function storeTaskImages(
       return false;
     }
     const downloaded = await downloadProviderImage(sourceUrl);
-    // 只有访客预览打水印；注册用户（免费与订阅）直接拿到干净文件
-    const watermarked = generation.mode === "guest";
+    const watermarked = generation.mode !== "pro";
     const image = watermarked ? await bakeWatermark(downloaded) : downloaded;
     await uploadPoster(path, image);
     const { error } = await admin.from("generated_assets").insert({
@@ -101,7 +120,7 @@ async function storeTaskImages(
       watermarked,
       expires_at:
         generation.mode === "pro"
-          ? null
+          ? paidExpiry
           : new Date(
               Date.now() + (generation.user_id ? 7 : 1) * 24 * 60 * 60 * 1_000,
             ).toISOString(),

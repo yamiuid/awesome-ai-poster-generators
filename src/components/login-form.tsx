@@ -190,7 +190,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
       const result = await createSupabaseBrowserClient().auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: true,
+          shouldCreateUser: false,
           emailRedirectTo: authRedirectUrl(window.location.origin, callbackUrl),
           ...(captchaToken ? { captchaToken } : {}),
         },
@@ -220,7 +220,7 @@ export function LoginForm({ next, initialError, onSuccess }: Props) {
       const result = await createSupabaseBrowserClient().auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: true,
+          shouldCreateUser: false,
           emailRedirectTo: authRedirectUrl(window.location.origin, callbackUrl),
           ...(captchaToken ? { captchaToken } : {}),
         },

@@ -72,6 +72,7 @@ export type Database = {
         guest_limit_key: string | null;
         guest_claimed_at: string | null;
         provider_task_id: string | null;
+        queued_request?: Json;
         prompt: string;
         style: string;
         aspect_ratio: string;

@@ -9,7 +9,7 @@ import {
   yearlyDiscountPercent,
   yearlySavings,
 } from "@/lib/domain/plans";
-import { resolveRouteLocale, type RouteParams } from "@/lib/i18n/route-locale";
+import { type RouteParams, resolveRouteLocale } from "@/lib/i18n/route-locale";
 import { pageMeta } from "@/lib/seo";
 import {
   isCreditPackConfigured,
@@ -49,7 +49,7 @@ export default async function PricingPage({ params }: RouteParams) {
   const creatorCredits = formatNumber.format(creditsForTier("creator"));
   const studioCredits = formatNumber.format(creditsForTier("studio"));
   const scaleCredits = formatNumber.format(creditsForTier("scale"));
-  // 预计可生成图片数：1K/标准品质 = 2 积分/张
+  // 预计可生成图片数：1K/低品质 = 2 积分/张
   const welcomeImages = formatNumber.format(10);
   const creatorImages = formatNumber.format(250);
   const studioImages = formatNumber.format(500);
@@ -61,9 +61,9 @@ export default async function PricingPage({ params }: RouteParams) {
     name: "Free",
     audience: t("freeAudience"),
     price: "$0",
-    cadence: t("monthCadence"),
+    cadence: t("freeCadence"),
     creditsLabel: t("welcomeCreditsLine"),
-    creditsNote: t("creditsNoteOnce", { count: welcomeImages }),
+    creditsNote: t("freeCreditsNote", { count: welcomeImages }),
     features: [
       t("freeFeature2"),
       t("freeFeature3"),

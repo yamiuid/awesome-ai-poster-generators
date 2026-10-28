@@ -30,4 +30,14 @@ describe("canonical URL redirects", () => {
     expect(config.matcher).toContain("/robots.txt");
     expect(config.matcher).toContain("/sitemap.xml");
   });
+
+  it("rewrites an unprefixed English page without redirecting its internal route", async () => {
+    // Given: the public English pricing URL and its internal locale route.
+    const publicResponse = await proxy(new NextRequest("http://localhost:3100/pricing"));
+    // When: Next resolves the rewritten route through the proxy.
+    const internalResponse = await proxy(new NextRequest("http://localhost:3100/en/pricing"));
+    // Then: the internal route cannot redirect back to the original URL.
+    expect(publicResponse.headers.get("x-middleware-rewrite")).toContain("/en/pricing");
+    expect(internalResponse.headers.get("location")).toBeNull();
+  });
 });

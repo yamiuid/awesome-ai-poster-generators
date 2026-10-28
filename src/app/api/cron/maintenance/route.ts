@@ -70,7 +70,9 @@ export async function GET(request: Request): Promise<Response> {
     const { data: assets } = await admin
       .from("generated_assets")
       .select("id, storage_path")
-      .eq("user_id", subscription.user_id);
+      .eq("user_id", subscription.user_id)
+      .is("expires_at", null)
+      .lte("created_at", subscription.period_end);
     if (assets && assets.length > 0) {
       await deletePoster(assets.map((asset) => asset.storage_path));
       await admin

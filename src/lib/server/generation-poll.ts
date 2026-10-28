@@ -5,10 +5,14 @@ import {
   generationFailureStatus,
   serverPollBackoffMs,
 } from "@/lib/domain/generation-progress";
-import type { GenerationMode } from "@/lib/domain/poster";
+import {
+  type GenerationMode,
+  generationRequestSchema,
+} from "@/lib/domain/poster";
 import { sendAlert } from "./alerts";
 import { getTask, providerTaskPhase } from "./apimart";
 import { AppError } from "./errors";
+import { submitCreatedGeneration } from "./generation-create";
 import { applyProviderTask, failGeneration } from "./generation-task";
 import type {
   AssetRow,
@@ -333,6 +337,22 @@ async function failTimedOutGeneration(
   generation: GenerationRow,
 ): Promise<GenerationRow> {
   const taskId = generation.provider_task_id;
+  if (!taskId) {
+    // The provider may have accepted the request before its ID could be saved.
+    // Keep the reservation for manual reconciliation instead of resubmitting or refunding.
+    const { data, error } = await createSupabaseAdminClient()
+      .from("generations")
+      .update({
+        error_code: "PROVIDER_SUBMISSION_UNCERTAIN",
+        error_message: "Submission needs review. Please contact support before retrying.",
+        next_poll_at: null,
+      })
+      .eq("id", generation.id)
+      .select()
+      .single();
+    if (error || !data) throw new AppError("GENERATION_STATE_FAILED", "Could not record submission review.", 503);
+    return data;
+  }
   if (taskId) {
     try {
       const task = await getTask(taskId);
@@ -398,7 +418,12 @@ async function advanceGeneration(
   const now = new Date().toISOString();
   const { data: claimed, error: claimError } = await createSupabaseAdminClient()
     .from("generations")
-    .update({ next_poll_at: nextPollAt() })
+    .update({
+      next_poll_at:
+        initialGeneration.queued_request && !initialGeneration.provider_task_id
+          ? new Date(Date.now() + MAX_GENERATION_MS).toISOString()
+          : nextPollAt(),
+    })
     .eq("id", generation.id)
     .lte("next_poll_at", now)
     .select()
@@ -415,12 +440,31 @@ async function advanceGeneration(
   }
   generation = claimed;
   if (
+    !(initialGeneration.queued_request &&
+      !initialGeneration.provider_task_id &&
+      initialGeneration.next_poll_at &&
+      new Date(initialGeneration.next_poll_at).getTime() -
+        new Date(initialGeneration.submitted_at).getTime() <= 60_000) &&
     Date.now() - new Date(generation.submitted_at).getTime() >
     MAX_GENERATION_MS
   ) {
     return failTimedOutGeneration(generation);
   }
   if (!generation.provider_task_id) {
+    if (generation.queued_request) {
+      const parsed = generationRequestSchema.safeParse(
+        generation.queued_request,
+      );
+      if (!parsed.success) {
+        return failGeneration(
+          generation,
+          "Invalid queued generation.",
+          "failed",
+          "INVALID_GENERATION_REQUEST",
+        );
+      }
+      return submitCreatedGeneration(generation, parsed.data, parsed.data);
+    }
     throw new AppError(
       "GENERATION_STATE_FAILED",
       "This generation has no provider task.",
@@ -536,6 +580,18 @@ export async function giveUpGenerationById(
   const hardTimeoutPassed =
     Date.now() - new Date(generation.submitted_at).getTime() >
     MAX_GENERATION_MS;
+
+  if (!generation.provider_task_id && hardTimeoutPassed) {
+    return responseFor(await failTimedOutGeneration(generation));
+  }
+
+  if (
+    generation.queued_request &&
+    !generation.provider_task_id &&
+    !hardTimeoutPassed
+  ) {
+    return responseFor(generation);
+  }
 
   // 有 provider 任务时先核实真实状态
   if (generation.provider_task_id) {
